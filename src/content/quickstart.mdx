@@ -1,0 +1,36 @@
+---
+title: Quickstart
+description: Install Thally Docs, configure your API key, and make your first call in under five minutes.
+keywords:
+  - Thally Docs
+  - quickstart
+  - installation
+  - getting started
+---
+
+## Installation
+
+Install Thally Docs with your package manager of choice. We recommend pinning the
+version in your project so builds stay reproducible across machines and CI:
+
+```bash
+npm install thally-docs
+```
+
+## Basic usage
+
+Import the client and initialize it with your API key. Keep the key in an
+environment variable rather than committing it to source control, so it never
+leaks into your repository or build logs:
+
+```ts
+import { create } from 'thally-docs'
+
+const client = create({ apiKey: process.env.API_KEY })
+```
+
+## What's next
+
+That's the basics — you're ready to build. Explore the guides for common workflows,
+open the API reference to try endpoints against a live "Try It" console, or edit this
+page at `src/content/quickstart.mdx` to document your own onboarding flow.

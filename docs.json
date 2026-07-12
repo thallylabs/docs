@@ -1,0 +1,48 @@
+{
+  "theme": "sharp",
+  "fonts": {
+    "body": {
+      "family": "Plus Jakarta Sans",
+      "weight": [
+        "400",
+        "500",
+        "600",
+        "700"
+      ]
+    },
+    "heading": {
+      "family": "Outfit",
+      "weight": [
+        "600",
+        "700"
+      ]
+    }
+  },
+  "ai": {
+    "chat": true
+  },
+  "tabs": [
+    {
+      "tab": "Overview",
+      "groups": [
+        {
+          "group": "Getting Started",
+          "pages": [
+            "introduction",
+            "quickstart"
+          ]
+        }
+      ]
+    },
+    {
+      "tab": "API Reference",
+      "api": {
+        "source": "openapi.yaml"
+      }
+    },
+    {
+      "tab": "Changelog",
+      "href": "/changelog"
+    }
+  ]
+}
