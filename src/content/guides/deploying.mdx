@@ -1,0 +1,176 @@
+---
+title: Deploying
+description: Build and deploy your Thally documentation site to any hosting platform.
+---
+
+## Build for production
+
+```bash
+npm run build
+```
+
+This generates an optimized production build in the `.next/` directory. All documentation pages are statically pre-rendered for fast loading.
+
+## Environment variables
+
+Before deploying, set the `THALLY_SITE_URL` environment variable to your production domain. This is used for OpenGraph metadata and canonical URLs:
+
+```bash
+THALLY_SITE_URL=https://docs.yourproduct.com
+```
+
+Depending on which features you use, you may also want to set:
+
+| Variable | Enables |
+| --- | --- |
+| `THALLY_SITE_URL` | OpenGraph metadata and canonical URLs (recommended for every deploy) |
+| `ANTHROPIC_API_KEY` | The in-docs AI assistant ([AI features](/guides/ai-features)) |
+| `THALLY_ADMIN_PASSWORD` | Break-glass Owner access to the `/admin` dashboard |
+| `THALLY_OIDC_ISSUER` / `THALLY_OIDC_CLIENT_ID` / `THALLY_OIDC_CLIENT_SECRET` | Team sign-in to the dashboard via your IdP |
+| `THALLY_AUTH_SECRET` | Signs admin sessions and encrypts stored secrets (required with OIDC, and for the Connect-GitHub app key) |
+| `THALLY_ANALYTICS_DB_URL` / `THALLY_ANALYTICS_DB_TOKEN` | Durable analytics store on serverless hosts (see [Analytics & durable storage](#analytics--durable-storage)) |
+| `THALLY_DATABASE_URL` / `THALLY_DATABASE_TOKEN` | Durable admin storage (settings, tasks, rate limits) on serverless hosts |
+| `THALLY_TRACK_WEBHOOK_SECRET` / `THALLY_GITHUB_TOKEN` | [Thally Track](/guides/thally-track) — the manual-webhook path (not needed if you Connect a GitHub App) |
+| `THALLY_GITHUB_APP_ID` / `THALLY_GITHUB_APP_INSTALLATION_ID` / `THALLY_GITHUB_APP_PRIVATE_KEY` | Optional — wire the Track GitHub App by hand instead of the admin "Connect GitHub" button |
+
+Only `THALLY_SITE_URL` is needed for a basic docs site. Analytics and admin storage work with zero config locally; on serverless you need a remote database (below). See [Admin dashboard & team access](/guides/admin-dashboard) for the auth variables in context, and [Thally Track](/guides/thally-track) for the code-triggered-docs variables.
+
+## Analytics & durable storage
+
+Thally stores first-party analytics and some admin state in **libSQL** (SQLite-compatible). Locally this is automatic — no account, no setup.
+
+| Environment | What happens |
+| --- | --- |
+| **Local (`npm run dev`)** | Analytics writes to `.data/analytics/events.db`. General admin KV storage uses `.data/thally.db`. Both are created on first use. |
+| **Server with a persistent disk** (Docker volume, VPS) | The same on-disk files work if the volume survives restarts. |
+| **Serverless** (Vercel, Lambda, etc.) | The filesystem is ephemeral. Without a remote database, Home/Analytics show empty values or fail to load, and runtime admin settings may not persist across deploys. |
+
+### When you need a remote database
+
+Point Thally at a hosted libSQL database such as [Turso](https://turso.tech) when you deploy to serverless **and** you want any of:
+
+- Admin **Analytics** / Home traffic metrics
+- Durable admin settings, docs-task queue state, or rate-limit counters across instances
+
+Agent Readiness still works without a database — it is computed from your docs content, not from the analytics store.
+
+### Set up Turso (recommended for Vercel)
+
+1. Create a free database (CLI or [Turso dashboard](https://turso.tech)):
+
+```bash
+brew install tursodatabase/tap/turso   # or follow Turso's install docs
+turso auth login
+turso db create your-docs
+turso db show your-docs --url
+turso db tokens create your-docs
+```
+
+2. Add these environment variables on your host (Production):
+
+```bash
+# Analytics (page views, human vs agent traffic, search terms)
+THALLY_ANALYTICS_DB_URL=libsql://your-docs-….turso.io
+THALLY_ANALYTICS_DB_TOKEN=…
+
+# Admin KV (settings overrides, tasks, rate limits) — can be the same database
+THALLY_DATABASE_URL=libsql://your-docs-….turso.io
+THALLY_DATABASE_TOKEN=…
+```
+
+3. Redeploy. Thally creates the required tables on first connect — you do not run migrations by hand.
+
+You can use one Turso database for both pairs of variables, or separate databases if you prefer.
+
+<Note type="info" title="Local data stays local">
+  Your laptop's `.data/` files are not uploaded to production. After connecting Turso, production analytics start empty and fill as real traffic hits the live site.
+</Note>
+
+## Vercel
+
+The fastest way to deploy — push to GitHub and import the repo:
+
+1. Push your docs repo to GitHub
+2. Go to [vercel.com/new](https://vercel.com/new) and import the repository
+3. Set `THALLY_SITE_URL` in the environment variables
+4. If you want admin analytics and durable settings, also set the Turso variables from [Analytics & durable storage](#analytics--durable-storage)
+5. Deploy
+
+Vercel auto-detects Next.js and configures everything.
+
+## Netlify
+
+```bash
+npm run build
+```
+
+Set the build command to `npm run build` and the publish directory to `.next`. You may need the `@netlify/plugin-nextjs` plugin for full Next.js support.
+
+## Docker
+
+Create a `Dockerfile`:
+
+```dockerfile
+FROM node:18-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM node:18-alpine AS runner
+WORKDIR /app
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/src/content ./src/content
+COPY --from=builder /app/openapi.yaml ./
+COPY --from=builder /app/docs.json ./
+
+EXPOSE 3000
+CMD ["npm", "start"]
+```
+
+Build and run:
+
+```bash
+docker build -t my-docs .
+docker run -p 3000:3000 my-docs
+```
+
+## Cloudflare Pages
+
+Use the `@cloudflare/next-on-pages` adapter:
+
+1. Install: `npm install @cloudflare/next-on-pages`
+2. Set build command: `npx @cloudflare/next-on-pages`
+3. Set output directory: `.vercel/output/static`
+4. Deploy via the Cloudflare dashboard or Wrangler CLI
+
+## Static export
+
+If you don't need server-side features (like the Try It proxy), you can export as a fully static site. Add to `next.config.ts`:
+
+```ts
+const nextConfig = {
+  output: 'export',
+}
+```
+
+Then run `npm run build` — the output will be in the `out/` directory, ready for any static host.
+
+<Note type="warning" title="Static export limitation">
+  The API "Try It" panel requires a server-side proxy route and won't work with static export. All other features work fine.
+</Note>
+
+## SEO and feeds
+
+Once deployed, Thally automatically serves:
+
+- **`/sitemap.xml`** — includes all doc pages, API reference pages, and the changelog
+- **`/robots.txt`** — allows crawlers on all pages, blocks internal API routes (`/api/og`, `/api/try-it`)
+- **`/changelog/rss.xml`** — RSS feed for changelog updates
+- **Dynamic OG images** — every page gets a branded social preview image via `/api/og`
+
+All of these use `THALLY_SITE_URL` to generate absolute URLs, so make sure it's set before deploying.

@@ -1,36 +1,86 @@
 ---
 title: Quickstart
-description: Install Thally Docs, configure your API key, and make your first call in under five minutes.
-keywords:
-  - Thally Docs
-  - quickstart
-  - installation
-  - getting started
+description: Get a Thally documentation site running locally in under five minutes.
 ---
 
-## Installation
+Follow these steps to go from zero to a running docs site.
 
-Install Thally Docs with your package manager of choice. We recommend pinning the
-version in your project so builds stay reproducible across machines and CI:
+![HTML browser window](/images/image2.jpg)
+
+<Steps>
+
+<Step title="Create your project">
 
 ```bash
-npm install thally-docs
+npx create-thally-docs my-docs
+cd my-docs
+npm run dev
 ```
 
-## Basic usage
+Open [http://localhost:3040](http://localhost:3040) to see your new docs site.
 
-Import the client and initialize it with your API key. Keep the key in an
-environment variable rather than committing it to source control, so it never
-leaks into your repository or build logs:
+</Step>
 
-```ts
-import { create } from 'thally-docs'
+<Step title="Add a page">
 
-const client = create({ apiKey: process.env.API_KEY })
+Create `src/content/my-page.mdx`:
+
+```mdx
+---
+title: My Page
+description: A new documentation page.
+---
+
+Write your content here using Markdown and JSX components.
 ```
 
-## What's next
+</Step>
 
-That's the basics — you're ready to build. Explore the guides for common workflows,
-open the API reference to try endpoints against a live "Try It" console, or edit this
-page at `src/content/quickstart.mdx` to document your own onboarding flow.
+<Step title="Register it in navigation">
+
+Open `docs.json` and add the page to a group:
+
+```json
+{
+  "group": "Getting Started",
+  "pages": ["introduction", "quickstart", "my-page"]
+}
+```
+
+The sidebar updates automatically — no restart required.
+
+</Step>
+
+<Step title="Add an API reference">
+
+Drop an OpenAPI spec (YAML or JSON) into the project root and reference it in `docs.json`:
+
+```json
+{
+  "tab": "API Reference",
+  "api": {
+    "source": "openapi.yaml"
+  }
+}
+```
+
+Thally generates interactive endpoint pages with parameter tables, schemas, code samples, and a "Try It" console.
+
+</Step>
+
+<Step title="Deploy">
+
+```bash
+npm run build
+```
+
+Deploy to any platform that supports Next.js — Vercel, Netlify, Cloudflare, or a Docker container.
+
+<Note type="info" title="Environment variables">
+Set `THALLY_SITE_URL` in your hosting dashboard for correct OpenGraph URLs and metadata.
+</Note>
+
+</Step>
+
+</Steps>
+

@@ -144,14 +144,14 @@ const brandPresets: Record<BrandPresetKey, BrandConfig> = {
 const brandPreset: BrandPresetKey = 'primary'
 
 export const siteConfig: SiteConfig = {
-  name: 'Thally Docs',
+  name: 'Thally',
   description:
-    'Documentation for Thally Docs.',
-  repoUrl: '',
+    'Thally is the first agent-native documentation platform. Every page is served to humans as polished HTML and to AI agents as structured JSON, JSON-LD, and Markdown from the same URL — self-hosted, open, and fully extensible.',
+  repoUrl: 'https://github.com/thallylabs/thally-docs',
   links: [
     { label: 'Get started', href: '/quickstart' },
-    { label: 'Support', href: '' },
-    { label: 'GitHub', href: '' },
+    { label: 'Support', href: 'https://github.com/thallylabs/thally-docs/issues/new' },
+    { label: 'GitHub', href: 'https://github.com/thallylabs/thally-docs' },
     { label: 'Changelog', href: '/changelog' },
   ],
   brand: brandPresets[brandPreset],
