@@ -144,6 +144,9 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
     !pathname.startsWith('/api/admin') &&
     !pathname.startsWith('/api/analytics') &&
     !pathname.startsWith('/api/access') &&
+    // Uses the server-only site credential; it must remain reachable so a
+    // password-protected deployment can connect itself to Thally Cloud.
+    !pathname.startsWith('/api/cloud/handshake') &&
     // The Thally Track webhook is called by GitHub, which can't hold a docs-access
     // cookie — it authenticates itself via HMAC signature instead.
     !pathname.startsWith('/api/track') &&
