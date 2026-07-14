@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
+    "@thallylabs/core": "^0.1.0",
     "@thallylabs/mcp": "*",
     "@headlessui/react": "^2.2.9",
     "@libsql/client": "^0.14.0",
