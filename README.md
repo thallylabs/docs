@@ -41,6 +41,15 @@ npm run dev
 
 Open [http://localhost:3040](http://localhost:3040).
 
+## Canonical site source
+
+This repository is both the live Thally documentation site and the canonical
+standalone source used by `create-thally-docs` and Thally Cloud. New projects
+inherit the application/runtime from `main`; the creation flow removes this
+repository's documentation, screenshots, and issue templates before writing
+the new site's placeholder or migrated content. There is no separate template
+implementation to keep in sync.
+
 ## Project Structure
 
 ```
