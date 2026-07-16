@@ -71,10 +71,12 @@ Thally generates interactive endpoint pages with parameter tables, schemas, code
 <Step title="Deploy">
 
 ```bash
-npm run build
+npm run build:cloudflare
+npm run smoke:cloudflare
 ```
 
-Deploy to any platform that supports Next.js — Vercel, Netlify, Cloudflare, or a Docker container.
+Deploy the verified Worker with `npm run deploy:cloudflare`. A traditional
+Node deployment remains available through `npm run build && npm start`.
 
 <Note type="info" title="Environment variables">
 Set `THALLY_SITE_URL` in your hosting dashboard for correct OpenGraph URLs and metadata.
@@ -83,4 +85,3 @@ Set `THALLY_SITE_URL` in your hosting dashboard for correct OpenGraph URLs and m
 </Step>
 
 </Steps>
-

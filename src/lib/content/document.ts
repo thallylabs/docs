@@ -1,10 +1,13 @@
-import fs from 'node:fs'
-import path from 'node:path'
 import matter from 'gray-matter'
 import { parseMdxContent } from '@/lib/content/parse'
 import type { ParsedContent } from '@/lib/content/types'
+import {
+  readRuntimeSource,
+  runtimeSourceExists,
+  runtimeSourceModifiedAt,
+} from '@/lib/runtime-sources'
 
-const CONTENT_ROOT = path.join(process.cwd(), 'src/content')
+const CONTENT_ROOT = 'src/content'
 
 export interface ContentDocument {
   pageId: string
@@ -18,17 +21,17 @@ function resolveContentFile(pageId: string, locale?: string): string | null {
   const candidates: Array<string> = []
   if (locale) {
     candidates.push(
-      path.join(CONTENT_ROOT, locale, `${pageId}.mdx`),
-      path.join(CONTENT_ROOT, locale, `${pageId}/index.mdx`),
+      `${CONTENT_ROOT}/${locale}/${pageId}.mdx`,
+      `${CONTENT_ROOT}/${locale}/${pageId}/index.mdx`,
     )
   }
   candidates.push(
-    path.join(CONTENT_ROOT, `${pageId}.mdx`),
-    path.join(CONTENT_ROOT, `${pageId}/index.mdx`),
+    `${CONTENT_ROOT}/${pageId}.mdx`,
+    `${CONTENT_ROOT}/${pageId}/index.mdx`,
   )
 
   for (const filePath of candidates) {
-    if (fs.existsSync(filePath)) return filePath
+    if (runtimeSourceExists(filePath)) return filePath
   }
   return null
 }
@@ -45,14 +48,14 @@ export function getContentDocument(pageId: string, locale?: string): ContentDocu
   const filePath = resolveContentFile(pageId, locale)
   if (!filePath) return null
 
-  const stat = fs.statSync(filePath)
+  const modifiedAtMs = runtimeSourceModifiedAt(filePath)
   const cacheKey = filePath
   const cached = documentCache.get(cacheKey)
-  if (cached && cached.mtimeMs === stat.mtimeMs) {
+  if (cached && cached.mtimeMs === modifiedAtMs) {
     return cached.document
   }
 
-  const raw = fs.readFileSync(filePath, 'utf8')
+  const raw = readRuntimeSource(filePath)
   const { data, content } = matter(raw)
   const document: ContentDocument = {
     pageId,
@@ -61,6 +64,6 @@ export function getContentDocument(pageId: string, locale?: string): ContentDocu
     content: parseMdxContent(content),
   }
 
-  documentCache.set(cacheKey, { mtimeMs: stat.mtimeMs, document })
+  documentCache.set(cacheKey, { mtimeMs: modifiedAtMs, document })
   return document
 }

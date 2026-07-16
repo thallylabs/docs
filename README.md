@@ -178,11 +178,13 @@ Legacy `DOX_*` names are still read as a fallback for every `THALLY_*` variable,
 ## Production
 
 ```bash
-npm run build
-npm start
+npm run build:cloudflare
+npm run smoke:cloudflare
+npm run deploy:cloudflare
 ```
 
-Deploy anywhere that supports Next.js — Vercel, Netlify, Cloudflare, Docker, etc.
+The canonical deployment target is Cloudflare Workers through OpenNext. For a
+traditional Node host, `npm run build && npm start` remains available.
 
 ## Stack
 
