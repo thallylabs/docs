@@ -1,0 +1,13 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "thally-docs",
+  "main": ".open-next/worker.js",
+  // Keep this current and validate changes through the workerd smoke suite;
+  // OpenNext relies on recent runtime fixes for Next.js server features.
+  "compatibility_date": "2026-07-15",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  }
+}

@@ -99,10 +99,12 @@ Guarda el archivo y la barra lateral se actualiza automáticamente — no se req
 <Step title="Despliega">
 
 ```bash
-npm run build
+npm run build:cloudflare
+npm run smoke:cloudflare
 ```
 
-Despliega la salida en cualquier plataforma que soporte Next.js — Vercel, Netlify, Cloudflare o un contenedor Docker.
+Despliega el Worker verificado con `npm run deploy:cloudflare`. Para un
+despliegue Node tradicional, usa `npm run build && npm start`.
 
 </Step>
 
