@@ -24,6 +24,9 @@ Depending on which features you use, you may also want to set:
 | Variable | Enables |
 | --- | --- |
 | `THALLY_SITE_URL` | OpenGraph metadata and canonical URLs (recommended for every deploy) |
+| `THALLY_CLOUD_SITE_TOKEN` | Connects an externally hosted deployment to its Thally Cloud site (server-only) |
+| `THALLY_CLOUD_URL` | Overrides the Thally Cloud control-plane URL for staging or a public development tunnel |
+| `THALLY_CLOUD_SITE_CONFIG` | Managed-hosting settings snapshot injected automatically by Thally Cloud; do not set this yourself |
 | `ANTHROPIC_API_KEY` | The in-docs AI assistant ([AI features](/guides/ai-features)) |
 | `THALLY_ADMIN_PASSWORD` | Break-glass Owner access to the `/admin` dashboard |
 | `THALLY_OIDC_ISSUER` / `THALLY_OIDC_CLIENT_ID` / `THALLY_OIDC_CLIENT_SECRET` | Team sign-in to the dashboard via your IdP |
