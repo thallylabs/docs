@@ -9,7 +9,7 @@
 
 import 'server-only'
 
-import { getRelevantChunks } from '@thallylabs/core'
+import { getRelevantChunks } from '@/lib/embeddings/retrieve'
 import { siteConfig } from '@/data/site'
 import type { AnalyticsEvent } from '@/lib/analytics/types'
 import { getCloudServiceGrant, getCloudSiteConfig } from './client'
