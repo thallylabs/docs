@@ -12,15 +12,12 @@ import { LocaleFallbackBanner } from '@/components/docs/locale-fallback-banner'
 import { LocaleStaleBanner } from '@/components/docs/locale-stale-banner'
 import { JsonLdScript } from '@/components/seo/json-ld-script'
 import { buildAgentAlternateLinks } from '@/lib/agent-discovery'
+import { buildLanguageAlternates, localizedHref } from '@/lib/i18n-seo'
 import { buildDocPageJsonLd } from '@/lib/json-ld'
 import { buildOgImageUrl } from '@/lib/og'
 
 interface PageProps {
   params: Promise<{ locale: string; slug?: Array<string> }>
-}
-
-function localizedHref(href: string, code: string, defaultLocale: string) {
-  return code === defaultLocale ? href : `/${code}${href}`
 }
 
 function isValidSecondaryLocale(locale: string): boolean {
@@ -59,24 +56,21 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description: doc.description,
       group: doc.group,
     })
-    const alternateLanguages = i18n
-      ? Object.fromEntries(
-          i18n.locales.map((l) => [l.code, `${siteUrl}${localizedHref(primaryHref, l.code, i18n.defaultLocale)}`]),
-        )
-      : {}
+    const alternateLanguages = buildLanguageAlternates(siteUrl, primaryHref, i18n)
 
     return {
       title: doc.title,
       description: doc.description,
       alternates: {
         canonical: `${siteUrl}${primaryHref}`,
-        ...(i18n ? { languages: alternateLanguages } : {}),
+        ...(alternateLanguages ? { languages: alternateLanguages } : {}),
         types: buildAgentAlternateLinks(primaryHref),
       },
       openGraph: {
         title: doc.title,
         description: doc.description,
         images: [{ url: ogImageUrl, width: 1200, height: 630 }],
+        url: `${siteUrl}${primaryHref}`,
       },
       twitter: {
         card: 'summary_large_image',
@@ -99,24 +93,22 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     group: doc.group,
   })
 
-  const alternateLanguages = i18n
-    ? Object.fromEntries(
-        i18n.locales.map((l) => [l.code, `${siteUrl}${localizedHref(primaryHref, l.code, i18n.defaultLocale)}`]),
-      )
-    : {}
+  const localeHref = localizedHref(primaryHref, resolved.locale, i18n?.defaultLocale ?? 'en')
+  const alternateLanguages = buildLanguageAlternates(siteUrl, primaryHref, i18n)
 
   return {
     title: doc.title,
     description: doc.description,
     alternates: {
-      canonical: `${siteUrl}${primaryHref}`,
-      languages: alternateLanguages,
-      types: buildAgentAlternateLinks(primaryHref),
+      canonical: `${siteUrl}${localeHref}`,
+      ...(alternateLanguages ? { languages: alternateLanguages } : {}),
+      types: buildAgentAlternateLinks(localeHref),
     },
     openGraph: {
       title: doc.title,
       description: doc.description,
       images: [{ url: ogImageUrl, width: 1200, height: 630 }],
+      url: `${siteUrl}${localeHref}`,
     },
     twitter: {
       card: 'summary_large_image',

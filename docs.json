@@ -228,7 +228,8 @@
         {
           "group": "Overview",
           "pages": [
-            "api/overview"
+            "api/overview",
+            "api/reference"
           ]
         }
       ],

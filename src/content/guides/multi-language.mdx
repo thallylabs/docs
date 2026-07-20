@@ -201,13 +201,14 @@ To change the language of API Reference descriptions and summaries, update them 
 When an `i18n` config is present, Thally automatically adds `hreflang` and `canonical` link tags to every page:
 
 ```html
-<link rel="canonical" href="https://docs.example.com/introduction" />
+<link rel="canonical" href="https://docs.example.com/es/introduction" />
 <link rel="alternate" hreflang="en" href="https://docs.example.com/introduction" />
 <link rel="alternate" hreflang="es" href="https://docs.example.com/es/introduction" />
 <link rel="alternate" hreflang="fr" href="https://docs.example.com/fr/introduction" />
+<link rel="alternate" hreflang="x-default" href="https://docs.example.com/introduction" />
 ```
 
-The primary URL is always canonical, including on secondary-locale pages. Set `THALLY_SITE_URL` so the correct domain appears in these tags:
+Each translated page is self-canonical. Reciprocal `hreflang` links connect every locale, and `x-default` points to the default-language page. Set `THALLY_SITE_URL` so the correct domain appears in these tags:
 
 ```bash
 THALLY_SITE_URL=https://docs.example.com

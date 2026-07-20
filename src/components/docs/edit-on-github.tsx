@@ -17,7 +17,7 @@ export function EditOnGithub({ pageId }: EditOnGithubProps) {
       href={editUrl}
       target="_blank"
       rel="noreferrer"
-      className="inline-flex items-center gap-1.5 text-sm text-foreground/50 transition hover:text-foreground/80"
+      className="inline-flex items-center gap-1.5 text-sm text-foreground/70 transition hover:text-foreground"
     >
       <Pencil className="h-3.5 w-3.5" />
       Edit this page on GitHub

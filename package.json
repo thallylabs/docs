@@ -11,7 +11,9 @@
     "start": "next start -p 3040",
     "lint": "eslint",
     "test": "vitest run",
-    "check:agents": "tsx scripts/agent-readiness.ts"
+    "check:agents": "tsx scripts/agent-readiness.ts",
+    "check:seo": "tsx scripts/seo-conformance.ts",
+    "check:release": "npm run build && npm run check:seo"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextFetchEvent, NextRequest } from 'next/server'
+import docsNavigationConfig from '../docs.json' assert { type: 'json' }
 import {
   ADMIN_SESSION_COOKIE,
   DOCS_ACCESS_COOKIE,
@@ -12,6 +13,15 @@ import {
 import { classifyRequest, isAgentRequest } from '@/lib/traffic-classifier'
 import { isMachineEndpoint, isPublicAgentEndpoint } from '@/lib/agent-endpoints'
 import { verifySession, SESSION_COOKIE } from '@/lib/auth/session'
+
+const configuredI18n = docsNavigationConfig.i18n
+const defaultLocale = configuredI18n?.defaultLocale ?? 'en'
+const localeCodes = new Set(configuredI18n?.locales.map(({ code }) => code) ?? [defaultLocale])
+
+function localeForPath(pathname: string): string {
+  const firstSegment = pathname.split('/').filter(Boolean)[0]
+  return firstSegment && localeCodes.has(firstSegment) ? firstSegment : defaultLocale
+}
 
 function shouldTrackPath(pathname: string): boolean {
   // Admin console (pages + its own asset/nav requests) and Next internals are
@@ -117,6 +127,9 @@ async function sendAnalyticsEvent(request: NextRequest, pathname: string) {
 
 export async function middleware(request: NextRequest, event: NextFetchEvent) {
   const { pathname } = request.nextUrl
+  const requestLocale = localeForPath(pathname)
+  const forwardedHeaders = new Headers(request.headers)
+  forwardedHeaders.set('x-thally-locale', requestLocale)
 
   // Gate admin PAGES and admin APIs at the edge — except the public auth routes
   // (login/OIDC start/callback), which must be reachable pre-auth. This is
@@ -208,12 +221,11 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
     url.pathname = `/api/docs/${slugPath}`
     url.searchParams.delete('format')
 
-    const requestHeaders = new Headers(request.headers)
     if (format === 'json' || format === 'ldjson' || format === 'md') {
-      requestHeaders.set('x-thally-format', format)
+      forwardedHeaders.set('x-thally-format', format)
     }
 
-    return NextResponse.rewrite(url, { request: { headers: requestHeaders } })
+    return NextResponse.rewrite(url, { request: { headers: forwardedHeaders } })
   }
 
   // Advertise the llms.txt discovery endpoint on HTML doc-page responses, so
@@ -221,7 +233,7 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
   // relative (resolved against the request URL per RFC 8288); `X-Llms-Txt` is a
   // custom header agents read directly, so it carries an absolute URL. Only
   // content pages get the headers (not API/admin/_next).
-  const response = NextResponse.next()
+  const response = NextResponse.next({ request: { headers: forwardedHeaders } })
   if (!pathname.startsWith('/api') && !pathname.startsWith('/admin') && !pathname.startsWith('/_next')) {
     response.headers.append('Link', '</llms.txt>; rel="llms-txt"')
     // Standard relation types agents actually dereference (RFC 8288): the
@@ -231,6 +243,7 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
     response.headers.append('Link', '</openapi.yaml>; rel="service-desc"; type="application/yaml"')
     response.headers.append('Link', '</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"')
     response.headers.set('X-Llms-Txt', `${request.nextUrl.origin}/llms.txt`)
+    response.headers.set('Content-Language', requestLocale)
   }
   return response
 }

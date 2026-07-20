@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
 import { Inter, JetBrains_Mono, Plus_Jakarta_Sans } from 'next/font/google'
 import Script from 'next/script'
 import './globals.css'
@@ -129,6 +130,12 @@ export const metadata: Metadata = {
     description: siteConfig.description,
     images: [defaultOgImage],
   },
+  verification: {
+    ...(process.env.GOOGLE_SITE_VERIFICATION ? { google: process.env.GOOGLE_SITE_VERIFICATION } : {}),
+    other: {
+      ...(process.env.BING_SITE_VERIFICATION ? { 'msvalidate.01': process.env.BING_SITE_VERIFICATION } : {}),
+    },
+  },
 }
 
 const brandStyle: Record<string, string> = {
@@ -163,15 +170,16 @@ const defaultLang = getI18nConfig()?.defaultLocale ?? 'en'
 const bannerConfig = getBannerConfig()
 const customScripts = getCustomScriptsConfig()
 const siteUrl = getSiteUrl()
-const siteJsonLd = buildSiteJsonLd({ siteUrl, locale: defaultLang })
-
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const requestHeaders = await headers()
+  const requestLocale = requestHeaders.get('x-thally-locale') ?? defaultLang
+  const siteJsonLd = buildSiteJsonLd({ siteUrl, locale: requestLocale })
   return (
     // Font variables live on <html> (not <body>) so :root-level rules — the
     // globals.css --font-heading default and docs.json font overrides — can
     // reference and override them.
     <html
-      lang={defaultLang}
+      lang={requestLocale}
       suppressHydrationWarning
       data-theme={structuralTheme}
       className={cn(fontSans.variable, fontDisplay.variable, fontMono.variable)}
@@ -195,7 +203,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         {/* CSS variable overrides for structural theme (radius, sidebar, nav tabs) */}
         {themeVars && <style>{`:root { ${themeVars} }`}</style>}
         {/* Live admin branding override (theme + accent from the dashboard) — last so it wins */}
-        {/* eslint-disable-next-line @next/next/no-head-element */}
+        {/* eslint-disable-next-line @next/next/no-css-tags -- runtime branding must override the generated palette */}
         <link rel="stylesheet" href="/api/brand.css" />
       </head>
       <body className="min-h-screen bg-background font-sans text-foreground antialiased">

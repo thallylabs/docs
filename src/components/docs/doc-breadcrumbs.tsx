@@ -10,7 +10,7 @@ export function DocBreadcrumbs({ items }: DocBreadcrumbsProps) {
   if (items.length < 2) return null
 
   return (
-    <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-sm text-foreground/50">
+    <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-sm text-foreground/70">
       {items.map((item, index) => {
         const isLast = index === items.length - 1
         return (
@@ -24,7 +24,7 @@ export function DocBreadcrumbs({ items }: DocBreadcrumbsProps) {
                 {item.label}
               </Link>
             ) : (
-              <span className={isLast ? 'text-foreground/70 font-medium' : ''}>
+              <span className={isLast ? 'text-foreground font-medium' : ''}>
                 {item.label}
               </span>
             )}

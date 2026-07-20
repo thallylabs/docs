@@ -10,12 +10,9 @@ import { ApiLayout } from '@/components/api/api-layout'
 import { OperationPanel } from '@/components/api/operation-panel'
 import { JsonLdScript } from '@/components/seo/json-ld-script'
 import { buildAgentAlternateLinks } from '@/lib/agent-discovery'
+import { buildLanguageAlternates } from '@/lib/i18n-seo'
 import { buildDocPageJsonLd } from '@/lib/json-ld'
 import { buildOgImageUrl } from '@/lib/og'
-
-function localizedHref(href: string, code: string, defaultLocale: string) {
-  return code === defaultLocale ? href : `/${code}${href}`
-}
 
 interface PageProps {
   params: Promise<{ slug?: Array<string> }>
@@ -45,11 +42,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     group: doc.group,
   })
 
-  const alternateLanguages = i18n
-    ? Object.fromEntries(
-        i18n.locales.map((l) => [l.code, `${siteUrl}${localizedHref(primaryHref, l.code, i18n.defaultLocale)}`]),
-      )
-    : {}
+  const alternateLanguages = buildLanguageAlternates(siteUrl, primaryHref, i18n)
 
   const isNoindex = doc.noindex || doc.hidden
 
@@ -59,13 +52,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     ...(isNoindex ? { robots: { index: false, follow: false } } : {}),
     alternates: {
       canonical: `${siteUrl}${primaryHref}`,
-      ...(i18n ? { languages: alternateLanguages } : {}),
+      ...(alternateLanguages ? { languages: alternateLanguages } : {}),
       types: buildAgentAlternateLinks(primaryHref),
     },
     openGraph: {
       title: doc.title,
       description: doc.description,
       images: [{ url: ogImageUrl, width: 1200, height: 630 }],
+      url: `${siteUrl}${primaryHref}`,
     },
     twitter: {
       card: 'summary_large_image',
