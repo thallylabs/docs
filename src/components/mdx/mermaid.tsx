@@ -1,5 +1,13 @@
 'use client'
 
+/**
+ * Client renderer for user-authored Mermaid diagrams.
+ *
+ * Mermaid's strict mode sanitizes SVG output before it enters the document;
+ * imported documentation is untrusted content and must not opt out of that
+ * boundary.
+ */
+
 import { useEffect, useId, useState } from 'react'
 
 interface MermaidProps {
@@ -17,7 +25,7 @@ export function Mermaid({ children }: MermaidProps) {
     import('mermaid').then((m) => {
       if (cancelled) return
       const mermaid = m.default
-      mermaid.initialize({ startOnLoad: false, theme: 'neutral', securityLevel: 'loose' })
+      mermaid.initialize({ startOnLoad: false, theme: 'neutral', securityLevel: 'strict' })
       mermaid
         .render(`mermaid-${id}`, children.trim())
         .then(({ svg: rendered }) => {
@@ -49,7 +57,6 @@ export function Mermaid({ children }: MermaidProps) {
   return (
     <div
       className="not-prose my-6 overflow-x-auto rounded-2xl border border-border/40 bg-background p-6 [&_svg]:mx-auto"
-      // eslint-disable-next-line react/no-danger
       dangerouslySetInnerHTML={{ __html: svg }}
     />
   )
