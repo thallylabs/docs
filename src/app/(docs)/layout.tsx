@@ -12,6 +12,11 @@ interface DocsLayoutProps {
   children: React.ReactNode
 }
 
+// This shell reads request headers and linked Cloud configuration. It must be
+// rendered for each request so generated sites never freeze one host's values
+// into a static build artifact.
+export const dynamic = 'force-dynamic'
+
 export default async function DocsLayout({ children }: DocsLayoutProps) {
   const navigation = await buildApiNavigation()
   const apiSections: Array<NavigationSection> = navigation.map((group) => ({
