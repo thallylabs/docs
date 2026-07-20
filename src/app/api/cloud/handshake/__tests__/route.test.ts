@@ -57,7 +57,8 @@ describe('POST /api/cloud/handshake', () => {
       }),
     )
 
-    expect(response.status).toBe(503)
+    expect(response.status).toBe(200)
+    expect(response.headers.get('x-thally-cloud-status')).toBe('cloud_unreachable')
     expect(await response.json()).toEqual({ status: 'cloud_unreachable' })
   })
 })

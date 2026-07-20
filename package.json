@@ -20,6 +20,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "check:agents": "node --import tsx scripts/agent-readiness.ts",
+    "check:seo": "node --import tsx scripts/seo-conformance.ts",
+    "check:release": "npm run build && npm run check:seo",
     "runtime-sources:build": "node --import tsx scripts/build-runtime-sources.mts"
   },
   "dependencies": {

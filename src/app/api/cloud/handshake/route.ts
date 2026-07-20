@@ -49,7 +49,9 @@ export function getExternalSiteUrl(request: NextRequest): string {
 export async function POST(request: NextRequest): Promise<Response> {
   const result = await connectCloudSite(getExternalSiteUrl(request))
   return NextResponse.json(result, {
-    status: result.status === 'connected' || result.status === 'not_configured' ? 200 : 503,
-    headers: { 'Cache-Control': 'no-store' },
+    // This optional background connection must not surface a page-load error in
+    // browsers or performance audits. The JSON status remains explicit.
+    status: 200,
+    headers: { 'Cache-Control': 'no-store', 'X-Thally-Cloud-Status': result.status },
   })
 }

@@ -7,9 +7,10 @@ import { getSiteUrl } from '@/lib/site-url'
 import { JsonLdScript } from '@/components/seo/json-ld-script'
 import { apiReferenceConfig, getOpenApiSpecUrl } from '@/config/api-reference'
 import { getAllApiOperationNodes, getApiOperationBySlug, getApiOperationNodes } from '@/data/api-reference'
-import { getBreadcrumbs, getDocEntries } from '@/data/docs'
+import { getBreadcrumbs, getDocEntries, getI18nConfig } from '@/data/docs'
 import { getDocFromParams } from '@/data/get-doc'
 import { buildAgentAlternateLinks } from '@/lib/agent-discovery'
+import { buildLanguageAlternates } from '@/lib/i18n-seo'
 import { buildApiOperationJsonLd, buildDocPageJsonLd } from '@/lib/json-ld'
 
 interface PageProps {
@@ -35,10 +36,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const node = await getApiOperationBySlug(resolved.slug)
   if (node) {
+    const languages = buildLanguageAlternates(siteUrl, node.href, getI18nConfig())
     return {
       title: node.operation.title,
       description: node.operation.description ?? `${node.operation.method} ${node.operation.path}`,
       alternates: {
+        canonical: `${siteUrl}${node.href}`,
+        ...(languages ? { languages } : {}),
         types: {
           ...buildAgentAlternateLinks(node.href),
           ...(specUrl ? { 'application/vnd.oai.openapi': specUrl } : {}),
@@ -50,10 +54,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const doc = await getDocFromParams(['api', ...(resolved.slug ?? [])])
   if (doc) {
     const primaryHref = doc.href
+    const languages = buildLanguageAlternates(siteUrl, primaryHref, getI18nConfig())
     return {
       title: doc.title,
       description: doc.description,
       alternates: {
+        canonical: `${siteUrl}${primaryHref}`,
+        ...(languages ? { languages } : {}),
         types: buildAgentAlternateLinks(primaryHref),
       },
     }

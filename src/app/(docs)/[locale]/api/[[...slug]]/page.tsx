@@ -8,6 +8,7 @@ import { apiReferenceConfig, getOpenApiSpecUrl } from '@/config/api-reference'
 import { getAllApiOperationNodes, getApiOperationBySlug, getApiOperationNodes } from '@/data/api-reference'
 import { getBreadcrumbs, getI18nConfig } from '@/data/docs'
 import { buildAgentAlternateLinks } from '@/lib/agent-discovery'
+import { buildLanguageAlternates, localizedHref } from '@/lib/i18n-seo'
 import { buildApiOperationJsonLd } from '@/lib/json-ld'
 
 interface PageProps {
@@ -37,12 +38,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const specUrl = getOpenApiSpecUrl(siteUrl)
   const node = await getApiOperationBySlug(resolved.slug)
   if (!node) return {}
+  const i18n = getI18nConfig()
+  const localeHref = localizedHref(node.href, resolved.locale, i18n?.defaultLocale ?? 'en')
+  const languages = buildLanguageAlternates(siteUrl, node.href, i18n)
   return {
     title: node.operation.title,
     description: node.operation.description ?? `${node.operation.method} ${node.operation.path}`,
     alternates: {
+      canonical: `${siteUrl}${localeHref}`,
+      ...(languages ? { languages } : {}),
       types: {
-        ...buildAgentAlternateLinks(node.href),
+        ...buildAgentAlternateLinks(localeHref),
         ...(specUrl ? { 'application/vnd.oai.openapi': specUrl } : {}),
       },
     },
