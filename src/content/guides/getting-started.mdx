@@ -99,10 +99,12 @@ Save the file and the sidebar updates automatically — no restart required.
 <Step title="Deploy">
 
 ```bash
-npm run build
+npm run build:cloudflare
+npm run smoke:cloudflare
 ```
 
-Deploy the output to any platform that supports Next.js — Vercel, Netlify, Cloudflare, or a Docker container.
+Deploy the verified Worker with `npm run deploy:cloudflare`. A traditional
+Node deployment remains available through `npm run build && npm start`.
 
 </Step>
 

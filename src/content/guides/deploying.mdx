@@ -24,6 +24,9 @@ Depending on which features you use, you may also want to set:
 | Variable | Enables |
 | --- | --- |
 | `THALLY_SITE_URL` | OpenGraph metadata and canonical URLs (recommended for every deploy) |
+| `THALLY_CLOUD_SITE_TOKEN` | Connects an externally hosted deployment to its Thally Cloud site (server-only) |
+| `THALLY_CLOUD_URL` | Overrides the Thally Cloud control-plane URL for staging or a public development tunnel |
+| `THALLY_CLOUD_SITE_CONFIG` | Managed-hosting settings snapshot injected automatically by Thally Cloud; do not set this yourself |
 | `ANTHROPIC_API_KEY` | The in-docs AI assistant ([AI features](/guides/ai-features)) |
 | `THALLY_ADMIN_PASSWORD` | Break-glass Owner access to the `/admin` dashboard |
 | `THALLY_OIDC_ISSUER` / `THALLY_OIDC_CLIENT_ID` / `THALLY_OIDC_CLIENT_SECRET` | Team sign-in to the dashboard via your IdP |
@@ -86,6 +89,22 @@ You can use one Turso database for both pairs of variables, or separate database
   Your laptop's `.data/` files are not uploaded to production. After connecting Turso, production analytics start empty and fill as real traffic hits the live site.
 </Note>
 
+## Cloudflare Workers
+
+The repository ships with the OpenNext adapter and a checked-in `wrangler.jsonc`.
+Build the Worker, run the same artifact locally under workerd, then deploy it:
+
+```bash
+npm run build:cloudflare
+npm run smoke:cloudflare
+npm run deploy:cloudflare
+```
+
+The build creates `.open-next/worker.js` and its static-asset directory. Configure
+`THALLY_SITE_URL` and any optional secrets in the Worker environment before the
+production deploy. Thally Cloud performs these steps automatically for managed
+sites.
+
 ## Vercel
 
 The fastest way to deploy — push to GitHub and import the repo:
@@ -98,27 +117,19 @@ The fastest way to deploy — push to GitHub and import the repo:
 
 Vercel auto-detects Next.js and configures everything.
 
-## Netlify
-
-```bash
-npm run build
-```
-
-Set the build command to `npm run build` and the publish directory to `.next`. You may need the `@netlify/plugin-nextjs` plugin for full Next.js support.
-
 ## Docker
 
 Create a `Dockerfile`:
 
 ```dockerfile
-FROM node:18-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM node:18-alpine AS runner
+FROM node:22-alpine AS runner
 WORKDIR /app
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules
@@ -138,15 +149,6 @@ Build and run:
 docker build -t my-docs .
 docker run -p 3000:3000 my-docs
 ```
-
-## Cloudflare Pages
-
-Use the `@cloudflare/next-on-pages` adapter:
-
-1. Install: `npm install @cloudflare/next-on-pages`
-2. Set build command: `npx @cloudflare/next-on-pages`
-3. Set output directory: `.vercel/output/static`
-4. Deploy via the Cloudflare dashboard or Wrangler CLI
 
 ## Static export
 

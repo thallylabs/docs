@@ -127,15 +127,15 @@ Use the `showcase` page to preview all available components as you write.
 
 <Step title="Deploy">
 
-Build and deploy to any platform that supports Next.js:
+Build and verify the Cloudflare Worker:
 
 ```bash
-npm run build
+npm run build:cloudflare
+npm run smoke:cloudflare
 ```
 
-- **Vercel** — zero-config deployment
-- **Netlify** — add a `netlify.toml` with the Next.js plugin
-- **Docker** — use the included `Dockerfile` or roll your own
+- **Cloudflare Workers** — deploy with `npm run deploy:cloudflare`
+- **Node or Docker** — use `npm run build && npm start`
 
 </Step>
 
@@ -260,5 +260,4 @@ Each column supports full MDX content including images, code blocks, lists, and 
 </Columns>
 
 Toggle between light and dark themes to verify all components render correctly in both modes.
-
 

@@ -13,6 +13,7 @@ import {
 import { classifyRequest, isAgentRequest } from '@/lib/traffic-classifier'
 import { isMachineEndpoint, isPublicAgentEndpoint } from '@/lib/agent-endpoints'
 import { verifySession, SESSION_COOKIE } from '@/lib/auth/session'
+import { getCloudAccessConfigEdge } from '@/lib/cloud-link/edge'
 
 const configuredI18n = docsNavigationConfig.i18n
 const defaultLocale = configuredI18n?.defaultLocale ?? 'en'
@@ -130,6 +131,9 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
   const requestLocale = localeForPath(pathname)
   const forwardedHeaders = new Headers(request.headers)
   forwardedHeaders.set('x-thally-locale', requestLocale)
+  const cloudAccess = await getCloudAccessConfigEdge(request.nextUrl.origin)
+  const docsAccessEnabled =
+    isDocsAccessEnabledEdge() || cloudAccess?.access?.mode === 'password'
 
   // Gate admin PAGES and admin APIs at the edge — except the public auth routes
   // (login/OIDC start/callback), which must be reachable pre-auth. This is
@@ -152,14 +156,14 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
   }
 
   if (
-    isDocsAccessEnabledEdge() &&
+    docsAccessEnabled &&
     !pathname.startsWith('/admin') &&
     !pathname.startsWith('/api/admin') &&
     !pathname.startsWith('/api/analytics') &&
     !pathname.startsWith('/api/access') &&
-    // Uses the server-only site credential; it must remain reachable so a
-    // password-protected deployment can connect itself to Thally Cloud.
-    !pathname.startsWith('/api/cloud/handshake') &&
+    // The same-origin Thally Cloud handshake authenticates server-to-server with the
+    // site token. It must remain reachable when the docs themselves are gated.
+    pathname !== '/api/cloud/handshake' &&
     // The Thally Track webhook is called by GitHub, which can't hold a docs-access
     // cookie — it authenticates itself via HMAC signature instead.
     !pathname.startsWith('/api/track') &&
@@ -171,7 +175,7 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
     // the HTML /access page instead of the JSON/markdown it asked for, and the
     // anonymous-access promises in auth.md / oauth-protected-resource go false.
     !isPublicAgentEndpoint(pathname) &&
-    !(await isDocsAccessGrantedEdge(request.cookies.get(DOCS_ACCESS_COOKIE)?.value))
+    !(await isDocsAccessGrantedEdge(request.cookies.get(DOCS_ACCESS_COOKIE)?.value, docsAccessEnabled))
   ) {
     const accessUrl = request.nextUrl.clone()
     accessUrl.pathname = '/access'

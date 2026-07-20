@@ -41,6 +41,15 @@ npm run dev
 
 Open [http://localhost:3040](http://localhost:3040).
 
+## Canonical site source
+
+This repository is both the live Thally documentation site and the canonical
+standalone source used by `create-thally-docs` and Thally Cloud. New projects
+inherit the application/runtime from `main`; the creation flow removes this
+repository's documentation, screenshots, and issue templates before writing
+the new site's placeholder or migrated content. There is no separate template
+implementation to keep in sync.
+
 ## Project Structure
 
 ```
@@ -156,6 +165,9 @@ cp .env.example .env.local
 | Variable | Purpose |
 |---|---|
 | `THALLY_SITE_URL` | Production URL for OpenGraph metadata, canonical URLs, and agent endpoints (legacy `NEXT_PUBLIC_SITE_URL` still honored) |
+| `THALLY_CLOUD_SITE_TOKEN` | Optional server-only credential from Thally Cloud for externally hosted sites; never prefix it with `NEXT_PUBLIC_` |
+| `THALLY_CLOUD_URL` | Optional Thally Cloud control-plane base URL; defaults to `https://app.thally.io` |
+| `THALLY_CLOUD_SITE_CONFIG` | Managed-hosting release snapshot injected by Thally Cloud; do not set this yourself |
 | `ANTHROPIC_API_KEY` | Owner key for AI chat — lifts trial limits entirely |
 | `THALLY_TRIAL_ANTHROPIC_KEY` | Optional shared key powering the out-of-the-box trial chat (strict per-IP limits + a global daily cap) |
 | `THALLY_TRIAL_RATE_PER_MIN` / `THALLY_TRIAL_RATE_PER_DAY` / `THALLY_TRIAL_DAILY_LIMIT` / `THALLY_CHAT_RATE_PER_MIN` | Optional chat rate-limit overrides |
@@ -169,11 +181,13 @@ Legacy `DOX_*` names are still read as a fallback for every `THALLY_*` variable,
 ## Production
 
 ```bash
-npm run build
-npm start
+npm run build:cloudflare
+npm run smoke:cloudflare
+npm run deploy:cloudflare
 ```
 
-Deploy anywhere that supports Next.js — Vercel, Netlify, Cloudflare, Docker, etc.
+The canonical deployment target is Cloudflare Workers through OpenNext. For a
+traditional Node host, `npm run build && npm start` remains available.
 
 ## Stack
 

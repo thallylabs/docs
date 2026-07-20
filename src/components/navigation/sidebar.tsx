@@ -39,9 +39,11 @@ export function Sidebar({ sections, title, className }: SidebarProps) {
 
   return (
     <aside
-      className={cn('hidden shrink-0 border-r border-border/80 bg-background lg:block', layout.sidebarWidth, className)}
+      className={cn('hidden shrink-0 border-r border-border/80 bg-sidebar lg:block', layout.sidebarWidth, className)}
     >
-      <div className={cn('fixed top-0 flex h-screen flex-col', layout.sidebarWidth, layout.sidebarPadding)}>
+      {/* Stay in the shell's flow so optional site banners reserve their own
+          space above the brand, then pin the navigation once they scroll away. */}
+      <div className={cn('sticky top-0 flex h-screen flex-col', layout.sidebarWidth, layout.sidebarPadding)}>
         <div className="flex shrink-0 flex-col gap-3 px-1 pt-2">
           <Link
             href="/"
@@ -125,4 +127,3 @@ function normalizePath(value: string) {
   }
   return value.endsWith('/') ? value.slice(0, -1) : value
 }
-
