@@ -168,7 +168,7 @@ export interface DocsJsonFeedback {
 
 export type StructuralTheme = 'default' | 'maple' | 'sharp' | 'minimal'
 
-interface DocsJsonConfig {
+export interface DocsJsonConfig {
   tabs: Array<DocsJsonTab>
   redirects?: Array<DocsJsonRedirect>
   banner?: DocsJsonBanner

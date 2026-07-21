@@ -14,8 +14,12 @@ import { classifyRequest, isAgentRequest } from '@/lib/traffic-classifier'
 import { isMachineEndpoint, isPublicAgentEndpoint } from '@/lib/agent-endpoints'
 import { verifySession, SESSION_COOKIE } from '@/lib/auth/session'
 import { getCloudAccessConfigEdge } from '@/lib/cloud-link/edge'
+import type { DocsJsonConfig } from '@/data/docs'
 
-const configuredI18n = docsNavigationConfig.i18n
+// JSON imports infer only properties present in the current site. Widen the
+// author-owned config before reading optional fields so monolingual migrated
+// sites remain type-safe when they omit `i18n` entirely.
+const configuredI18n = (docsNavigationConfig as DocsJsonConfig).i18n
 const defaultLocale = configuredI18n?.defaultLocale ?? 'en'
 const localeCodes = new Set(configuredI18n?.locales.map(({ code }) => code) ?? [defaultLocale])
 
