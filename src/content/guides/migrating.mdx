@@ -1,155 +1,179 @@
 ---
-title: Migrating to Thally
-description: Move your existing documentation from Mintlify, Docusaurus, GitBook, or any Markdown-based platform to Thally in one command.
+title: Migrate and publish existing documentation
+description: Import a public documentation site or GitHub repository with the Thally CLI, review it locally, and publish it through Thally Cloud.
 ---
 
-The `create-thally-docs migrate` command clones a GitHub docs repository and converts it into a running Thally project — no manual copying, no reformatting.
+Thally migrates public documentation from a live URL or a GitHub repository into a repository you own. The CLI discovers the source navigation, converts supported content into Thally MDX, and creates a project you can review before anything is published.
+
+This guide takes you from a live documentation site to a managed Thally deployment.
+
+<Note type="info" title="Migration runs locally">
+  Thally Cloud does not crawl the source site. Run the migration with the CLI, push the generated project to GitHub, then connect that repository to Thally Cloud.
+</Note>
+
+## Before you begin
+
+You need:
+
+- Node.js 22 or later
+- A public documentation URL or public GitHub repository
+- A GitHub account where you can create a repository
+- A [Thally Cloud account](https://app.thally.io)
+
+## 1. Migrate the documentation
+
+Pass the current documentation URL and the directory to create:
 
 ```bash
-npx create-thally-docs migrate https://github.com/your-org/your-docs my-docs
+npx create-thally-docs@latest migrate https://docs.example.com ./example-docs
 ```
 
----
+For a GitHub-hosted source, use the repository URL instead:
 
-## How it works
+```bash
+npx create-thally-docs@latest migrate https://github.com/example/docs ./example-docs
+```
+
+For public sites, Thally looks for machine-readable indexes such as `llms.txt` and `sitemap.xml`, then follows same-origin documentation navigation within the submitted path. It preserves the discovered hierarchy, portable MDX components, assets, redirects, and OpenAPI metadata where the source exposes them.
+
+### Limit the number of pages
+
+The crawler imports up to 1,000 pages by default. Use `--max-pages` to run a smaller trial migration or limit a large site:
+
+```bash
+npx create-thally-docs@latest migrate https://docs.example.com ./example-docs --max-pages 100
+```
+
+`--max-pages` accepts an integer from 1 to 1,000. A limit applies to imported content pages, not discovery files such as sitemaps.
+
+<Note type="warning" title="Choose a representative limit">
+  A small limit is useful for reviewing conversion quality, but the generated navigation includes only pages imported during that run. Run the final migration with a high enough limit before publishing.
+</Note>
+
+## 2. Review the generated site
+
+Install dependencies, run the project, and inspect its primary navigation paths:
+
+```bash
+cd example-docs
+npm install
+npm run dev
+```
+
+Open the local URL printed by the dev server. Check the top-level tabs, sidebar groups, internal links, code blocks, cards, tabs, images, and API reference pages.
+
+Then run the project checks:
+
+```bash
+npx create-thally-docs@latest check .
+npm test
+```
+
+Review any migration warnings printed by the CLI. You can edit the generated MDX in `src/content/`, navigation in `docs.json`, and branding in `src/data/site.ts` before publishing.
+
+## 3. Push the generated project to GitHub
+
+Create an empty GitHub repository, then commit and push the generated project. With the GitHub CLI:
+
+```bash
+git init
+git add .
+git commit -m "docs: migrate documentation to Thally"
+git branch -M main
+gh repo create example-docs --private --source=. --remote=origin --push
+```
+
+You can make the repository public by replacing `--private` with `--public`. Do not initialize the GitHub repository with a README or license before pushing; the generated project already contains its own files.
+
+## 4. Connect the repository in Thally Cloud
 
 <Steps>
 
-<Step title="Clone the source repo">
+<Step title="Create or sign in to your account">
 
-Thally does a shallow `git clone` of the repository to a temporary directory. No authentication is required for public repos.
-
-</Step>
-
-<Step title="Auto-detect the platform and structure">
-
-Thally inspects the repo for platform config files to understand the existing navigation:
-
-| File | Platform detected |
-|------|-------------------|
-| `docs.json` / `mint.json` | Mintlify |
-| `docusaurus.config.js` + `sidebars.js` | Docusaurus |
-| `book.yaml` | GitBook |
-| `_meta.json` | Nextra |
-| `vitepress.config.*` | VitePress |
-| `.starlight/` | Starlight |
-| *(none of the above)* | Directory structure used |
-
-The docs directory is also auto-detected: `docs/`, `documentation/`, `content/`, `src/content/`, `pages/`, or the repo root.
+Open [Thally Cloud](https://app.thally.io), create an account if needed, and choose the workspace that should own the site.
 
 </Step>
 
-<Step title="Import all documentation files">
+<Step title="Start a new site">
 
-Every `.md` and `.mdx` file is read directly. Frontmatter (`title`, `description`, `keywords`) is preserved. Platform-specific MDX components are converted to their Thally equivalents.
-
-Non-Markdown files (e.g. `.rst`) are converted to MDX using Claude if you provide an Anthropic API key.
+From the dashboard, select **Create site** and enter the site name, description, and Thally address.
 
 </Step>
 
-<Step title="Wire up the API reference">
+<Step title="Choose Connect an existing repository">
 
-If an OpenAPI spec (`openapi.json`, `openapi.yaml`, `swagger.json`, etc.) is found anywhere in the repo, it is copied to `public/` and the API Reference tab in `docs.json` is set up automatically.
+On the source step, select **Connect an existing repository**. Install or reconnect the Thally GitHub App when prompted, and grant it access to the repository you pushed.
 
 </Step>
 
-<Step title="Write the Thally project">
+<Step title="Select the source settings">
 
-All converted pages are written to `src/content/`. The `docs.json` navigation is built from the detected platform config or inferred from the directory structure.
+Choose the repository and its production branch, normally `main`. Leave **Docs directory** empty when the Thally project is at the repository root. For a monorepo, enter the relative directory containing `docs.json` and `package.json`.
+
+</Step>
+
+<Step title="Publish">
+
+Review the source summary and select **Publish site**. Thally Cloud provisions managed hosting and shows the deployment status on the site dashboard.
 
 </Step>
 
 </Steps>
 
----
+Future pushes to the production branch trigger new deployments, so the GitHub repository remains the source of truth after migration.
 
-## Supported platforms
-
-### Mintlify
-
-```bash
-npx create-thally-docs migrate https://github.com/mintlify/starter my-docs
-```
-
-Navigation is read from `docs.json` (Mintlify v3) or `mint.json`. OpenAPI specs in the `api-reference/` directory are detected and wired up automatically.
-
-### Docusaurus
-
-```bash
-npx create-thally-docs migrate https://github.com/facebook/docusaurus/tree/main/website/docs my-docs
-```
-
-Sidebar structure is parsed from `sidebars.js`. Docusaurus admonitions (`:::note`, `:::warning`, etc.) are converted to Thally callout components.
-
-### GitBook
-
-```bash
-npx create-thally-docs migrate https://github.com/your-org/gitbook-docs my-docs
-```
-
-`SUMMARY.md` is used to infer navigation order. `{% hint %}` blocks are converted to the appropriate Thally callout component.
-
-### Plain Markdown
-
-Any repository with Markdown files works — navigation is built from the directory structure.
-
-```bash
-npx create-thally-docs migrate https://github.com/your-org/docs my-docs
-```
-
----
-
-## Migrating into an existing project
-
-Use `--into` to add content from another repo into an existing Thally project without overwriting it. New tabs and groups are merged; existing content is not touched.
-
-```bash
-npx create-thally-docs migrate https://github.com/your-org/api-docs --into ./my-docs
-```
-
----
-
-## Options
+## CLI options
 
 | Flag | Description |
 |------|-------------|
-| `--into <dir>` | Merge into an existing project |
-| `--branch <name>` | Override the auto-detected git branch |
-| `--docs-dir <path>` | Override the auto-detected docs subdirectory |
-| `--api-key <key>` | Anthropic API key (or set `ANTHROPIC_API_KEY`) for non-Markdown conversion |
+| `--max-pages <count>` | Import at most 1–1,000 content pages from a public docs URL |
+| `--into <dir>` | Merge content into an existing Thally project |
+| `--branch <name>` | Override the auto-detected GitHub branch |
+| `--docs-dir <path>` | Override the auto-detected docs subdirectory for a repository source |
+| `--api-key <key>` | Anthropic API key, or `ANTHROPIC_API_KEY`, for non-Markdown conversion |
 | `--yes`, `-y` | Skip confirmation prompts |
 
----
+## How repository sources are detected
 
-## Via the MCP server
+For GitHub repositories, Thally detects common platform configuration and content roots:
 
-If you're using Claude Code or Claude Desktop, you can trigger a migration through chat:
+| File | Platform detected |
+|------|-------------------|
+| `docs.json` / `mint.json` | Mintlify |
+| `docusaurus.config.js` + `sidebars.js` | Docusaurus |
+| `book.yaml` / `SUMMARY.md` | GitBook |
+| `_meta.json` | Nextra |
+| `vitepress.config.*` | VitePress |
+| `.starlight/` | Starlight |
+| *(none of the above)* | Plain Markdown directory structure |
 
-```
-Migrate the Mintlify starter repo into a new Thally project at ~/dev/my-docs
-```
+The docs directory is auto-detected from common locations such as `docs/`, `documentation/`, `content/`, `src/content/`, `pages/`, or the repository root.
 
-The `migrate_docs` MCP tool accepts the same options as the CLI. See [MCP Server](/guides/mcp-server) for setup instructions.
+## Migrate into an existing project
 
----
-
-## After migration
-
-Once the migration completes, start the dev server to review the output:
-
-```bash
-cd my-docs
-npm run dev
-```
-
-Then run `create-thally-docs check` to catch any issues before publishing:
+Use `--into` to add migrated content to a Thally project without replacing its existing pages:
 
 ```bash
-npx create-thally-docs check my-docs
+npx create-thally-docs@latest migrate https://docs.example.com --into ./existing-docs --max-pages 250
 ```
 
-Common post-migration tasks:
-- Update `src/data/site.ts` with your logo and brand colors
-- Replace placeholder images in `src/content/`
-- Review the nav order in `docs.json`
-- Set `THALLY_SITE_URL` before deploying
+New navigation groups are merged into the existing `docs.json`. Review the result before committing because source sites can use components or API-reference features that need a final editorial pass.
+
+## Troubleshooting
+
+### Some pages are missing
+
+Increase `--max-pages` and rerun into a clean output directory. Also confirm the missing pages are linked from the submitted path, `llms.txt`, or a sitemap on the same origin.
+
+### The wrong section was imported
+
+Submit the narrowest public entry URL that contains the documentation you want. URL migrations stay within the source origin and discovered documentation scope.
+
+### Thally Cloud cannot connect the repository
+
+Open the GitHub App installation settings from the source step and grant access to the generated repository. Then return to the flow and reload the available repositories.
+
+### The repository is rejected as incompatible
+
+Run the migration with `create-thally-docs@latest`, commit every generated runtime file, and ensure `package-lock.json`, `wrangler.jsonc`, and `open-next.config.ts` are present on the selected branch.
