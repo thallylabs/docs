@@ -43,19 +43,25 @@ npx create-thally-docs my-docs --yes
 
 ## create-thally-docs migrate
 
-Migrates an existing documentation repository from GitHub into a Thally project.
+Migrates a public documentation URL or GitHub documentation repository into a Thally project.
 
 ```bash
-npx create-thally-docs migrate <github-url> [output-dir] [options]
+npx create-thally-docs migrate <github-or-docs-url> [output-dir] [options]
 ```
 
-Thally clones the source repo, reads all Markdown and MDX files directly, converts navigation from the source platform's config, and writes everything into a ready-to-run Thally project.
+For repository sources, Thally clones and reads the source content directly. For live sites, it discovers machine-readable indexes, sitemaps, and same-origin documentation navigation. Both paths produce the same ready-to-run Thally project.
 
 **Supported source platforms:** Mintlify, Docusaurus, GitBook, Nextra, VitePress, Starlight, and any repo with plain Markdown files.
 
 ### Examples
 
 ```bash
+# Migrate a live documentation site
+npx create-thally-docs migrate https://docs.example.com example-docs
+
+# Trial a large live site with at most 100 pages
+npx create-thally-docs migrate https://docs.example.com example-docs --max-pages 100
+
 # Migrate into a new project at ./my-docs
 npx create-thally-docs migrate https://github.com/org/repo my-docs
 
@@ -80,6 +86,7 @@ npx create-thally-docs migrate https://github.com/org/repo --into ./existing-doc
 
 | Flag | Description |
 |------|-------------|
+| `--max-pages <count>` | Import at most 1–1,000 content pages from a public docs URL (default: 1,000) |
 | `--into <dir>` | Migrate into an existing Thally project instead of scaffolding a new one |
 | `--branch <name>` | Override the auto-detected git branch |
 | `--docs-dir <path>` | Override the auto-detected docs subdirectory |
@@ -107,6 +114,8 @@ Mintlify, Docusaurus, and GitBook use platform-specific MDX components that don'
 <Note type="info" title="Non-Markdown files">
 Files in `.rst` or other formats require an Anthropic API key to convert. Set `ANTHROPIC_API_KEY` in your environment or pass `--api-key`. Plain `.md` and `.mdx` files are migrated for free.
 </Note>
+
+See [Migrate and publish existing documentation](/guides/migrating) for the complete workflow from a live site to a managed Thally Cloud deployment.
 
 ---
 
