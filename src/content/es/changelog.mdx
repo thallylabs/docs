@@ -3,6 +3,17 @@ title: Registro de cambios
 description: Seguimiento de mejoras notables en la plantilla Thally.
 ---
 
+<Update label="Migraciones desde Docusaurus" date="2026-07-22">
+
+- `create-thally-docs migrate` ahora pregunta si Mintlify o Docusaurus aloja la documentación, con `--platform` para scripts y CI.
+- Las importaciones públicas de Docusaurus conservan las páginas de la versión actual, la jerarquía de navegación, rutas sensibles a mayúsculas, redirecciones, avisos, pestañas, tablas y código resaltado.
+- Las importaciones desde repositorios admiten proyectos Docusaurus dentro de monorepos y plugins de documentación adicionales sin ejecutar la configuración fuente.
+- Las migraciones completas se verificaron con Relay, Algolia DocSearch y Hasura DDN.
+
+Consulta [Migrando a Thally](/guides/migrating) y la [Referencia CLI](/guides/cli-reference).
+
+</Update>
+
 ## v0.1.0
 
 Lanzamiento inicial de la plantilla Thally de sala limpia.

@@ -153,19 +153,21 @@ Show me all the pages in my docs project
 
 #### `migrate_docs`
 
-Clones a GitHub docs repo and migrates its content into a Thally project.
+Imports a public docs site or GitHub docs repository into a Thally project.
 
 ```
-Migrate the Mintlify starter into a new project at /tmp/my-docs
+Migrate https://relay.dev/ as a Docusaurus site into a new project at /tmp/relay-docs
 ```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `sourceUrl` | Yes | GitHub URL of the source repo |
+| `sourceUrl` | Yes | Public docs URL or GitHub repository URL |
 | `projectDir` | Yes | Target path (new project or existing) |
 | `into` | No | Migrate into an existing project (default: `false`) |
 | `branch` | No | Git branch to clone (auto-detected by default) |
 | `docsDir` | No | Docs subdirectory in the repo (auto-detected) |
+| `platform` | No | `mintlify` or `docusaurus`; omit for auto-detection |
+| `maxPages` | No | Maximum number of live-site pages to import (`1`–`1000`) |
 | `apiKey` | No | Anthropic API key for non-Markdown conversion |
 
 ---

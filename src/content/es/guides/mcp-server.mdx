@@ -153,19 +153,21 @@ Show me all the pages in my docs project
 
 #### `migrate_docs`
 
-Clona un repositorio de documentación de GitHub y migra su contenido a un proyecto Thally.
+Importa un sitio público de documentación o un repositorio de GitHub a un proyecto Thally.
 
 ```
-Migrate the Mintlify starter into a new project at /tmp/my-docs
+Migrate https://relay.dev/ as a Docusaurus site into a new project at /tmp/relay-docs
 ```
 
 | Parámetro | Requerido | Descripción |
 |-----------|----------|-------------|
-| `sourceUrl` | Sí | URL de GitHub del repositorio fuente |
+| `sourceUrl` | Sí | URL pública de documentación o URL de un repositorio de GitHub |
 | `projectDir` | Sí | Ruta de destino (proyecto nuevo o existente) |
 | `into` | No | Migrar a un proyecto existente (predeterminado: `false`) |
 | `branch` | No | Rama de Git a clonar (se detecta automáticamente por defecto) |
 | `docsDir` | No | Subdirectorio de documentación en el repositorio (se detecta automáticamente) |
+| `platform` | No | `mintlify` o `docusaurus`; omitir para detección automática |
+| `maxPages` | No | Máximo de páginas públicas que se importarán (`1`–`1000`) |
 | `apiKey` | No | Clave de API de Anthropic para conversión de contenido no Markdown |
 
 ---
