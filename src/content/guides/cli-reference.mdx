@@ -59,6 +59,12 @@ For repository sources, Thally clones and reads the source content directly. For
 # Migrate a live documentation site
 npx create-thally-docs migrate https://docs.example.com example-docs
 
+# Choose Mintlify, Docusaurus, or auto-detection interactively
+npx create-thally-docs migrate https://relay.dev/ relay-docs --max-pages 1000
+
+# Run the same Docusaurus migration without prompts
+npx create-thally-docs migrate https://relay.dev/ relay-docs --platform docusaurus --max-pages 1000 --yes
+
 # Trial a large live site with at most 100 pages
 npx create-thally-docs migrate https://docs.example.com example-docs --max-pages 100
 
@@ -78,7 +84,9 @@ npx create-thally-docs migrate https://github.com/org/repo --into ./existing-doc
 ### What gets migrated
 
 - All `.md` and `.mdx` files are copied and converted to clean MDX
-- Navigation structure is detected from `mint.json`, `docusaurus.config.js`, `docs.json`, or inferred from the directory structure
+- Live-site pages are discovered from machine-readable indexes, sitemaps, and rendered sidebars within the submitted docs path
+- Navigation structure is detected from rendered Mintlify/Docusaurus navigation, `mint.json`, `docusaurus.config.js`, `docs.json`, or the directory structure
+- Docusaurus current-version boundaries, case-sensitive routes, redirects, nested docs plugins, callouts, tabs, tables, and highlighted code are preserved
 - OpenAPI spec files (`.json`, `.yaml`) are detected and wired up as an API Reference tab
 - Platform-specific MDX components are normalized to Thally equivalents (see [component mapping](#component-mapping) below)
 
@@ -90,8 +98,13 @@ npx create-thally-docs migrate https://github.com/org/repo --into ./existing-doc
 | `--into <dir>` | Migrate into an existing Thally project instead of scaffolding a new one |
 | `--branch <name>` | Override the auto-detected git branch |
 | `--docs-dir <path>` | Override the auto-detected docs subdirectory |
+| `--platform <name>` | Select `mintlify`, `docusaurus`, or `auto` |
 | `--api-key <key>` | Anthropic API key for converting non-Markdown files (e.g. `.rst`). Falls back to `ANTHROPIC_API_KEY` env var |
-| `--yes`, `-y` | Skip confirmation prompts |
+| `--yes`, `-y` | Accept defaults and skip all prompts, including platform selection |
+
+<Warning>
+If you omit both `--platform` and `--yes`, the CLI asks which platform currently hosts the docs. If you pass `--yes` without `--platform`, it uses auto-detection.
+</Warning>
 
 ### Component mapping
 
@@ -104,6 +117,9 @@ Mintlify, Docusaurus, and GitBook use platform-specific MDX components that don'
 | `<Danger>` | `<Error>` |
 | `<Callout>` | `<Note>` / `<Warning>` / `<Info>` |
 | `:::note ...:::` (Docusaurus) | `<Note>` |
+| Docusaurus admonition | `<Note>` / `<Info>` / `<Warning>` / `<Error>` |
+| Docusaurus tabs | `<Tabs>` and `<Tab>` |
+| Rendered HTML table | Markdown table |
 | `{% hint style="..." %}` (GitBook) | `<Note>` / `<Warning>` |
 | `<AccordionGroup>` | stripped (children kept) |
 | `<Expandable title="...">` | `<Accordion title="...">` |
