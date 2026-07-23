@@ -2,11 +2,9 @@
 
 import type React from 'react'
 import Link from 'next/link'
-import { Suspense } from 'react'
 import { ExternalLink } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import type { SidebarCollection, DocsJsonNavbar } from '@/data/docs'
-import type { SearchCorpusRecord } from '@/components/search/command-search'
 import { MobileNav } from '@/components/navigation/mobile-nav'
 import { CommandSearch } from '@/components/search/command-search'
 import { ThemeSwitch } from '@/components/theme/theme-switch'
@@ -39,7 +37,6 @@ interface TopBarProps {
   activeCollectionId: SidebarCollection['id']
   onCollectionChange: (id: SidebarCollection['id']) => void
   activeSections: SidebarCollection['sections']
-  searchIndex: Array<SearchCorpusRecord>
   i18nConfig?: I18nConfig | null
   currentLocale?: string
   currentPath?: string
@@ -51,7 +48,6 @@ export function TopBar({
   activeCollectionId,
   onCollectionChange,
   activeSections,
-  searchIndex,
   i18nConfig,
   currentLocale,
   currentPath,
@@ -83,13 +79,7 @@ export function TopBar({
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <MobileNav sections={activeSections} />
           <div className="ml-auto flex w-full flex-1 flex-wrap items-center gap-2 sm:w-auto sm:gap-3">
-            <Suspense
-              fallback={
-                <div className="hidden h-9 flex-1 items-center rounded-[var(--theme-control-radius)] border border-border/40 px-4 sm:h-10 lg:flex" />
-              }
-            >
-              <CommandSearch searchIndex={searchIndex} />
-            </Suspense>
+            <CommandSearch />
             {navbarConfig?.links && navbarConfig.links.length > 0
               ? navbarConfig.links.map((link) => {
                   const isExternal = /^https?:\/\//.test(link.href)
@@ -117,6 +107,7 @@ export function TopBar({
                 ? (
                     <Link
                       href={supportLink.href}
+                      prefetch={false}
                       className="hidden items-center rounded-[var(--theme-control-radius)] border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground/70 transition hover:text-foreground sm:inline-flex sm:px-4 sm:py-2 sm:text-sm"
                     >
                       <span className="hidden sm:inline">{supportLink.label}</span>
@@ -127,6 +118,7 @@ export function TopBar({
             {primaryCta ? (
               <Link
                 href={primaryCta.href}
+                prefetch={false}
                 className="inline-flex items-center rounded-[var(--theme-control-radius)] bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow hover:bg-primary/90 active:scale-[0.98] sm:px-4 sm:py-2 sm:text-sm"
               >
                 <span className="hidden sm:inline">{primaryCta.label}</span>
@@ -186,6 +178,7 @@ export function TopBar({
                 <Link
                   key={collection.id}
                   href={collection.href}
+                  prefetch={false}
                   className={baseClasses}
                 >
                   {indicator}
@@ -217,4 +210,3 @@ export function TopBar({
     </header>
   )
 }
-

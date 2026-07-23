@@ -1,4 +1,5 @@
 import { AdminShell } from '@/components/admin/admin-shell'
+import { CloudHandshake } from '@/components/cloud/cloud-handshake'
 import { siteConfig } from '@/data/site'
 
 // Admin pages must render per-request so the node-side auth guard
@@ -7,5 +8,10 @@ import { siteConfig } from '@/data/site'
 export const dynamic = 'force-dynamic'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  return <AdminShell siteName={siteConfig.name}>{children}</AdminShell>
+  return (
+    <>
+      <AdminShell siteName={siteConfig.name}>{children}</AdminShell>
+      <CloudHandshake />
+    </>
+  )
 }

@@ -15,6 +15,7 @@ export function DocPagination({ prev, next }: DocPaginationProps) {
       {prev ? (
         <Link
           href={prev.href}
+          prefetch={false}
           className="group flex items-center gap-2 text-sm font-medium text-foreground/70 transition hover:text-foreground"
         >
           <ChevronLeft className="h-4 w-4 transition group-hover:-translate-x-0.5" />
@@ -26,6 +27,7 @@ export function DocPagination({ prev, next }: DocPaginationProps) {
       {next ? (
         <Link
           href={next.href}
+          prefetch={false}
           className="group flex items-center gap-2 text-sm font-medium text-foreground/70 transition hover:text-foreground"
         >
           {next.title}

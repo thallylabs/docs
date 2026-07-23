@@ -6,7 +6,6 @@ import { Sidebar } from '@/components/navigation/sidebar'
 import { PageContainer } from '@/components/layout/sections'
 import { layout, shell } from '@/config/layout'
 import type { SidebarCollection, DocsJsonNavbar, DocsJsonFooter } from '@/data/docs'
-import type { SearchCorpusRecord } from '@/components/search/command-search'
 import { useSidebarCollectionsStore } from './sidebar-store'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -55,13 +54,12 @@ function normalizePath(value: string) {
 interface SiteShellProps {
   children: React.ReactNode
   initialCollections: Array<SidebarCollection>
-  searchIndex: Array<SearchCorpusRecord>
   i18nConfig?: I18nConfig | null
   navbarConfig?: DocsJsonNavbar | null
   footerConfig?: DocsJsonFooter | null
 }
 
-export function SiteShell({ children, initialCollections, searchIndex, i18nConfig, navbarConfig, footerConfig }: SiteShellProps) {
+export function SiteShell({ children, initialCollections, i18nConfig, navbarConfig, footerConfig }: SiteShellProps) {
   const hydratedCollections = useSidebarCollectionsStore((state) => state.collections)
   const collections = hydratedCollections.length > 0 ? hydratedCollections : initialCollections
   const pathname = usePathname()
@@ -150,7 +148,6 @@ export function SiteShell({ children, initialCollections, searchIndex, i18nConfi
               }
             }}
             activeSections={activeCollection.sections}
-            searchIndex={searchIndex}
             i18nConfig={i18nConfig ?? null}
             currentLocale={currentLocale}
             currentPath={currentPath}

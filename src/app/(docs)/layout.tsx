@@ -2,20 +2,12 @@ import { SiteShell } from '@/components/layout/site-shell'
 import { SidebarCollectionsHydrator } from '@/components/layout/sidebar-hydrator'
 import { getSidebarCollections, getAiConfig, getI18nConfig, getNavbarConfig, getFooterConfig } from '@/data/docs'
 import type { NavigationSection } from '@/data/docs'
-import { getClientSearchCorpus } from '@/lib/search/corpus'
 import { buildApiNavigation } from '@/data/api-reference'
-import { DocsChat } from '@/components/docs/docs-chat'
-import { isAiChatAvailable } from '@/lib/cloud-bridge'
-import { getRequestCloudSiteConfig, getRequestOrigin } from '@/lib/cloud-link/request'
+import { DocsChatLauncher } from '@/components/docs/docs-chat-launcher'
 
 interface DocsLayoutProps {
   children: React.ReactNode
 }
-
-// This shell reads request headers and linked Cloud configuration. It must be
-// rendered for each request so generated sites never freeze one host's values
-// into a static build artifact.
-export const dynamic = 'force-dynamic'
 
 export default async function DocsLayout({ children }: DocsLayoutProps) {
   const navigation = await buildApiNavigation()
@@ -40,36 +32,23 @@ export default async function DocsLayout({ children }: DocsLayoutProps) {
     }
     return collection
   })
-  const searchIndex = getClientSearchCorpus()
   const aiConfig = getAiConfig()
   const i18nConfig = getI18nConfig()
   const navbarConfig = getNavbarConfig()
   const footerConfig = getFooterConfig()
-  const origin = await getRequestOrigin()
-  // Resolve settings first so linked sites reuse the same cached short-lived
-  // grant when checking the paid AI service immediately afterward.
-  const cloudConfig = await getRequestCloudSiteConfig()
-  const hasAiService = await isAiChatAvailable(origin)
-  const isAiEnabled = cloudConfig
-    ? Boolean(cloudConfig.entitlements.features?.aiAnswers) &&
-      Boolean(cloudConfig.siteConfig.portable.ai?.enabled)
-    : Boolean(aiConfig.chat)
 
   return (
     <>
       <SidebarCollectionsHydrator collections={collections} />
       <SiteShell
         initialCollections={collections}
-        searchIndex={searchIndex}
         i18nConfig={i18nConfig}
         navbarConfig={navbarConfig}
         footerConfig={footerConfig}
       >
         {children}
       </SiteShell>
-      {isAiEnabled && (
-        <DocsChat label={aiConfig.label} icon={aiConfig.icon} enabled={hasAiService} />
-      )}
+      <DocsChatLauncher label={aiConfig.label} icon={aiConfig.icon} />
     </>
   )
 }

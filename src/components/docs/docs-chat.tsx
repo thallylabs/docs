@@ -24,6 +24,7 @@ const ICON_MAP: Record<IconName, React.ComponentType<LucideProps>> = {
 function FabIcon({ icon, className }: { icon?: string; className?: string }) {
   // URL or path → render as image
   if (icon && (icon.startsWith('/') || icon.startsWith('http'))) {
+    // eslint-disable-next-line @next/next/no-img-element -- remote admin-provided icons have no known dimensions.
     return <img src={icon} alt="" className={className} style={{ objectFit: 'contain' }} />
   }
   // Named icon → look up in map, fall back to Sparkles
@@ -52,24 +53,38 @@ function TypingDots() {
   )
 }
 
-interface DocsChatProps {
+export interface DocsChatStatus {
+  show?: boolean
+  label?: string
+  disclaimer?: string
+}
+
+export interface DocsChatProps {
   label?: string
   icon?: string
   /** False when no Anthropic key is configured — show an upfront notice instead
    * of inviting a question that would 503. */
   enabled?: boolean
+  initiallyOpen?: boolean
+  initialStatus?: DocsChatStatus | null
 }
 
-export function DocsChat({ label = 'Ask AI', icon, enabled = true }: DocsChatProps) {
-  const [open, setOpen] = useState(false)
+export function DocsChat({
+  label = 'Ask AI',
+  icon,
+  enabled = true,
+  initiallyOpen = false,
+  initialStatus,
+}: DocsChatProps) {
+  const [open, setOpen] = useState(initiallyOpen)
   const [expanded, setExpanded] = useState(false)
-  const [chatShown, setChatShown] = useState(true)
+  const [chatShown, setChatShown] = useState(initialStatus?.show !== false)
   // Live admin overrides — SSR'd prop is the first-paint value; the chat-status
   // fetch swaps in the admin's custom name / disclaimer when set. Disclaimer
   // starts on its generic default so a safety notice always shows, even if the
   // fetch is slow or fails.
-  const [liveLabel, setLiveLabel] = useState(label)
-  const [disclaimer, setDisclaimer] = useState(DEFAULT_AI_DISCLAIMER)
+  const [liveLabel, setLiveLabel] = useState(initialStatus?.label || label)
+  const [disclaimer, setDisclaimer] = useState(initialStatus?.disclaimer ?? DEFAULT_AI_DISCLAIMER)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -101,6 +116,7 @@ export function DocsChat({ label = 'Ask AI', icon, enabled = true }: DocsChatPro
   // Respect the admin's live enable/disable toggle (hide if off) and pick up the
   // admin's custom assistant name + disclaimer.
   useEffect(() => {
+    if (initialStatus) return
     let active = true
     fetch('/api/chat-status')
       .then((r) => (r.ok ? r.json() : { show: true }))
@@ -114,7 +130,7 @@ export function DocsChat({ label = 'Ask AI', icon, enabled = true }: DocsChatPro
     return () => {
       active = false
     }
-  }, [])
+  }, [initialStatus])
 
   const send = useCallback(async (text?: string) => {
     const content = (text ?? input).trim()

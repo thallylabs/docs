@@ -2,56 +2,18 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { ZoomableContent } from '@/components/mdx/zoomable-content'
-import {
-  ArrowRight,
-  BookOpen,
-  Code2,
-  Grid3X3,
-  Link2,
-  PartyPopper,
-  Send,
-  Mail,
-  Twitter,
-  Wrench,
-  MessageSquare,
-  type LucideIcon,
-} from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
+import { ContentIcon, type ContentIconName } from '@/components/ui/content-icon'
 import { cn } from '@/lib/utils'
 
-type IconName =
-  | 'book-open'
-  | 'code-simple'
-  | 'grid-round'
-  | 'link-simple'
-  | 'wrench'
-  | 'party-horn'
-  | 'telegram'
-  | 'envelope'
-  | 'x-twitter'
-  | 'message'
-
-const iconMap: Record<IconName, LucideIcon> = {
-  'book-open': BookOpen,
-  'code-simple': Code2,
-  'grid-round': Grid3X3,
-  'link-simple': Link2,
-  wrench: Wrench,
-  'party-horn': PartyPopper,
-  telegram: Send,
-  envelope: Mail,
-  'x-twitter': Twitter,
-  message: MessageSquare,
-}
-
 export interface IconProps {
-  icon: IconName | string
+  icon: ContentIconName | string
   iconType?: 'solid' | 'outline'
   className?: string
 }
 
 export function Icon({ icon, className }: IconProps) {
-  const Component = iconMap[icon as IconName] ?? MessageSquare
-  return <Component className={cn('h-5 w-5 text-accent', className)} aria-hidden="true" />
+  return <ContentIcon icon={icon} className={className} />
 }
 
 // ---------------------------------------------------------------------------
@@ -96,6 +58,7 @@ export function Hero({
             {primaryHref ? (
               <Link
                 href={primaryHref}
+                prefetch={false}
                 className="inline-flex items-center gap-2 rounded-[var(--theme-control-radius)] bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:opacity-90 active:scale-[0.98]"
               >
                 {primaryLabel ?? 'Get started'}
@@ -105,6 +68,7 @@ export function Hero({
             {secondaryHref ? (
               <Link
                 href={secondaryHref}
+                prefetch={false}
                 className="inline-flex items-center gap-2 rounded-[var(--theme-control-radius)] border border-border/60 bg-background px-5 py-2.5 text-sm font-semibold text-foreground transition hover:border-accent/50 hover:text-accent"
               >
                 {secondaryLabel ?? 'Learn more'}
@@ -120,7 +84,7 @@ export function Hero({
 interface CardProps {
   title?: string
   href?: string
-  icon?: IconName
+  icon?: ContentIconName
   iconType?: 'solid' | 'outline'
   img?: string
   children?: ReactNode
@@ -164,6 +128,7 @@ export function Card({ title, href, icon, iconType, img, children }: CardProps) 
     return (
       <Link
         href={href}
+        prefetch={false}
         className="block h-full"
         target={external ? '_blank' : undefined}
         rel={external ? 'noreferrer' : undefined}
@@ -384,7 +349,7 @@ export function Tile({ title, href, icon, iconType, img, children }: TileProps &
   if (href) {
     const external = isExternalLink(href)
     return (
-      <Link href={href} className="block h-full" target={external ? '_blank' : undefined} rel={external ? 'noreferrer' : undefined}>
+      <Link href={href} prefetch={false} className="block h-full" target={external ? '_blank' : undefined} rel={external ? 'noreferrer' : undefined}>
         {content}
       </Link>
     )
