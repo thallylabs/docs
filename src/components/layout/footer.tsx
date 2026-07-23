@@ -77,7 +77,11 @@ export function Footer({ footerConfig }: FooterProps) {
                               {item.label}
                             </a>
                           ) : (
-                            <Link href={item.href} className="text-sm text-foreground/75 hover:text-foreground">
+                            <Link
+                              href={item.href}
+                              prefetch={false}
+                              className="text-sm text-foreground/75 hover:text-foreground"
+                            >
                               {item.label}
                             </Link>
                           )}
@@ -123,7 +127,7 @@ export function Footer({ footerConfig }: FooterProps) {
         <p>© {new Date().getFullYear()} {siteConfig.name}. All rights reserved.</p>
         <div className="flex gap-4">
           {siteConfig.links.map((link) => (
-            <Link key={link.href} href={link.href} className="hover:text-foreground">
+            <Link key={link.href} href={link.href} prefetch={false} className="hover:text-foreground">
               {link.label}
             </Link>
           ))}

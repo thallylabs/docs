@@ -1,14 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { parseAsStringEnum, useQueryState } from 'nuqs'
+import { useState } from 'react'
 import type { ApiNavigationGroup } from '@/data/api-reference'
 import { getMethodToken } from '@/components/api/tokens'
 import { cn } from '@/lib/utils'
 
-const HTTP_METHODS = ['ALL', 'GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD', 'TRACE'] as const
-type HttpMethod = (typeof HTTP_METHODS)[number]
-const methodFilterParser = parseAsStringEnum<HttpMethod>([...HTTP_METHODS]).withDefault('ALL')
+type HttpMethod = 'ALL' | 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'OPTIONS' | 'HEAD' | 'TRACE'
 
 interface OperationNavProps {
   navigation: Array<ApiNavigationGroup>
@@ -18,7 +16,7 @@ interface OperationNavProps {
 }
 
 export function OperationNav({ navigation, activeOperationId, variant = 'sidebar', className }: OperationNavProps) {
-  const [methodFilter, setMethodFilter] = useQueryState('method', methodFilterParser)
+  const [methodFilter, setMethodFilter] = useState<HttpMethod>('ALL')
 
   const operations = navigation.flatMap((group) =>
     group.items.map((item) => ({
@@ -99,4 +97,3 @@ export function OperationNav({ navigation, activeOperationId, variant = 'sidebar
     </div>
   )
 }
-

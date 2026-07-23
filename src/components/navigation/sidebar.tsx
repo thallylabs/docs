@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { NavigationSection } from '@/data/docs'
 import { Badge } from '@/components/ui/badge'
-import { Icon } from '@/components/mdx/rich-content'
+import { ContentIcon } from '@/components/ui/content-icon'
 import { layout, typography } from '@/config/layout'
 import { cn } from '@/lib/utils'
 import { Logo } from '@/components/layout/logo'
@@ -18,7 +18,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ sections, title, className }: SidebarProps) {
-  const siteName = useSiteName()
+  const siteName = useSiteName('desktop')
   const pathname = usePathname()
 
   function isActive(href: string) {
@@ -51,6 +51,7 @@ export function Sidebar({ sections, title, className }: SidebarProps) {
         <div className="flex shrink-0 flex-col gap-3 px-1 pt-2">
           <Link
             href="/"
+            prefetch={false}
             className="flex items-center gap-2 rounded-lg focus:outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/30"
           >
             <Logo showText={false} className="shrink-0" />
@@ -64,7 +65,7 @@ export function Sidebar({ sections, title, className }: SidebarProps) {
             {sections.map((section) => (
               <div key={section.title} className="space-y-3">
                 <p className={cn(typography.meta, 'flex items-center gap-1.5 px-1 uppercase tracking-wide text-foreground/70')}>
-                  {section.icon && <Icon icon={section.icon} className="h-3.5 w-3.5 shrink-0 text-foreground/50" />}
+                  {section.icon && <ContentIcon icon={section.icon} className="h-3.5 w-3.5 shrink-0 text-foreground/50" />}
                   <span className="truncate">{section.title}</span>
                 </p>
                 <div className="relative pl-4">
@@ -82,6 +83,7 @@ export function Sidebar({ sections, title, className }: SidebarProps) {
                         <Link
                           key={item.id}
                           href={item.href}
+                          prefetch={false}
                           aria-current={active ? 'page' : undefined}
                           className={cn(
                             'group relative block px-3 py-2 text-left transition',

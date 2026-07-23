@@ -18,6 +18,8 @@ export function Logo({ className, showText = true }: LogoProps) {
   // Show an admin-uploaded logo when one exists; otherwise the default mark +
   // site name. The <img> probes /api/brand/logo and swaps in on load.
   const [customOk, setCustomOk] = useState(false)
+  const [shouldProbe, setShouldProbe] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
   const imgRef = useRef<HTMLImageElement>(null)
 
   // Follow the site theme: dark mode requests the dark variant (the route
@@ -28,26 +30,43 @@ export function Logo({ className, showText = true }: LogoProps) {
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false)
   const { resolvedTheme } = useTheme()
   const isDark = mounted && resolvedTheme === 'dark'
-  const src = isDark ? '/api/brand/logo?mode=dark' : '/api/brand/logo'
+  const src = shouldProbe
+    ? (isDark ? '/api/brand/logo?mode=dark' : '/api/brand/logo')
+    : null
 
-  // The <img> is server-rendered, so it can finish loading BEFORE React attaches
-  // onLoad (the event never fires). Check completeness on mount to catch that.
+  // A hidden desktop sidebar used to probe the dynamic logo on mobile too.
+  // Only request it once the logo container is actually visible.
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry?.isIntersecting) {
+        setShouldProbe(true)
+        observer.disconnect()
+      }
+    })
+    observer.observe(container)
+    return () => observer.disconnect()
+  }, [])
+
   useEffect(() => {
     const img = imgRef.current
     if (img?.complete) setCustomOk(img.naturalWidth > 0)
-  }, [])
+  }, [src])
 
   return (
-    <div className={cn('inline-flex items-center gap-2', className)}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        ref={imgRef}
-        src={src}
-        alt={siteName}
-        onLoad={() => setCustomOk(true)}
-        onError={() => setCustomOk(false)}
-        style={{ height: 28, width: 'auto', display: customOk ? 'block' : 'none' }}
-      />
+    <div ref={containerRef} className={cn('inline-flex items-center gap-2', className)}>
+      {src ? (
+        // eslint-disable-next-line @next/next/no-img-element -- runtime brand assets are served by an API route.
+        <img
+          ref={imgRef}
+          src={src}
+          alt={siteName}
+          onLoad={() => setCustomOk(true)}
+          onError={() => setCustomOk(false)}
+          style={{ height: 28, width: 'auto', display: customOk ? 'block' : 'none' }}
+        />
+      ) : null}
       {!customOk ? (
         <>
           {/* Default brand mark (public/brand, ships with every scaffold) —

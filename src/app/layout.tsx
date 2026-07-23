@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { headers } from 'next/headers'
 import { Inter, JetBrains_Mono, Plus_Jakarta_Sans } from 'next/font/google'
 import Script from 'next/script'
 import './globals.css'
@@ -16,7 +15,6 @@ import { JsonLdScript } from '@/components/seo/json-ld-script'
 import { AnalyticsProvider } from '@/components/analytics/analytics-provider'
 import { SiteBanner } from '@/components/layout/site-banner'
 import { WebMcpTools } from '@/components/agent/web-mcp-tools'
-import { CloudHandshake } from '@/components/cloud/cloud-handshake'
 
 // Default fonts via next/font (optimal performance — preloaded, no FOUC).
 // The Thally brand pairs Inter (body) with Plus Jakarta Sans (display —
@@ -190,16 +188,14 @@ const siteUrl = getSiteUrl()
 const runtimeNameShim =
   "globalThis.__name ??= (target, value) => Object.defineProperty(target, 'name', { value, configurable: true });"
 
-export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const requestHeaders = await headers()
-  const requestLocale = requestHeaders.get('x-thally-locale') ?? defaultLang
-  const siteJsonLd = buildSiteJsonLd({ siteUrl, locale: requestLocale })
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const siteJsonLd = buildSiteJsonLd({ siteUrl, locale: defaultLang })
   return (
     // Font variables live on <html> (not <body>) so :root-level rules — the
     // globals.css --font-heading default and docs.json font overrides — can
     // reference and override them.
     <html
-      lang={requestLocale}
+      lang={defaultLang}
       suppressHydrationWarning
       data-theme={structuralTheme}
       className={cn(fontSans.variable, fontDisplay.variable, fontMono.variable)}
@@ -233,8 +229,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       <body className="min-h-screen bg-background font-sans text-foreground antialiased">
         {bannerConfig && <SiteBanner banner={bannerConfig} />}
         <Providers>{children}</Providers>
-        <CloudHandshake />
-        <AnalyticsProvider />
+        {siteConfig.analytics && <AnalyticsProvider />}
         <WebMcpTools />
         {customScripts.map((script) => (
           <Script
