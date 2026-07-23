@@ -39,7 +39,11 @@ export function Sidebar({ sections, title, className }: SidebarProps) {
 
   return (
     <aside
-      className={cn('hidden shrink-0 border-r border-border/80 bg-sidebar lg:block', layout.sidebarWidth, className)}
+      className={cn(
+        "relative hidden shrink-0 border-r border-border/80 bg-sidebar before:absolute before:inset-y-0 before:right-full before:w-screen before:bg-inherit before:content-[''] lg:block",
+        layout.sidebarWidth,
+        className,
+      )}
     >
       {/* Stay in the shell's flow so optional site banners reserve their own
           space above the brand, then pin the navigation once they scroll away. */}
@@ -56,7 +60,7 @@ export function Sidebar({ sections, title, className }: SidebarProps) {
         <div className="shrink-0 px-1 pt-6">
           <p className="text-xs font-semibold uppercase tracking-[0.4em] text-foreground/40 line-clamp-1">{title}</p>
         </div>
-        <nav className="mt-6 min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-y-contain pb-4">
+        <nav className="scrollbar-hide mt-6 min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-y-contain pb-4">
             {sections.map((section) => (
               <div key={section.title} className="space-y-3">
                 <p className={cn(typography.meta, 'flex items-center gap-1.5 px-1 uppercase tracking-wide text-foreground/70')}>
