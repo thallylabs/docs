@@ -1,6 +1,6 @@
 ---
 title: Thally Track
-description: Watch your product repos — merged PRs there become reviewed documentation PRs, drafted by the docs agent.
+description: Trace product changes to affected customer-facing knowledge and prepare evidence-backed documentation pull requests for human review.
 keywords:
   - thally track
   - pr-triggered docs
@@ -10,9 +10,17 @@ keywords:
   - agent-native
 ---
 
-**Thally Track closes the oldest gap in documentation: the feature shipped, and nobody updated the docs.** You register your product's source repositories, and when a **pull request merges** there, Thally distills it into a task and has the [docs agent](/guides/docs-agent) draft a documentation pull request — reviewed by you, never merged on its own.
+**Every product change creates communication work. Thally Track finds the part
+that belongs in your documentation.** You register your product's source
+repositories, and when a **pull request merges**, Track carries the reviewed
+product evidence into a task for the [docs agent](/guides/docs-agent). The
+agent updates the affected pages in a documentation pull request—reviewed by
+you, never merged on its own.
 
-Track acts on **merged PRs, not raw commits** — a merged PR is completed, reviewed work, whereas a commit can be undone by the next one. Triggering per-commit would open (and re-open) docs PRs on churning, incomplete work.
+Track acts on **merged PRs, not raw commits**, because evidence comes before
+confidence. A merged PR is completed, reviewed work with a durable explanation;
+a commit can be undone by the next one. Triggering per commit would ask the
+agent to interpret churning, incomplete work.
 
 ```
 product-repo PR merged ──▶ trigger (webhook or Action) ──▶ repository_dispatch
@@ -21,6 +29,13 @@ product-repo PR merged ──▶ trigger (webhook or Action) ──▶ repositor
 ```
 
 Everything runs on your infrastructure with your keys. Nothing is hosted by Thally.
+
+<Note type="info" title="The current wedge">
+Track starts with GitHub product changes and documentation pull requests. SDK
+references, release notes, tutorials, and AI context are part of Thally's
+long-term product-knowledge graph, not a claim that every surface is automated
+today.
+</Note>
 
 ## Register a repo
 

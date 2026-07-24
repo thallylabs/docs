@@ -142,6 +142,7 @@
           "group": "Concepts",
           "icon": "grid-round",
           "pages": [
+            "product-change-pipeline",
             "authentication",
             "pagination"
           ]
