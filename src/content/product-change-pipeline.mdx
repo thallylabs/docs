@@ -1,0 +1,98 @@
+---
+title: The product-change pipeline
+description: How Thally connects product evidence to customer-facing knowledge while keeping people responsible for what publishes.
+keywords:
+  - product knowledge pipeline
+  - product changes
+  - documentation automation
+  - evidence-backed updates
+  - human review
+---
+
+Software teams ship continuously, but the places where customers learn about
+the product are maintained separately. A single change can create work across
+documentation, API and SDK references, tutorials, release notes, examples, and
+AI context. The usual failure is not writing quality—it is that no system owns
+finding all of that communication work.
+
+Thally is built to own that handoff.
+
+> Every product change. Every knowledge surface. Automatically in sync.
+
+That is the direction of the product. The first implementation is intentionally
+narrow: connect GitHub product changes to documentation, determine what is
+affected, and prepare a pull request for a person to review.
+
+## How it works today
+
+<Steps>
+  <Step title="A product change supplies the evidence">
+    A merged pull request contains the diff, discussion, files, and intent
+    behind a completed change. Track uses that reviewed record instead of
+    guessing from an isolated commit.
+  </Step>
+  <Step title="Track determines whether communication work exists">
+    Repository and path rules establish the candidate scope. Track distills the
+    change into a documentation task only when the evidence indicates a
+    customer-facing effect.
+  </Step>
+  <Step title="The docs agent updates the affected source">
+    The agent reads the product evidence and the existing docs together,
+    updates relevant pages, and validates the result with `thally check`.
+  </Step>
+  <Step title="A person decides what publishes">
+    The result is a normal pull request. Reviewers can accept, correct, or
+    reject it; the agent never merges its own work.
+  </Step>
+  <Step title="One reviewed source feeds every projection">
+    After approval, the content engine serves the same structured source as
+    HTML, Markdown, JSON, JSON-LD, search, embeddings, and agent context.
+  </Step>
+</Steps>
+
+## The trust contract
+
+<Columns cols={2}>
+  <Card title="The product is the source of truth" icon="code-simple">
+    The pipeline begins with reviewed product evidence, not an ungrounded
+    request to generate content.
+  </Card>
+  <Card title="Understand before generating" icon="link-simple">
+    A change should produce communication work only after Thally can explain
+    what customer-facing knowledge it affects.
+  </Card>
+  <Card title="Evidence before confidence" icon="book-open">
+    The proposed update keeps the product context available for reviewers
+    instead of presenting generated prose as fact.
+  </Card>
+  <Card title="Humans approve important communication" icon="message">
+    Review remains a product invariant. Automation removes discovery and
+    drafting work, not accountability.
+  </Card>
+</Columns>
+
+## Current boundary and direction
+
+| Area | Available now | Product direction |
+| --- | --- | --- |
+| Product source | GitHub pull requests, paths, and repositories | Additional integrations that extend—not unlock—the pipeline |
+| Knowledge surface | Documentation pages and API-reference content in a Thally project | SDK references, tutorials, release notes, examples, AI context, and future surfaces |
+| Output | Evidence-backed documentation pull requests | Coordinated updates across every affected surface |
+| Approval | Existing GitHub review and deployment workflow | Human control over every important communication |
+| Learning | Accepted content and repository configuration | A customer-specific Product Knowledge Graph strengthened by reviews and corrections |
+
+<Note type="info" title="Not another knowledge destination">
+Thally includes an open documentation engine, but the product is not trying to
+be another wiki, CMS, or knowledge base. Those tools store knowledge. Thally's
+job is to keep it synchronized as the product changes.
+</Note>
+
+## Put the pipeline to work
+
+- [Set up Thally Track](/guides/thally-track) to connect a product repository.
+- [Initialize the docs agent](/guides/docs-agent) to prepare reviewable pull
+  requests.
+- [Add provenance](/guides/provenance) so people and agents can see when pages
+  were updated and last verified.
+- Run [`thally check`](/guides/cli-reference) in CI to validate the reviewed
+  source before it publishes.

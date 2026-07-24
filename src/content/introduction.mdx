@@ -1,19 +1,22 @@
 ---
 title: Introduction
-description: Thally is an open-source documentation template built with Next.js, MDX, and Tailwind CSS.
+description: Thally connects product changes to customer-facing knowledge and prepares evidence-backed documentation updates for human review.
 mode: home
 ---
 
 <Hero
-  title="Documentation your readers and their agents both love"
-  subtitle="Thally is a production-ready docs platform built on the Next.js App Router, MDX, and Tailwind CSS. Write in Markdown, own your stack, and ship a site that's fast for humans and legible to AI."
+  title="Every product change. Every knowledge surface. Automatically in sync."
+  subtitle="Thally starts with documentation: connect product repositories to the places customers learn, understand what a change affects, and prepare evidence-backed updates for human review."
   primaryLabel="Get started"
   primaryHref="/quickstart"
-  secondaryLabel="Browse components"
-  secondaryHref="/components/card"
+  secondaryLabel="Understand the pipeline"
+  secondaryHref="/product-change-pipeline"
 />
 
 <CardGroup cols={3}>
+  <Card title="Product-change pipeline" icon="code-simple" href="/product-change-pipeline">
+    See how product evidence becomes reviewable customer-facing knowledge.
+  </Card>
   <Card title="Quickstart" icon="code-simple" href="/quickstart">
     Scaffold a new site and go from zero to a running docs app in minutes.
   </Card>
@@ -27,15 +30,40 @@ mode: home
     Drop in an OpenAPI spec for interactive endpoints and a "Try It" console.
   </Card>
   <Card title="CLI & tooling" icon="wrench" href="/guides/cli-reference">
-    One `thally` binary to init, dev, build, deploy, migrate, and check your docs.
+    One `thally` binary to create, check, and keep knowledge surfaces current.
   </Card>
   <Card title="AI features" icon="message" href="/guides/ai-features">
     Grounded chat, an Agent Readiness Score, and `llms.txt` out of the box.
   </Card>
   <Card title="Thally Track" icon="git-pull-request" href="/guides/thally-track">
-    Merged (or preview) PRs in your product repos become reviewed docs PRs, drafted by the agent.
+    Product changes become evidence-backed docs pull requests for your team to review.
   </Card>
 </CardGroup>
+
+## The product-change pipeline
+
+Every product change creates communication work. Thally makes that work visible
+and reviewable instead of treating documentation as a separate destination
+someone has to remember to update.
+
+<Columns cols={2}>
+  <Card title="1. Start with product evidence" icon="code-simple">
+    A merged or review-ready GitHub pull request is the source: what changed,
+    why it changed, and which code or API surfaces moved.
+  </Card>
+  <Card title="2. Understand the impact" icon="link-simple">
+    Thally Track traces that evidence to the customer-facing knowledge it may
+    affect. Understanding comes before generation.
+  </Card>
+  <Card title="3. Prepare a reviewable update" icon="book-open">
+    The docs agent edits the relevant pages and opens a pull request with the
+    product context attached. It never merges its own work.
+  </Card>
+  <Card title="4. Publish one trusted source" icon="book-open">
+    After human approval, the content engine projects the same structured
+    source into HTML, Markdown, JSON, JSON-LD, search, and agent context.
+  </Card>
+</Columns>
 
 ## What's included
 
