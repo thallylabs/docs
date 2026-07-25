@@ -4,6 +4,7 @@ import { OpenApiDocPage } from '@/components/api/openapi-doc-page'
 import { DocLayout } from '@/components/docs/doc-layout'
 import { getDocEntries, getI18nConfig, getNavContext } from '@/data/docs'
 import { getDocFromParams } from '@/data/get-doc'
+import { isRemoteContentSource } from '@/lib/content-source'
 import { getSiteUrl } from '@/lib/site-url'
 import { JsonLdScript } from '@/components/seo/json-ld-script'
 import { buildAgentAlternateLinks } from '@/lib/agent-discovery'
@@ -16,6 +17,10 @@ interface PageProps {
 }
 
 export async function generateStaticParams() {
+  // Remote content sources resolve pages at request time: baking today's page
+  // list into static HTML would freeze content (and 404s) at build time.
+  // Unknown slugs still 404 through the same notFound() path below.
+  if (isRemoteContentSource()) return []
   const docs = getDocEntries()
   return docs.map((doc) =>
     doc.slug.length ? { slug: doc.slug } : { slug: [] },
