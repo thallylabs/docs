@@ -1,12 +1,35 @@
 import type { Element, Root } from 'hast'
+// Fine-grained shiki: the full-bundle `shiki` entry statically embeds every
+// grammar (~9 MB of server chunks), which pushed managed Worker bundles past
+// the hosting size budget. The core entry plus a curated grammar set keeps
+// highlighting for the languages docs actually use; anything outside the set
+// falls back to plaintext exactly like an unknown language always has.
+// Type-only imports from `shiki` are erased at build time and cost nothing.
+import { createHighlighterCore } from 'shiki/core'
 import {
-  createHighlighter,
   createJavaScriptRegexEngine,
   defaultJavaScriptRegexConstructor,
-  type Highlighter,
-  type ThemedToken,
-  type ThemeRegistration,
-} from 'shiki'
+} from 'shiki/engine/javascript'
+import type { HighlighterCore, ThemedToken, ThemeRegistration } from 'shiki'
+import langBash from '@shikijs/langs/bash'
+import langCss from '@shikijs/langs/css'
+import langDiff from '@shikijs/langs/diff'
+import langDocker from '@shikijs/langs/docker'
+import langGo from '@shikijs/langs/go'
+import langHtml from '@shikijs/langs/html'
+import langJavascript from '@shikijs/langs/javascript'
+import langJson from '@shikijs/langs/json'
+import langJsonc from '@shikijs/langs/jsonc'
+import langJsx from '@shikijs/langs/jsx'
+import langMarkdown from '@shikijs/langs/markdown'
+import langMdx from '@shikijs/langs/mdx'
+import langPython from '@shikijs/langs/python'
+import langRust from '@shikijs/langs/rust'
+import langSql from '@shikijs/langs/sql'
+import langToml from '@shikijs/langs/toml'
+import langTsx from '@shikijs/langs/tsx'
+import langTypescript from '@shikijs/langs/typescript'
+import langYaml from '@shikijs/langs/yaml'
 import { visit } from 'unist-util-visit'
 
 /**
@@ -38,11 +61,11 @@ const cssVariablesTheme: ThemeRegistration = {
 
 const FALLBACK_LANGUAGE = 'txt'
 
-let highlighterPromise: Promise<Highlighter> | null = null
+let highlighterPromise: Promise<HighlighterCore> | null = null
 
-function getHighlighter(): Promise<Highlighter> {
+function getHighlighter(): Promise<HighlighterCore> {
   if (!highlighterPromise) {
-    highlighterPromise = createHighlighter({
+    highlighterPromise = createHighlighterCore({
       // Workers disallow runtime WebAssembly code generation. Shiki's
       // JavaScript regex engine preserves highlighting without Oniguruma WASM.
       engine: createJavaScriptRegexEngine({
@@ -52,7 +75,29 @@ function getHighlighter(): Promise<Highlighter> {
           defaultJavaScriptRegexConstructor(pattern, { lazyCompileLength: Infinity }),
       }),
       themes: [cssVariablesTheme],
-      langs: [FALLBACK_LANGUAGE],
+      // Plaintext is built into core; every grammar ships explicitly so the
+      // bundle carries exactly this set and nothing else.
+      langs: [
+        langBash,
+        langCss,
+        langDiff,
+        langDocker,
+        langGo,
+        langHtml,
+        langJavascript,
+        langJson,
+        langJsonc,
+        langJsx,
+        langMarkdown,
+        langMdx,
+        langPython,
+        langRust,
+        langSql,
+        langToml,
+        langTsx,
+        langTypescript,
+        langYaml,
+      ],
     })
   }
   return highlighterPromise
@@ -75,16 +120,13 @@ function normalizeLanguage(language?: string) {
  * Ensure a language grammar is loaded; fall back to plaintext for unknown or
  * unsupported languages so an exotic code fence never breaks the page.
  */
-async function resolveLanguage(highlighter: Highlighter, language: string): Promise<string> {
-  if (highlighter.getLoadedLanguages().includes(language)) {
-    return language
-  }
-  try {
-    await highlighter.loadLanguage(language as Parameters<Highlighter['loadLanguage']>[0])
-    return language
-  } catch {
-    return FALLBACK_LANGUAGE
-  }
+function resolveLanguage(highlighter: HighlighterCore, language: string): string {
+  // Core carries only the curated grammar set — no dynamic registry to load
+  // from — so anything outside it degrades to plaintext, the same contract an
+  // unknown language always had.
+  return highlighter.getLoadedLanguages().includes(language)
+    ? language
+    : FALLBACK_LANGUAGE
 }
 
 const HTML_ESCAPES: Record<string, string> = {
@@ -249,9 +291,9 @@ function rehypeShiki() {
     })
 
     for (const target of targets) {
-      const language = await resolveLanguage(highlighter, target.language)
+      const language = resolveLanguage(highlighter, target.language)
       const lines = highlighter.codeToTokensBase(target.code, {
-        lang: language as Parameters<Highlighter['codeToTokensBase']>[1]['lang'],
+        lang: language as Parameters<HighlighterCore['codeToTokensBase']>[1]['lang'],
         theme: cssVariablesTheme,
       })
       const highlightSpec = target.node.properties?.highlightLines as string | undefined

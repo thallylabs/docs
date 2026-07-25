@@ -1,6 +1,9 @@
 import { type NextRequest } from 'next/server'
 import { getDocEntries, getI18nConfig, getNavContext } from '@/data/docs'
-import { mdxToMarkdown } from '@thallylabs/core'
+// Vendored module instead of the @thallylabs/core barrel — a value import
+// of core bloats the Worker bundle past the managed size budget (see
+// src/lib/content/document.ts).
+import { mdxToMarkdown } from '@/lib/content/to-markdown'
 import { loadContentDocument } from '@/lib/content'
 import { buildDocPageJsonLd } from '@/lib/json-ld'
 import { getSiteUrl } from '@/lib/site-url'

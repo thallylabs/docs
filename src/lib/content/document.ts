@@ -9,7 +9,14 @@
  */
 
 import matter from 'gray-matter'
-import { parseMdxContent, type ContentDocument } from '@thallylabs/core'
+// parseMdxContent comes from the template's vendored parser rather than the
+// @thallylabs/core barrel: core ships no lean subpath exports and no
+// sideEffects marker, so one value import drags its entire compiled dist —
+// including a second copy of the render pipeline — into the Worker bundle,
+// which pushed fresh scaffolds past the managed 32 MiB module budget. The
+// type import is erased at build time and stays on core, the contract owner.
+import { parseMdxContent } from '@/lib/content/parse'
+import type { ContentDocument } from '@thallylabs/core'
 import {
   readRuntimeSource,
   runtimeSourceExists,
