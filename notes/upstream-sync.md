@@ -78,6 +78,26 @@ Sync is therefore a **manual, one-way, per-commit review**, not a merge.
 These are changes where this repository differs from the engine **on purpose**.
 Do not "fix" them by porting the engine version.
 
+### Frontmatter is parsed only through `src/lib/frontmatter.ts`
+
+The template is **ahead of the engine** here, and the divergence is a security
+fix, not a style preference. gray-matter picks its parser from the language
+token on the opening delimiter, and its `javascript` engine parses with `eval`.
+Content beginning with `---js` therefore executed — confirmed by running a
+probe file through `npm run runtime-sources:build`, which `prebuild` invokes
+inside the managed build container, where deploy credentials live.
+
+Every call site here routes through `parseFrontmatter` / `stringifyFrontmatter`
+instead of importing gray-matter directly. Do not reintroduce a bare `matter(`
+call while porting an engine commit, and note that gray-matter's `language`
+option does **not** close this — a language declared by the content wins over
+the option, so the engines themselves must be replaced.
+
+Until the engine ships its own version of this fix, engine commits touching
+`src/data/docs.ts`, `src/lib/content/document.ts`, `src/lib/provenance.ts`,
+`src/app/llms-full.txt/route.ts`, `scripts/build-runtime-sources.mts`, or
+`src/lib/mdx-interpret.tsx` must be adapted onto the helper rather than copied.
+
 ### The template vendors what the engine imports from `@thallylabs/core`
 
 The engine depends on `@thallylabs/core@^0.2.0`, built from its own workspace.
