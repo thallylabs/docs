@@ -27,7 +27,7 @@ const SAFE_ENGINES = {
   js: () => ({}),
 } as const
 
-export const FRONTMATTER_OPTIONS = { engines: SAFE_ENGINES } as const
+const FRONTMATTER_OPTIONS = { engines: SAFE_ENGINES } as const
 
 /**
  * Parse frontmatter without any code execution. Same shape gray-matter
