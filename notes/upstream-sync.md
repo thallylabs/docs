@@ -15,6 +15,12 @@ with the engine repository (`thallylabs/thally`) worth writing down.
 "Merge pull request #36 from thallylabs/fix/interpreter-hardening").
 Update this line whenever a sync pass completes.
 
+That review covered `src/` (including `src/middleware.ts`, `src/config/`,
+`src/styles/`, `src/test/`), `scripts/`, and the root config files. It did
+**not** cover `packages/` — this repository tracks no package source and
+consumes `@thallylabs/{core,mcp}` from npm, so engine package work reaches a
+site through a release, not through this repository.
+
 ## There is deliberately no `upstream` remote
 
 The obvious setup — add `thallylabs/thally` as `upstream` and `git merge` it
@@ -48,8 +54,11 @@ Sync is therefore a **manual, one-way, per-commit review**, not a merge.
 
    ```bash
    git -C /tmp/thally-engine log --oneline --no-merges 170e204..main -- \
-     src/app src/components src/data src/lib src/mdx src/middleware.ts
+     src scripts next.config.ts open-next.config.ts mdx-components.tsx
    ```
+
+   A commit that only touches `packages/` is not a template concern; it
+   arrives through a published release instead.
 
 3. Classify each commit against the divergence list below:
 
@@ -143,6 +152,9 @@ which is why the engine's top bar wraps `CommandSearch` in `<Suspense>`.
 `src/content/**`, `docs.json`, `src/data/site.ts`, `README.md`, and
 `public/images/` are this site's own. The engine's copies are its own product
 docs. These are never synced in either direction.
+
+`scripts/seo-conformance.ts` exists only here, and `package.json` invokes the
+scripts as `node --import tsx …` rather than bare `tsx`. Both are deliberate.
 
 ## Known engine gaps (the debt runs both ways)
 
