@@ -18,7 +18,7 @@ import {
 } from 'node:fs'
 import path from 'node:path'
 import { compile } from '@mdx-js/mdx'
-import matter from 'gray-matter'
+import { parseFrontmatter } from '../src/lib/frontmatter'
 // tsx exposes these extensionless TypeScript modules through CJS interop when
 // this generator runs as ESM. Their declared shape still has named exports.
 // @ts-expect-error -- runtime interop intentionally provides the default object
@@ -109,7 +109,7 @@ async function writeCompiledDocs(): Promise<number> {
     const moduleName = `RuntimeDoc${index}`
     const frontmatterName = `RuntimeFrontmatter${index}`
     const modulePath = path.join(compiledDocsDirectory, `doc-${index}.tsx`)
-    const parsed = matter(entry.content)
+    const parsed = parseFrontmatter(entry.content)
     const mdxSource = parsed.content.replace(snippetImportPattern, '')
     const program = await compile(mdxSource, {
       outputFormat: 'program',

@@ -1,4 +1,5 @@
-import matter from 'gray-matter'
+import type matter from 'gray-matter'
+import { parseFrontmatter } from '@/lib/frontmatter'
 
 /**
  * Frontmatter keys that are **internal provenance** — the mechanism `thally check
@@ -21,7 +22,7 @@ export const INTERNAL_FRONTMATTER_KEYS = ['sources', 'verifiedCommit'] as const
 export function stripInternalFrontmatter(raw: string): string {
   let parsed: matter.GrayMatterFile<string>
   try {
-    parsed = matter(raw)
+    parsed = parseFrontmatter(raw)
   } catch {
     return raw
   }

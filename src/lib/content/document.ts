@@ -8,7 +8,7 @@
  * source map on the legacy sync path.
  */
 
-import matter from 'gray-matter'
+import { parseFrontmatter } from '@/lib/frontmatter'
 // parseMdxContent comes from the template's vendored parser rather than the
 // @thallylabs/core barrel: core ships no lean subpath exports and no
 // sideEffects marker, so one value import drags its entire compiled dist —
@@ -63,7 +63,7 @@ function parseDocument(
   const cached = documentCache.get(cacheKey)
   if (cached?.modifiedAtMs === modifiedAtMs) return cached.document
 
-  const { data, content } = matter(raw)
+  const { data, content } = parseFrontmatter(raw)
   const document: ContentDocument = {
     pageId,
     frontmatter: data,
