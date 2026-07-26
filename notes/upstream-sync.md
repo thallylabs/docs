@@ -11,9 +11,13 @@ Nothing here is versioned or pinned. Whatever lands on `main` reaches the next
 scaffold and the next managed site immediately. That makes the relationship
 with the engine repository (`thallylabs/thally`) worth writing down.
 
-**Last engine commit reviewed for divergence: `170e204`** (2026-07-26,
-"Merge pull request #36 from thallylabs/fix/interpreter-hardening").
+**Last engine commit reviewed for divergence: `4b9a63c`** (2026-07-26,
+"Merge pull request #37 from thallylabs/claude/sleepy-nightingale-bdaa48").
 Update this line whenever a sync pass completes.
+
+`4b9a63c` is the engine's frontmatter hardening. The template already carried
+the equivalent fix (#25), so nothing needed porting from it — see the
+frontmatter entry under intentional divergences.
 
 That review covered `src/` (including `src/middleware.ts`, `src/config/`,
 `src/styles/`, `src/test/`), `scripts/`, and the root config files. It did
@@ -102,10 +106,18 @@ call while porting an engine commit, and note that gray-matter's `language`
 option does **not** close this — a language declared by the content wins over
 the option, so the engines themselves must be replaced.
 
-Until the engine ships its own version of this fix, engine commits touching
-`src/data/docs.ts`, `src/lib/content/document.ts`, `src/lib/provenance.ts`,
-`src/app/llms-full.txt/route.ts`, `scripts/build-runtime-sources.mts`, or
-`src/lib/mdx-interpret.tsx` must be adapted onto the helper rather than copied.
+**This is no longer a divergence.** `thallylabs/thally#37` shipped the same fix
+engine-side with an identical API — `parseFrontmatter(raw)` and
+`stringifyFrontmatter(body, data)` — so the two repositories agree and engine
+commits in these files port normally again. The entry stays as the record of
+why the helper exists, so nobody "simplifies" it back into a bare `matter()`
+call on either side.
+
+The engine went further than the template needed to: it also covers
+`packages/{mcp,create-thally-docs,migrate,core}`, which parse authored content
+on maintainer machines, in CI over contributor pull requests, and from scraped
+third-party pages. Those have no counterpart here — a site consumes them as
+published packages, so this repository picks the fix up through a release.
 
 ### The template vendors what the engine imports from `@thallylabs/core`
 
