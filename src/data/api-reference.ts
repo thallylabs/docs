@@ -99,7 +99,6 @@ export async function getApiOperationByKey(
 
 export async function buildApiNavigation(specId?: string): Promise<Array<ApiNavigationGroup>> {
   if (apiReferenceConfig.specs.length === 0) return []
-  if (apiReferenceConfig.specs.length === 0) return []
   const spec = await getNormalizedSpec(specId)
   const nodes = await getApiOperationNodes(spec.config.id)
   const groupMap = new Map<string, Array<ApiNavigationItem>>()
