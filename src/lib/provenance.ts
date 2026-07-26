@@ -1,5 +1,5 @@
 import type matter from 'gray-matter'
-import { parseFrontmatter } from '@/lib/frontmatter'
+import { parseFrontmatter, stringifyFrontmatter } from '@/lib/frontmatter'
 
 /**
  * Frontmatter keys that are **internal provenance** — the mechanism `thally check
@@ -32,5 +32,5 @@ export function stripInternalFrontmatter(raw: string): string {
 
   const clean: Record<string, unknown> = { ...data }
   for (const key of INTERNAL_FRONTMATTER_KEYS) delete clean[key]
-  return matter.stringify(parsed.content, clean)
+  return stringifyFrontmatter(parsed.content, clean)
 }

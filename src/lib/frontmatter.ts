@@ -30,3 +30,8 @@ export const FRONTMATTER_OPTIONS = { engines: SAFE_ENGINES } as const
 export function parseFrontmatter(raw: string): matter.GrayMatterFile<string> {
   return matter(raw, FRONTMATTER_OPTIONS)
 }
+
+/** Serialize a document back to YAML frontmatter plus body. */
+export function stringifyFrontmatter(content: string, data: Record<string, unknown>): string {
+  return matter.stringify(content, data)
+}
