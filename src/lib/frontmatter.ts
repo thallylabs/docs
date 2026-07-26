@@ -3,10 +3,16 @@
  *
  * gray-matter dispatches on the language token of the opening delimiter, so
  * `---js` selects an engine whose parser is literally `eval`. Content arrives
- * from customer repositories and is parsed both at request time and during
- * `prebuild` inside the managed build container — which holds deploy
- * credentials — so a defaulted `matter()` call is a code-execution sink, not a
- * formatting quirk.
+ * from customer repositories and is parsed at request time and during
+ * `prebuild`, so a defaulted `matter()` call executes authored content rather
+ * than reading it.
+ *
+ * Where that lands depends on who runs the build. Sites built in their own CI
+ * run it beside whatever credentials that pipeline holds. Thally's managed
+ * builder is sandboxed — a fixed credential-free environment and a three-host
+ * egress allowlist — so there the exposure is the site's own npm/`.next` cache
+ * backup, which later builds of that site restore and trust, giving one
+ * crafted commit persistence across builds.
  *
  * Note that `{ language: 'yaml' }` does NOT close this: a language declared by
  * the content wins over the option. The engines themselves must be replaced.

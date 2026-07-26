@@ -97,8 +97,10 @@ The template is **ahead of the engine** here, and the divergence is a security
 fix, not a style preference. gray-matter picks its parser from the language
 token on the opening delimiter, and its `javascript` engine parses with `eval`.
 Content beginning with `---js` therefore executed — confirmed by running a
-probe file through `npm run runtime-sources:build`, which `prebuild` invokes
-inside the managed build container, where deploy credentials live.
+probe file through `npm run runtime-sources:build`, which `prebuild` invokes.
+Sites built in their own CI run that beside whatever credentials the pipeline
+holds; Thally's managed builder is sandboxed and credential-free, so there the
+exposure is the site's own cache backup, which later builds restore and trust.
 
 Every call site here routes through `parseFrontmatter` / `stringifyFrontmatter`
 instead of importing gray-matter directly. Do not reintroduce a bare `matter(`
