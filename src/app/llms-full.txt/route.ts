@@ -1,5 +1,5 @@
 import path from 'node:path'
-import matter from 'gray-matter'
+import { parseFrontmatter } from '@/lib/frontmatter'
 import { siteConfig } from '@/data/site'
 import { getDocEntries, getSidebarCollections } from '@/data/docs'
 import { ensureDynamicContentRendering, getContentSource } from '@/lib/content-source'
@@ -18,7 +18,7 @@ async function readRawContent(pageId: string): Promise<string | null> {
   for (const filePath of candidates) {
     const file = await source.read(filePath)
     if (file) {
-      const { content } = matter(file.content)
+      const { content } = parseFrontmatter(file.content)
       // Strip JSX component tags but keep their text content
       return content
         .replace(/<\/?(?:Steps|Step|Tabs|Tab|Note|Callout|CodeGroup|CardGroup|Card|Frame|Accordion|Columns|Tooltip)[^>]*>/g, '')
