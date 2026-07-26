@@ -111,11 +111,21 @@ async function writeCompiledDocs(): Promise<number> {
     const modulePath = path.join(compiledDocsDirectory, `doc-${index}.tsx`)
     const parsed = matter(entry.content)
     const mdxSource = parsed.content.replace(snippetImportPattern, '')
-    const program = await compile(mdxSource, {
-      outputFormat: 'program',
-      remarkPlugins,
-      rehypePlugins,
-    })
+    // MDX compile errors carry a position but not the file, so an unwrapped
+    // failure reads as an anonymous syntax error somewhere in the build.
+    let program
+    try {
+      program = await compile(mdxSource, {
+        outputFormat: 'program',
+        remarkPlugins,
+        rehypePlugins,
+      })
+    } catch (error) {
+      throw new Error(
+        `Failed to compile runtime MDX ${filePath}: ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error },
+      )
+    }
 
     writeFileSync(
       modulePath,
