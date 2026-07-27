@@ -46,7 +46,9 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3040](http://localhost:3040).
+Open [http://localhost:3040](http://localhost:3040). If port 3040 is already
+taken, the dev server falls back to the next free port and prints the URL it
+started on.
 
 ## Canonical site source
 

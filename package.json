@@ -5,7 +5,7 @@
   "license": "MIT",
   "scripts": {
     "predev": "npm run runtime-sources:build",
-    "dev": "next dev -p 3040",
+    "dev": "node --import tsx scripts/dev.mts",
     "postinstall": "npm run runtime-sources:build",
     "prebuild": "npm run runtime-sources:build && npm run embeddings:build",
     "build": "next build",
