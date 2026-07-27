@@ -53,13 +53,17 @@ Para una URL pública, Thally descubre el sitemap, la navegación renderizada, l
 
 **Plataformas fuente compatibles:** Mintlify, Docusaurus, GitBook, Nextra, VitePress, Starlight y cualquier repositorio con archivos Markdown simples.
 
+<Note type="info" title="Usa el repositorio para la detección automática">
+  Un repositorio de GitHub es la fuente recomendada porque expone el contenido, la navegación, los assets, los archivos OpenAPI, las redirecciones y la configuración originales.
+</Note>
+
 ### Ejemplos
 
 ```bash
-# Migrar a un nuevo proyecto en ./my-docs
+# Recomendado: detectar la plataforma desde el repositorio fuente
 npx create-thally-docs migrate https://github.com/org/repo my-docs
 
-# Elegir la plataforma fuente de forma interactiva
+# Usar el sitio público cuando el repositorio no está disponible
 npx create-thally-docs migrate https://relay.dev/ relay-docs --max-pages 1000
 
 # Ejecutar la misma migración Docusaurus sin prompts
@@ -94,10 +98,10 @@ npx create-thally-docs migrate https://github.com/org/repo --into ./existing-doc
 | `--platform <name>` | Seleccionar `mintlify`, `docusaurus` o `auto` |
 | `--max-pages <count>` | Máximo de páginas públicas que se importarán (`1`–`1000`) |
 | `--api-key <key>` | Clave API de Anthropic para convertir archivos que no son Markdown (p. ej. `.rst`). Usa como alternativa la variable de entorno `ANTHROPIC_API_KEY` |
-| `--yes`, `-y` | Aceptar valores predeterminados y omitir todos los prompts, incluida la plataforma |
+| `--yes`, `-y` | Aceptar valores predeterminados y las limitaciones del sitio público, y omitir todos los prompts |
 
 <Warning>
-Si omites `--platform` y `--yes`, la CLI pregunta qué plataforma aloja la documentación. Si usas `--yes` sin `--platform`, utiliza detección automática.
+Si una migración interactiva con detección automática comienza desde una URL pública, la CLI ofrece cambiar al flujo recomendado desde GitHub. Continuar con la URL requiere confirmar que el resultado puede necesitar ajustes manuales y recomienda usar el servidor MCP de Thally para completar esos ajustes en un PR. `--platform auto` y `--yes` siguen siendo no interactivos y muestran la misma advertencia.
 </Warning>
 
 ### Mapeo de componentes

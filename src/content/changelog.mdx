@@ -5,6 +5,17 @@ description: Track notable improvements to the Thally template.
 
 ## Latest releases
 
+<Update label="Repository-first migrations" date="2026-07-28">
+
+- Auto-platform CLI migrations now recommend a GitHub repository because the original source preserves more navigation, assets, OpenAPI metadata, redirects, and MDX structure than browser output.
+- Interactive live-URL migrations offer a repository handoff before requiring acknowledgment that the result may need manual alignment. Scripted `--platform auto` and `--yes` runs remain non-interactive and print the same warning.
+- MCP `migrate_docs` now always scaffolds the current canonical Thally template into a new or empty directory before importing content.
+- MCP `import_docs` is the explicit tool for merging documentation into an existing Thally project.
+
+See [Migrate and publish existing documentation](/guides/migrating), the [CLI reference](/guides/cli-reference), and the [MCP server guide](/guides/mcp-server).
+
+</Update>
+
 <Update label="Docusaurus migration support" date="2026-07-22">
 
 - `create-thally-docs migrate` now asks whether Mintlify or Docusaurus hosts the source documentation, with `--platform` for scripts and CI.

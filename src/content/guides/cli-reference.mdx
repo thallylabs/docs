@@ -53,13 +53,17 @@ For repository sources, Thally clones and reads the source content directly. For
 
 **Supported source platforms:** Mintlify, Docusaurus, GitBook, Nextra, VitePress, Starlight, and any repo with plain Markdown files.
 
+<Note type="info" title="Use the repository for auto-detection">
+  A GitHub repository is the recommended source for auto-platform migrations because it exposes the original content, navigation, assets, OpenAPI files, redirects, and configuration.
+</Note>
+
 ### Examples
 
 ```bash
-# Migrate a live documentation site
-npx create-thally-docs migrate https://docs.example.com example-docs
+# Recommended: auto-detect from the source repository
+npx create-thally-docs migrate https://github.com/org/repo my-docs
 
-# Choose Mintlify, Docusaurus, or auto-detection interactively
+# Use a live site when the repository is unavailable
 npx create-thally-docs migrate https://relay.dev/ relay-docs --max-pages 1000
 
 # Run the same Docusaurus migration without prompts
@@ -67,9 +71,6 @@ npx create-thally-docs migrate https://relay.dev/ relay-docs --platform docusaur
 
 # Trial a large live site with at most 100 pages
 npx create-thally-docs migrate https://docs.example.com example-docs --max-pages 100
-
-# Migrate into a new project at ./my-docs
-npx create-thally-docs migrate https://github.com/org/repo my-docs
 
 # Derive the output dir from the repo name
 npx create-thally-docs migrate https://github.com/mintlify/starter
@@ -100,10 +101,10 @@ npx create-thally-docs migrate https://github.com/org/repo --into ./existing-doc
 | `--docs-dir <path>` | Override the auto-detected docs subdirectory |
 | `--platform <name>` | Select `mintlify`, `docusaurus`, or `auto` |
 | `--api-key <key>` | Anthropic API key for converting non-Markdown files (e.g. `.rst`). Falls back to `ANTHROPIC_API_KEY` env var |
-| `--yes`, `-y` | Accept defaults and skip all prompts, including platform selection |
+| `--yes`, `-y` | Accept defaults and live-site limitations, then skip all prompts |
 
 <Warning>
-If you omit both `--platform` and `--yes`, the CLI asks which platform currently hosts the docs. If you pass `--yes` without `--platform`, it uses auto-detection.
+If an interactive auto-platform migration starts from a live URL, the CLI offers to switch to the recommended GitHub repository flow. Continuing with the URL requires confirmation that the result may need manual alignment and suggests using the Thally MCP server to finish the alignment in a PR. `--platform auto` and `--yes` remain non-interactive and print the same warning.
 </Warning>
 
 ### Component mapping
