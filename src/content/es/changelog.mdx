@@ -3,6 +3,17 @@ title: Registro de cambios
 description: Seguimiento de mejoras notables en la plantilla Thally.
 ---
 
+<Update label="Migraciones desde el repositorio" date="2026-07-28">
+
+- Las migraciones con detección automática ahora recomiendan un repositorio de GitHub porque conserva más información original que el sitio desplegado.
+- Las migraciones interactivas desde una URL pública ofrecen cambiar al repositorio antes de solicitar la aceptación de posibles ajustes manuales. `--platform auto` y `--yes` continúan sin interacción y muestran la misma advertencia.
+- `migrate_docs` del MCP siempre crea primero la plantilla canónica actual de Thally en un directorio nuevo o vacío.
+- `import_docs` del MCP es la herramienta explícita para fusionar documentación en un proyecto Thally existente.
+
+Consulta [Migrando a Thally](/guides/migrating), la [Referencia CLI](/guides/cli-reference) y la guía del [Servidor MCP](/guides/mcp-server).
+
+</Update>
+
 <Update label="Migraciones desde Docusaurus" date="2026-07-22">
 
 - `create-thally-docs migrate` ahora pregunta si Mintlify o Docusaurus aloja la documentación, con `--platform` para scripts y CI.

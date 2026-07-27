@@ -153,22 +153,31 @@ Show me all the pages in my docs project
 
 #### `migrate_docs`
 
-Imports a public docs site or GitHub docs repository into a Thally project.
+Creates a new Thally project from the current canonical template, then imports a public docs site or GitHub docs repository into it. The target directory must be new or empty; the tool never reuses an existing site's runtime.
 
 ```
-Migrate https://relay.dev/ as a Docusaurus site into a new project at /tmp/relay-docs
+Migrate https://github.com/example/docs into a new Thally project at /tmp/example-docs
 ```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `sourceUrl` | Yes | Public docs URL or GitHub repository URL |
-| `projectDir` | Yes | Target path (new project or existing) |
-| `into` | No | Migrate into an existing project (default: `false`) |
+| `projectDir` | Yes | New or empty target directory |
 | `branch` | No | Git branch to clone (auto-detected by default) |
 | `docsDir` | No | Docs subdirectory in the repo (auto-detected) |
 | `platform` | No | `mintlify` or `docusaurus`; omit for auto-detection |
 | `maxPages` | No | Maximum number of live-site pages to import (`1`–`1000`) |
 | `apiKey` | No | Anthropic API key for non-Markdown conversion |
+
+#### `import_docs`
+
+Imports documentation into an existing Thally project without replacing its runtime. Use this tool only when you intentionally want an in-place content and navigation merge.
+
+```
+Import https://github.com/example/api-docs into the existing Thally project at /workspace/docs
+```
+
+The source options match `migrate_docs`; `projectDir` must point to an existing Thally project.
 
 ---
 
