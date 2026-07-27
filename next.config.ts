@@ -34,13 +34,15 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     externalDir: true,
-    // Persist Turbopack's compiler cache under .next/cache so warm builds —
-    // local rebuilds, CI with cache restore, and Thally-managed deploys that
-    // restore .next/cache between publishes — skip recompiling unchanged
-    // modules. Still marked experimental for production builds by Next, so
-    // THALLY_DISABLE_BUILD_CACHE=1 opts out without editing this file.
-    turbopackFileSystemCacheForBuild:
-      process.env.THALLY_DISABLE_BUILD_CACHE !== '1',
+    // Turbopack's persistent build cache is deliberately NOT enabled here.
+    // Measured on this site: it saves about 6s of compile while growing
+    // .next/cache from ~560 KB to ~250 MB. Managed publishes snapshot and
+    // restore that directory per site, so the transfer costs more than the
+    // compile it saves — and Next still marks the flag experimental for
+    // production builds, with restores from a divergent commit able to serve
+    // stale prerendered HTML. Publishing a customer's docs with stale pages is
+    // a correctness failure, not a slow build. Revisit once the flag is stable
+    // (Next 16.3+) and only with a cache key that cannot span commits.
   },
   async redirects() {
     return [
