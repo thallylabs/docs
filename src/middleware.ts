@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextFetchEvent, NextRequest } from 'next/server'
-import docsNavigationConfig from '../docs.json' assert { type: 'json' }
+import { getDocsJsonConfig } from '@/lib/docs-config'
 import {
   ADMIN_SESSION_COOKIE,
   DOCS_ACCESS_COOKIE,
@@ -16,10 +16,12 @@ import { verifySession, SESSION_COOKIE } from '@/lib/auth/session'
 import { getCloudAccessConfigEdge, getManagedSiteIdEdge } from '@/lib/cloud-link/edge'
 import type { DocsJsonConfig } from '@/data/docs'
 
+const docsJsonConfig = getDocsJsonConfig()
+
 // JSON imports infer only properties present in the current site. Widen the
 // author-owned config before reading optional fields so monolingual migrated
 // sites remain type-safe when they omit `i18n` entirely.
-const configuredI18n = (docsNavigationConfig as DocsJsonConfig).i18n
+const configuredI18n = (docsJsonConfig as DocsJsonConfig).i18n
 const defaultLocale = configuredI18n?.defaultLocale ?? 'en'
 const localeCodes = new Set(configuredI18n?.locales.map(({ code }) => code) ?? [defaultLocale])
 

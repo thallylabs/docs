@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
 import { parseFrontmatter } from '@/lib/frontmatter'
-import docsNavigationConfig from '../../docs.json' assert { type: 'json' }
+import { getDocsJsonConfig } from '@/lib/docs-config'
 import { listRuntimeSources, readRuntimeSource, runtimeSourceExists } from '@/lib/runtime-sources'
 
 // ---------------------------------------------------------------------------
@@ -257,7 +257,7 @@ export interface TrackingConfig {
 // ---------------------------------------------------------------------------
 
 const CONTENT_ROOT = 'src/content'
-const docsConfig = docsNavigationConfig as unknown as DocsJsonConfig
+const docsConfig = getDocsJsonConfig() as DocsJsonConfig
 
 interface FrontmatterData {
   title?: string
