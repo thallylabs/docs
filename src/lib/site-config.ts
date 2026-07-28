@@ -44,7 +44,12 @@ export async function resolveSiteConfig(siteUrl?: string): Promise<SiteConfig> {
       ...siteConfig,
       name: details?.name ?? s.siteName ?? siteConfig.name,
       description: details?.description ?? s.siteDescription ?? siteConfig.description,
-      repoUrl: s.siteRepoUrl ?? siteConfig.repoUrl ?? '',
+      // Cloud-delivered first, so a managed release can carry a site's own
+      // repository without it being compiled into the bundle. Admin settings
+      // and the checked-in default still win for self-hosted deployments,
+      // which never receive a cloud config.
+      repoUrl: details?.repoUrl ?? s.siteRepoUrl ?? siteConfig.repoUrl ?? '',
+      links: details?.links ?? siteConfig.links,
     }
   } catch {
     return siteConfig

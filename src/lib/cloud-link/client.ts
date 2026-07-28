@@ -40,7 +40,20 @@ export interface CloudEntitlements {
 }
 
 export interface CloudPortableConfig {
-  details?: { name?: string; description?: string }
+  /**
+   * Site identity delivered per release rather than compiled in.
+   *
+   * `repoUrl` and `links` join `name` and `description` here so that nothing a
+   * managed site displays about itself lives in the bundle. That is what lets
+   * one prebuilt artifact serve any site: everything site-specific arrives as
+   * a binding or an asset.
+   */
+  details?: {
+    name?: string
+    description?: string
+    repoUrl?: string
+    links?: Array<{ label: string; href: string }>
+  }
   feedback?: {
     thumbsRating?: boolean
     editSuggestions?: boolean
