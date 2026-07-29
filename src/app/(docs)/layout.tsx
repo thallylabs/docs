@@ -1,9 +1,15 @@
 import { SiteShell } from '@/components/layout/site-shell'
 import { SidebarCollectionsHydrator } from '@/components/layout/sidebar-hydrator'
-import { getSidebarCollections, getAiConfig, getI18nConfig, getNavbarConfig, getFooterConfig } from '@/data/docs'
+import {
+  getSidebarCollections,
+  getAiConfig,
+  getNavbarConfig,
+  getFooterConfig,
+} from '@/data/docs'
 import type { NavigationSection } from '@/data/docs'
 import { buildApiNavigation } from '@/data/api-reference'
 import { DocsChatLauncher } from '@/components/docs/docs-chat-launcher'
+import { getEffectiveI18nConfig } from '@/lib/i18n/request'
 
 interface DocsLayoutProps {
   children: React.ReactNode
@@ -33,7 +39,7 @@ export default async function DocsLayout({ children }: DocsLayoutProps) {
     return collection
   })
   const aiConfig = getAiConfig()
-  const i18nConfig = getI18nConfig()
+  const i18nConfig = await getEffectiveI18nConfig()
   const navbarConfig = getNavbarConfig()
   const footerConfig = getFooterConfig()
 

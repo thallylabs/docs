@@ -11,8 +11,8 @@ Nothing here is versioned or pinned. Whatever lands on `main` reaches the next
 scaffold and the next managed site immediately. That makes the relationship
 with the engine repository (`thallylabs/thally`) worth writing down.
 
-**Last engine commit reviewed for divergence: `4b9a63c`** (2026-07-26,
-"Merge pull request #37 from thallylabs/claude/sleepy-nightingale-bdaa48").
+**Last engine commit reviewed for divergence: `a4cc260`** (2026-07-29,
+"feat(i18n): add configurable language support").
 Update this line whenever a sync pass completes.
 
 `4b9a63c` is the engine's frontmatter hardening. The template already carried
@@ -38,7 +38,7 @@ periodically — is the wrong one here, for three reasons.
    `workspaces` field, and `notes/`. A site consumes those as published
    packages. Inheriting the sources would break the scaffold contract — which
    is why `create-thally-docs` strips `/packages` and `/notes/` on the way out.
-3. **Divergence runs both ways.** This repository is *ahead* of the engine on
+3. **Divergence runs both ways.** This repository is _ahead_ of the engine on
    several deliberate changes (see below). A merge from the engine would
    silently revert them, and the regressions would ship straight into every new
    site.
@@ -65,7 +65,6 @@ Sync is therefore a **manual, one-way, per-commit review**, not a merge.
    arrives through a published release instead.
 
 3. Classify each commit against the divergence list below:
-
    - **Engine fix the template lacks** → cherry-pick by hand into a branch here.
      Apply the change, not the commit: paths match, but surrounding code often
      does not.
@@ -161,6 +160,12 @@ engine still inlines a narrower version of this. `src/lib/site-url.ts` is also
 richer here: it resolves managed-deployment origins (`NETLIFY`, `VERCEL`,
 `CF_PAGES` and their URL vars), normalizes host-only values to HTTPS, and
 refuses to generate production metadata from a local origin.
+
+The request-time localization contract from `thallylabs/thally#44` is now
+ported here while preserving those richer template surfaces. Cloud-selected
+locales drive navigation immediately; crawler alternates and sitemap entries
+remain limited to authored translations, and source-content fallbacks keep the
+English canonical with `noindex`.
 
 `src/middleware.ts` forwards an `x-thally-locale` request header and classifies
 cacheable docs pages. Neither exists in the engine.

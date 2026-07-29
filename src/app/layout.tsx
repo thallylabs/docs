@@ -4,7 +4,12 @@ import Script from 'next/script'
 import './globals.css'
 import { Providers } from '@/app/providers'
 import { siteConfig } from '@/data/site'
-import { getBannerConfig, getCustomScriptsConfig, getFontsConfig, getI18nConfig, getStructuralTheme } from '@/data/docs'
+import {
+  getBannerConfig,
+  getCustomScriptsConfig,
+  getFontsConfig,
+  getStructuralTheme,
+} from '@/data/docs'
 import { cn } from '@/lib/utils'
 import { toHslValue } from '@/lib/colors'
 import { THEME_VARS } from '@/lib/theme-vars'
@@ -15,6 +20,8 @@ import { JsonLdScript } from '@/components/seo/json-ld-script'
 import { AnalyticsProvider } from '@/components/analytics/analytics-provider'
 import { SiteBanner } from '@/components/layout/site-banner'
 import { WebMcpTools } from '@/components/agent/web-mcp-tools'
+import { localeDirection } from '@/lib/i18n/config'
+import { getEffectiveI18nConfig } from '@/lib/i18n/request'
 
 // Default fonts via next/font (optimal performance — preloaded, no FOUC).
 // The Thally brand pairs Inter (body) with Plus Jakarta Sans (display —
@@ -58,14 +65,20 @@ let headingFontFamily: string | null = null
 if (fontsConfig.body?.family) {
   bodyFontFamily = fontsConfig.body.family
   googleFontUrlSet.add(
-    buildGoogleFontsUrl(fontsConfig.body.family, fontsConfig.body.weight ?? ['400', '500', '600', '700']),
+    buildGoogleFontsUrl(
+      fontsConfig.body.family,
+      fontsConfig.body.weight ?? ['400', '500', '600', '700'],
+    ),
   )
 }
 
 if (fontsConfig.heading?.family) {
   headingFontFamily = fontsConfig.heading.family
   googleFontUrlSet.add(
-    buildGoogleFontsUrl(fontsConfig.heading.family, fontsConfig.heading.weight ?? ['600', '700']),
+    buildGoogleFontsUrl(
+      fontsConfig.heading.family,
+      fontsConfig.heading.weight ?? ['600', '700'],
+    ),
   )
 }
 
@@ -74,7 +87,9 @@ const googleFontUrls = Array.from(googleFontUrlSet)
 // CSS variable overrides injected into :root when custom fonts are set
 const fontOverrides = [
   bodyFontFamily ? `--font-sans: '${bodyFontFamily}', sans-serif;` : '',
-  headingFontFamily ? `--font-heading: '${headingFontFamily}', sans-serif;` : '',
+  headingFontFamily
+    ? `--font-heading: '${headingFontFamily}', sans-serif;`
+    : '',
 ]
   .filter(Boolean)
   .join(' ')
@@ -111,7 +126,10 @@ export const metadata: Metadata = {
     // dark variant is uploaded, so both links always resolve.
     icon: [
       { url: '/api/brand/favicon', media: '(prefers-color-scheme: light)' },
-      { url: '/api/brand/favicon?mode=dark', media: '(prefers-color-scheme: dark)' },
+      {
+        url: '/api/brand/favicon?mode=dark',
+        media: '(prefers-color-scheme: dark)',
+      },
     ],
     shortcut: '/api/brand/favicon',
   },
@@ -129,44 +147,86 @@ export const metadata: Metadata = {
     images: [defaultOgImage],
   },
   verification: {
-    ...(process.env.GOOGLE_SITE_VERIFICATION ? { google: process.env.GOOGLE_SITE_VERIFICATION } : {}),
+    ...(process.env.GOOGLE_SITE_VERIFICATION
+      ? { google: process.env.GOOGLE_SITE_VERIFICATION }
+      : {}),
     other: {
-      ...(process.env.BING_SITE_VERIFICATION ? { 'msvalidate.01': process.env.BING_SITE_VERIFICATION } : {}),
+      ...(process.env.BING_SITE_VERIFICATION
+        ? { 'msvalidate.01': process.env.BING_SITE_VERIFICATION }
+        : {}),
     },
   },
 }
 
 const brandStyle: Record<string, string> = {
   '--brand-light-background': toHslValue(siteConfig.brand.light.background),
-  '--brand-light-card': toHslValue(siteConfig.brand.light.card ?? siteConfig.brand.light.background),
+  '--brand-light-card': toHslValue(
+    siteConfig.brand.light.card ?? siteConfig.brand.light.background,
+  ),
   '--brand-light-foreground': toHslValue(siteConfig.brand.light.foreground),
   '--brand-light-muted': toHslValue(siteConfig.brand.light.muted),
-  '--brand-light-muted-foreground': toHslValue(siteConfig.brand.light.mutedForeground ?? siteConfig.brand.light.foreground),
+  '--brand-light-muted-foreground': toHslValue(
+    siteConfig.brand.light.mutedForeground ?? siteConfig.brand.light.foreground,
+  ),
   '--brand-light-border': toHslValue(siteConfig.brand.light.border),
   '--brand-light-accent': toHslValue(siteConfig.brand.light.accent),
-  '--brand-light-accent-foreground': toHslValue(siteConfig.brand.light.accentForeground),
-  '--brand-light-accent-2': toHslValue(siteConfig.brand.light.accent2 ?? siteConfig.brand.light.accent),
-  '--brand-light-accent-2-foreground': toHslValue(siteConfig.brand.light.accent2Foreground ?? siteConfig.brand.light.accentForeground),
-  '--brand-light-input': toHslValue(siteConfig.brand.light.input ?? siteConfig.brand.light.border),
-  '--brand-light-sidebar': toHslValue(siteConfig.brand.light.sidebar ?? siteConfig.brand.light.background),
+  '--brand-light-accent-foreground': toHslValue(
+    siteConfig.brand.light.accentForeground,
+  ),
+  '--brand-light-accent-2': toHslValue(
+    siteConfig.brand.light.accent2 ?? siteConfig.brand.light.accent,
+  ),
+  '--brand-light-accent-2-foreground': toHslValue(
+    siteConfig.brand.light.accent2Foreground ??
+      siteConfig.brand.light.accentForeground,
+  ),
+  '--brand-light-input': toHslValue(
+    siteConfig.brand.light.input ?? siteConfig.brand.light.border,
+  ),
+  '--brand-light-sidebar': toHslValue(
+    siteConfig.brand.light.sidebar ?? siteConfig.brand.light.background,
+  ),
   '--brand-light-ring': toHslValue(siteConfig.brand.light.ring),
-  '--brand-sidebar-active-bg-light': toHslValue(siteConfig.brand.light.sidebarActiveBg),
-  '--brand-sidebar-active-text-light': toHslValue(siteConfig.brand.light.sidebarActiveText),
+  '--brand-sidebar-active-bg-light': toHslValue(
+    siteConfig.brand.light.sidebarActiveBg,
+  ),
+  '--brand-sidebar-active-text-light': toHslValue(
+    siteConfig.brand.light.sidebarActiveText,
+  ),
   '--brand-dark-background': toHslValue(siteConfig.brand.dark.background),
-  '--brand-dark-card': toHslValue(siteConfig.brand.dark.card ?? siteConfig.brand.dark.background),
+  '--brand-dark-card': toHslValue(
+    siteConfig.brand.dark.card ?? siteConfig.brand.dark.background,
+  ),
   '--brand-dark-foreground': toHslValue(siteConfig.brand.dark.foreground),
   '--brand-dark-muted': toHslValue(siteConfig.brand.dark.muted),
-  '--brand-dark-muted-foreground': toHslValue(siteConfig.brand.dark.mutedForeground ?? siteConfig.brand.dark.foreground),
+  '--brand-dark-muted-foreground': toHslValue(
+    siteConfig.brand.dark.mutedForeground ?? siteConfig.brand.dark.foreground,
+  ),
   '--brand-dark-border': toHslValue(siteConfig.brand.dark.border),
   '--brand-dark-accent': toHslValue(siteConfig.brand.dark.accent),
-  '--brand-dark-accent-foreground': toHslValue(siteConfig.brand.dark.accentForeground),
-  '--brand-dark-accent-2': toHslValue(siteConfig.brand.dark.accent2 ?? siteConfig.brand.dark.accent),
-  '--brand-dark-accent-2-foreground': toHslValue(siteConfig.brand.dark.accent2Foreground ?? siteConfig.brand.dark.accentForeground),
-  '--brand-dark-input': toHslValue(siteConfig.brand.dark.input ?? siteConfig.brand.dark.border),
-  '--brand-dark-sidebar': toHslValue(siteConfig.brand.dark.sidebar ?? siteConfig.brand.dark.background),
+  '--brand-dark-accent-foreground': toHslValue(
+    siteConfig.brand.dark.accentForeground,
+  ),
+  '--brand-dark-accent-2': toHslValue(
+    siteConfig.brand.dark.accent2 ?? siteConfig.brand.dark.accent,
+  ),
+  '--brand-dark-accent-2-foreground': toHslValue(
+    siteConfig.brand.dark.accent2Foreground ??
+      siteConfig.brand.dark.accentForeground,
+  ),
+  '--brand-dark-input': toHslValue(
+    siteConfig.brand.dark.input ?? siteConfig.brand.dark.border,
+  ),
+  '--brand-dark-sidebar': toHslValue(
+    siteConfig.brand.dark.sidebar ?? siteConfig.brand.dark.background,
+  ),
   '--brand-dark-ring': toHslValue(siteConfig.brand.dark.ring),
-  '--brand-sidebar-active-bg-dark': toHslValue(siteConfig.brand.dark.sidebarActiveBg),
-  '--brand-sidebar-active-text-dark': toHslValue(siteConfig.brand.dark.sidebarActiveText),
+  '--brand-sidebar-active-bg-dark': toHslValue(
+    siteConfig.brand.dark.sidebarActiveBg,
+  ),
+  '--brand-sidebar-active-text-dark': toHslValue(
+    siteConfig.brand.dark.sidebarActiveText,
+  ),
 }
 
 // The brand palette must live in a :root <style> (NOT inline on <html>): inline
@@ -176,7 +236,6 @@ const brandCss = Object.entries(brandStyle)
   .map(([k, v]) => `${k}:${v}`)
   .join(';')
 
-const defaultLang = getI18nConfig()?.defaultLocale ?? 'en'
 const bannerConfig = getBannerConfig()
 const customScripts = getCustomScriptsConfig()
 const siteUrl = getSiteUrl()
@@ -188,7 +247,10 @@ const siteUrl = getSiteUrl()
 const runtimeNameShim =
   "globalThis.__name ??= (target, value) => Object.defineProperty(target, 'name', { value, configurable: true });"
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
+  const defaultLang = (await getEffectiveI18nConfig()).defaultLocale
   const siteJsonLd = buildSiteJsonLd({ siteUrl, locale: defaultLang })
   return (
     // Font variables live on <html> (not <body>) so :root-level rules — the
@@ -196,6 +258,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     // reference and override them.
     <html
       lang={defaultLang}
+      dir={localeDirection(defaultLang)}
       suppressHydrationWarning
       data-theme={structuralTheme}
       className={cn(fontSans.variable, fontDisplay.variable, fontMono.variable)}
@@ -210,7 +273,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         {googleFontUrls.length > 0 && (
           <>
             <link rel="preconnect" href="https://fonts.googleapis.com" />
-            <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+            <link
+              rel="preconnect"
+              href="https://fonts.gstatic.com"
+              crossOrigin="anonymous"
+            />
             {googleFontUrls.map((url) => (
               <link key={url} rel="stylesheet" href={url} />
             ))}

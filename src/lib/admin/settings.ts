@@ -26,6 +26,11 @@ export interface AdminSettings {
   aiLabel: string | null
   /** Custom disclaimer shown at the foot of the assistant panel, or null for the generic default. */
   aiDisclaimer: string | null
+  /** Reader locales selected locally when no Cloud snapshot is present. */
+  localization: {
+    defaultLocale: string
+    locales: Array<{ code: string; label: string }>
+  } | null
   /** Extra OIDC access domains, merged with the git-committed `team.domains`. */
   allowedDomains: Array<{ domain: string; role: Role }>
   /** scrypt hash of the docs-access (visitor) password. Never returned by the API. */
@@ -68,6 +73,7 @@ const DEFAULTS: AdminSettings = {
   siteRepoUrl: null,
   aiLabel: null,
   aiDisclaimer: null,
+  localization: null,
   allowedDomains: [],
   docsPasswordHash: null,
   chatKeyEnc: null,
@@ -78,22 +84,63 @@ export async function getAdminSettings(): Promise<AdminSettings> {
   try {
     const stored = await getStorage().kvGet<Partial<AdminSettings>>(NS, KEY)
     return {
-      chatEnabled: typeof stored?.chatEnabled === 'boolean' ? stored.chatEnabled : DEFAULTS.chatEnabled,
-      analyticsEnabled: typeof stored?.analyticsEnabled === 'boolean' ? stored.analyticsEnabled : DEFAULTS.analyticsEnabled,
-      mcpEnabled: typeof stored?.mcpEnabled === 'boolean' ? stored.mcpEnabled : DEFAULTS.mcpEnabled,
-      brandTheme: typeof stored?.brandTheme === 'string' ? stored.brandTheme : DEFAULTS.brandTheme,
+      chatEnabled:
+        typeof stored?.chatEnabled === 'boolean'
+          ? stored.chatEnabled
+          : DEFAULTS.chatEnabled,
+      analyticsEnabled:
+        typeof stored?.analyticsEnabled === 'boolean'
+          ? stored.analyticsEnabled
+          : DEFAULTS.analyticsEnabled,
+      mcpEnabled:
+        typeof stored?.mcpEnabled === 'boolean'
+          ? stored.mcpEnabled
+          : DEFAULTS.mcpEnabled,
+      brandTheme:
+        typeof stored?.brandTheme === 'string'
+          ? stored.brandTheme
+          : DEFAULTS.brandTheme,
       brandAccent:
-        stored?.brandAccent && typeof stored.brandAccent === 'object' ? stored.brandAccent : DEFAULTS.brandAccent,
-      siteName: typeof stored?.siteName === 'string' ? stored.siteName : DEFAULTS.siteName,
-      siteDescription: typeof stored?.siteDescription === 'string' ? stored.siteDescription : DEFAULTS.siteDescription,
-      siteRepoUrl: typeof stored?.siteRepoUrl === 'string' ? stored.siteRepoUrl : DEFAULTS.siteRepoUrl,
-      aiLabel: typeof stored?.aiLabel === 'string' ? stored.aiLabel : DEFAULTS.aiLabel,
-      aiDisclaimer: typeof stored?.aiDisclaimer === 'string' ? stored.aiDisclaimer : DEFAULTS.aiDisclaimer,
-      allowedDomains: Array.isArray(stored?.allowedDomains) ? stored!.allowedDomains! : DEFAULTS.allowedDomains,
-      docsPasswordHash: typeof stored?.docsPasswordHash === 'string' ? stored.docsPasswordHash : DEFAULTS.docsPasswordHash,
-      chatKeyEnc: typeof stored?.chatKeyEnc === 'string' ? stored.chatKeyEnc : DEFAULTS.chatKeyEnc,
+        stored?.brandAccent && typeof stored.brandAccent === 'object'
+          ? stored.brandAccent
+          : DEFAULTS.brandAccent,
+      siteName:
+        typeof stored?.siteName === 'string'
+          ? stored.siteName
+          : DEFAULTS.siteName,
+      siteDescription:
+        typeof stored?.siteDescription === 'string'
+          ? stored.siteDescription
+          : DEFAULTS.siteDescription,
+      siteRepoUrl:
+        typeof stored?.siteRepoUrl === 'string'
+          ? stored.siteRepoUrl
+          : DEFAULTS.siteRepoUrl,
+      aiLabel:
+        typeof stored?.aiLabel === 'string' ? stored.aiLabel : DEFAULTS.aiLabel,
+      aiDisclaimer:
+        typeof stored?.aiDisclaimer === 'string'
+          ? stored.aiDisclaimer
+          : DEFAULTS.aiDisclaimer,
+      localization:
+        stored?.localization && typeof stored.localization === 'object'
+          ? stored.localization
+          : DEFAULTS.localization,
+      allowedDomains: Array.isArray(stored?.allowedDomains)
+        ? stored!.allowedDomains!
+        : DEFAULTS.allowedDomains,
+      docsPasswordHash:
+        typeof stored?.docsPasswordHash === 'string'
+          ? stored.docsPasswordHash
+          : DEFAULTS.docsPasswordHash,
+      chatKeyEnc:
+        typeof stored?.chatKeyEnc === 'string'
+          ? stored.chatKeyEnc
+          : DEFAULTS.chatKeyEnc,
       githubApp:
-        stored?.githubApp && typeof stored.githubApp === 'object' && typeof stored.githubApp.keyEnc === 'string'
+        stored?.githubApp &&
+        typeof stored.githubApp === 'object' &&
+        typeof stored.githubApp.keyEnc === 'string'
           ? stored.githubApp
           : DEFAULTS.githubApp,
     }
@@ -118,11 +165,20 @@ export async function getDecryptedGithubApp(): Promise<{
   if (!app?.installationId) return null
   const privateKey = decryptSecret(app.keyEnc)
   if (!privateKey) return null
-  const webhookSecret = app.webhookSecretEnc ? decryptSecret(app.webhookSecretEnc) : null
-  return { appId: app.appId, installationId: app.installationId, privateKey, webhookSecret }
+  const webhookSecret = app.webhookSecretEnc
+    ? decryptSecret(app.webhookSecretEnc)
+    : null
+  return {
+    appId: app.appId,
+    installationId: app.installationId,
+    privateKey,
+    webhookSecret,
+  }
 }
 
-export async function updateAdminSettings(patch: Partial<AdminSettings>): Promise<AdminSettings> {
+export async function updateAdminSettings(
+  patch: Partial<AdminSettings>,
+): Promise<AdminSettings> {
   const current = await getAdminSettings()
   const next: AdminSettings = { ...current, ...patch }
   await getStorage().kvSet(NS, KEY, next)
@@ -157,7 +213,10 @@ export async function getBrandAsset(kind: BrandAsset): Promise<string | null> {
   }
 }
 
-export async function setBrandAsset(kind: BrandAsset, dataUri: string | null): Promise<void> {
+export async function setBrandAsset(
+  kind: BrandAsset,
+  dataUri: string | null,
+): Promise<void> {
   if (dataUri === null) await getStorage().kvDelete(NS, kind)
   else await getStorage().kvSet(NS, kind, dataUri)
 }
