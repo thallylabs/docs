@@ -2,15 +2,17 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { OpenApiDocPage } from '@/components/api/openapi-doc-page'
 import { DocLayout } from '@/components/docs/doc-layout'
-import { getDocEntries, getI18nConfig, getNavContext } from '@/data/docs'
+import { getDocEntries, getNavContext } from '@/data/docs'
 import { getDocFromParams } from '@/data/get-doc'
 import { isRemoteContentSource } from '@/lib/content-source'
 import { getSiteUrl } from '@/lib/site-url'
 import { JsonLdScript } from '@/components/seo/json-ld-script'
 import { buildAgentAlternateLinks } from '@/lib/agent-discovery'
-import { buildLanguageAlternates } from '@/lib/i18n-seo'
 import { buildDocPageJsonLd } from '@/lib/json-ld'
 import { buildOgImageUrl } from '@/lib/og'
+import { getContentI18nConfig } from '@/lib/i18n/content'
+import { buildLocaleAlternates } from '@/lib/i18n/metadata'
+import { getEffectiveI18nConfig } from '@/lib/i18n/request'
 
 interface PageProps {
   params: Promise<{ slug?: Array<string> }>
@@ -27,7 +29,9 @@ export async function generateStaticParams() {
   )
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
   const resolved = await params
   const doc = await getDocFromParams(resolved.slug)
   if (!doc) {
@@ -36,7 +40,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const siteUrl = getSiteUrl()
   const primaryHref = doc.slug.length ? `/${doc.slug.join('/')}` : '/'
-  const i18n = getI18nConfig()
+  const i18n = await getContentI18nConfig(
+    resolved.slug,
+    await getEffectiveI18nConfig(),
+  )
 
   const ogImageUrl = buildOgImageUrl({
     title: doc.title,
@@ -44,7 +51,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     group: doc.group,
   })
 
-  const alternateLanguages = buildLanguageAlternates(siteUrl, primaryHref, i18n)
+  const alternateLanguages = buildLocaleAlternates(siteUrl, primaryHref, i18n)
 
   const isNoindex = doc.noindex || doc.hidden
 
@@ -83,7 +90,7 @@ export default async function DocsPage({ params }: PageProps) {
   const siteUrl = getSiteUrl()
   const primaryHref = doc.slug.length ? `/${doc.slug.join('/')}` : '/'
   const pageUrl = `${siteUrl}${primaryHref}`
-  const locale = getI18nConfig()?.defaultLocale ?? 'en'
+  const locale = (await getEffectiveI18nConfig()).defaultLocale
   const nav = getNavContext(doc.id)
   const jsonLd = buildDocPageJsonLd({
     siteUrl,
@@ -104,7 +111,7 @@ export default async function DocsPage({ params }: PageProps) {
   const Content = doc.component
 
   return (
-    <DocLayout doc={doc}>
+    <DocLayout doc={doc} locale={locale}>
       <JsonLdScript data={jsonLd} />
       <Content />
     </DocLayout>

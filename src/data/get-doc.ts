@@ -42,14 +42,22 @@ export interface DocSourceResult {
   isStale: boolean
 }
 
-const dynamicDocCache = new Map<string, Promise<(DocEntry & { isFallback: boolean; isStale: boolean }) | null>>()
+const dynamicDocCache = new Map<
+  string,
+  Promise<(DocEntry & { isFallback: boolean; isStale: boolean }) | null>
+>()
 
-export async function getDocFromParams(slugSegments?: Array<string>, locale?: string) {
+export async function getDocFromParams(
+  slugSegments?: Array<string>,
+  locale?: string,
+) {
   // Remote content must never be baked into a static or ISR-cached render —
   // a no-op under the default filesystem source. Called before the cache
   // lookup so every request opts out, not just the first.
 
-  const normalized = Array.isArray(slugSegments) ? slugSegments.filter(Boolean) : []
+  const normalized = Array.isArray(slugSegments)
+    ? slugSegments.filter(Boolean)
+    : []
   const slugKey = normalized.join('/')
 
   const cacheKey = locale ? `${locale}:${slugKey}` : slugKey
@@ -62,6 +70,22 @@ export async function getDocFromParams(slugSegments?: Array<string>, locale?: st
   return pending
 }
 
+/**
+ * Check for an authored translation without compiling MDX. Sitemap and
+ * metadata generation call this across multiple locale/page combinations.
+ */
+export async function hasDocTranslation(
+  slugSegments: Array<string> | undefined,
+  locale: string,
+): Promise<boolean> {
+  const source = getContentSource()
+  const normalized = Array.isArray(slugSegments)
+    ? slugSegments.filter(Boolean)
+    : []
+  const candidate = await findDocSource(source, normalized.join('/'), locale)
+  return Boolean(candidate && !candidate.isFallback)
+}
+
 async function loadDocFromSource(
   slugSegments: Array<string>,
   locale?: string,
@@ -72,7 +96,13 @@ async function loadDocFromSource(
   if (!candidate) {
     return null
   }
-  return compileDocEntry(source, candidate.filePath, slugSegments, candidate.isFallback, candidate.isStale)
+  return compileDocEntry(
+    source,
+    candidate.filePath,
+    slugSegments,
+    candidate.isFallback,
+    candidate.isStale,
+  )
 }
 
 async function findDocSource(
@@ -120,7 +150,10 @@ async function findDocSource(
       let isStale = false
       for (const primaryPath of primaryCandidates) {
         if (await source.exists(primaryPath)) {
-          if ((await source.modifiedAt(primaryPath)) > (await source.modifiedAt(localeFilePath))) {
+          if (
+            (await source.modifiedAt(primaryPath)) >
+            (await source.modifiedAt(localeFilePath))
+          ) {
             isStale = true
           }
           break
@@ -148,10 +181,16 @@ async function findDocSource(
  * so reusing the precompiled module skips the request-time compile (and, on
  * workerd, the dynamic-eval requirement) for everything except edited pages.
  */
-function needsRuntimeCompile(source: ContentSource, filePath: string, content: string): boolean {
+function needsRuntimeCompile(
+  source: ContentSource,
+  filePath: string,
+  content: string,
+): boolean {
   if (process.env.NODE_ENV === 'development') return true
   if (source.kind !== 'assets') return false
-  return !(runtimeSourceExists(filePath) && readRuntimeSource(filePath) === content)
+  return !(
+    runtimeSourceExists(filePath) && readRuntimeSource(filePath) === content
+  )
 }
 
 async function compileDocEntry(
@@ -163,10 +202,17 @@ async function compileDocEntry(
 ): Promise<(DocEntry & { isFallback: boolean; isStale: boolean }) | null> {
   const sourceFile = await source.read(filePath)
   if (!sourceFile) return null
-  const { cleanedSource, snippetInjectors } = extractSnippetComponents(sourceFile.content)
-  const resolvedSnippetComponents: Record<string, ComponentType<Record<string, unknown>>> = {}
+  const { cleanedSource, snippetInjectors } = extractSnippetComponents(
+    sourceFile.content,
+  )
+  const resolvedSnippetComponents: Record<
+    string,
+    ComponentType<Record<string, unknown>>
+  > = {}
   for (const [name, resolver] of Object.entries(snippetInjectors)) {
-    resolvedSnippetComponents[name] = (await resolver()) as ComponentType<Record<string, unknown>>
+    resolvedSnippetComponents[name] = (await resolver()) as ComponentType<
+      Record<string, unknown>
+    >
   }
   const components = getMDXComponents(resolvedSnippetComponents)
   let content: ReactNode
@@ -209,9 +255,10 @@ async function compileDocEntry(
 
   const slugPath = slugSegments.join('/')
   const href = slugPath ? `/${slugPath}` : '/'
-  const GeneratedDoc: ComponentType<Record<string, unknown>> = function GeneratedDoc() {
-    return content
-  }
+  const GeneratedDoc: ComponentType<Record<string, unknown>> =
+    function GeneratedDoc() {
+      return content
+    }
   GeneratedDoc.displayName = `DocContent(${href})`
 
   const openapi = parseOpenApiReference(frontmatter?.openapi)
@@ -227,7 +274,8 @@ async function compileDocEntry(
     keywords: frontmatter?.keywords ?? [],
     component: GeneratedDoc,
     timeEstimate: frontmatter?.timeEstimate ?? '5 min',
-    lastUpdated: frontmatter?.lastUpdated ?? new Date().toISOString().slice(0, 10),
+    lastUpdated:
+      frontmatter?.lastUpdated ?? new Date().toISOString().slice(0, 10),
     openapi: openapi ?? undefined,
     noindex: frontmatter?.noindex,
     hidden: frontmatter?.hidden,
@@ -237,41 +285,52 @@ async function compileDocEntry(
   }
 }
 
-const snippetImportPattern = /^\s*import\s+\{([^}]+)\}\s+from\s+['"]([^'"]+)['"];?\s*$/gm
+const snippetImportPattern =
+  /^\s*import\s+\{([^}]+)\}\s+from\s+['"]([^'"]+)['"];?\s*$/gm
 
 function extractSnippetComponents(source: string) {
-  const snippetInjectors: Record<string, () => Promise<ComponentType<Record<string, unknown>>>> = {}
-  const cleanedSource = source.replace(snippetImportPattern, (statement, imports, fromPath) => {
-    const normalizedPath = typeof fromPath === 'string' ? fromPath.trim() : ''
-    if (!normalizedPath.startsWith('/snippets/')) {
-      return statement
-    }
-
-    const names = imports
-      .split(',')
-      .map((name: string) => name.trim())
-      .filter(Boolean)
-
-    names.forEach((name: string) => {
-      const loader = resolveSnippetComponent(normalizedPath, name)
-      if (loader) {
-        snippetInjectors[name] = loader
-      } else {
-        snippetInjectors[name] = () => compileSnippetFromPath(normalizedPath)
+  const snippetInjectors: Record<
+    string,
+    () => Promise<ComponentType<Record<string, unknown>>>
+  > = {}
+  const cleanedSource = source.replace(
+    snippetImportPattern,
+    (statement, imports, fromPath) => {
+      const normalizedPath = typeof fromPath === 'string' ? fromPath.trim() : ''
+      if (!normalizedPath.startsWith('/snippets/')) {
+        return statement
       }
-    })
 
-    return ''
-  })
+      const names = imports
+        .split(',')
+        .map((name: string) => name.trim())
+        .filter(Boolean)
+
+      names.forEach((name: string) => {
+        const loader = resolveSnippetComponent(normalizedPath, name)
+        if (loader) {
+          snippetInjectors[name] = loader
+        } else {
+          snippetInjectors[name] = () => compileSnippetFromPath(normalizedPath)
+        }
+      })
+
+      return ''
+    },
+  )
 
   return { cleanedSource, snippetInjectors }
 }
 
 const SNIPPETS_ROOT = 'snippets'
 
-async function compileSnippetFromPath(snippetImportPath: string): Promise<ComponentType<Record<string, unknown>>> {
+async function compileSnippetFromPath(
+  snippetImportPath: string,
+): Promise<ComponentType<Record<string, unknown>>> {
   const source = getContentSource()
-  const relative = snippetImportPath.replace(/^\/snippets\//, '').replace(/\.mdx$/, '')
+  const relative = snippetImportPath
+    .replace(/^\/snippets\//, '')
+    .replace(/\.mdx$/, '')
   const candidates = [
     projectJoin(SNIPPETS_ROOT, `${relative}.mdx`),
     projectJoin(SNIPPETS_ROOT, relative, 'index.mdx'),
@@ -300,9 +359,10 @@ async function compileSnippetFromPath(snippetImportPath: string): Promise<Compon
       return MissingSnippet
     }
     const components = getMDXComponents({})
-    const PrecompiledSnippet: ComponentType<Record<string, unknown>> = function PrecompiledSnippet() {
-      return createElement(compiled.component, { components })
-    }
+    const PrecompiledSnippet: ComponentType<Record<string, unknown>> =
+      function PrecompiledSnippet() {
+        return createElement(compiled.component, { components })
+      }
     return PrecompiledSnippet
   }
 
@@ -328,9 +388,10 @@ async function compileSnippetFromPath(snippetImportPath: string): Promise<Compon
           })
         ).content
 
-  const SnippetComponent: ComponentType<Record<string, unknown>> = function SnippetComponent() {
-    return content
-  }
+  const SnippetComponent: ComponentType<Record<string, unknown>> =
+    function SnippetComponent() {
+      return content
+    }
   return SnippetComponent
 }
 

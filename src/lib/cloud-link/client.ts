@@ -14,7 +14,11 @@ const DEFAULT_CLOUD_URL = 'https://app.thally.io'
 const GRANT_CACHE_TTL_MS = 30_000
 const REQUEST_TIMEOUT_MS = 8_000
 
-export type CloudLinkStatus = 'connected' | 'not_configured' | 'cloud_unreachable' | 'credential_rejected'
+export type CloudLinkStatus =
+  | 'connected'
+  | 'not_configured'
+  | 'cloud_unreachable'
+  | 'credential_rejected'
 
 export interface CloudLinkResult {
   status: CloudLinkStatus
@@ -53,6 +57,15 @@ export interface CloudPortableConfig {
     description?: string
     repoUrl?: string
     links?: Array<{ label: string; href: string }>
+  }
+  /**
+   * Reader locales selected in Thally Cloud. The site runtime keeps the
+   * repository's source locale authoritative even if a legacy snapshot names
+   * a different default.
+   */
+  localization?: {
+    defaultLocale: string
+    locales: Array<{ code: string; label: string }>
   }
   feedback?: {
     thumbsRating?: boolean
@@ -156,19 +169,19 @@ function isCloudGrantPayload(
 ): payload is CloudGrantPayload {
   return Boolean(
     typeof payload.siteId === 'string' &&
-      typeof payload.orgId === 'string' &&
-      payload.entitlements &&
-      typeof payload.entitlements === 'object' &&
-      payload.siteConfig &&
-      typeof payload.siteConfig === 'object' &&
-      payload.siteConfig.portable &&
-      typeof payload.siteConfig.portable === 'object' &&
-      payload.siteConfig.access &&
-      (payload.siteConfig.access.mode === 'public' ||
-        payload.siteConfig.access.mode === 'password') &&
-      (payload.siteConfig.access.passwordHash === null ||
-        typeof payload.siteConfig.access.passwordHash === 'string') &&
-      (!payload.exp || payload.exp * 1000 > Date.now()),
+    typeof payload.orgId === 'string' &&
+    payload.entitlements &&
+    typeof payload.entitlements === 'object' &&
+    payload.siteConfig &&
+    typeof payload.siteConfig === 'object' &&
+    payload.siteConfig.portable &&
+    typeof payload.siteConfig.portable === 'object' &&
+    payload.siteConfig.access &&
+    (payload.siteConfig.access.mode === 'public' ||
+      payload.siteConfig.access.mode === 'password') &&
+    (payload.siteConfig.access.passwordHash === null ||
+      typeof payload.siteConfig.access.passwordHash === 'string') &&
+    (!payload.exp || payload.exp * 1000 > Date.now()),
   )
 }
 
@@ -180,7 +193,9 @@ function readCachedGrant(): string | null {
   return cachedGrant.value
 }
 
-async function exchangeGrant(siteUrl: string): Promise<CloudLinkResult & { grant?: string }> {
+async function exchangeGrant(
+  siteUrl: string,
+): Promise<CloudLinkResult & { grant?: string }> {
   const token = getSiteToken()
   if (!token) return { status: 'not_configured' }
 
@@ -203,11 +218,14 @@ async function exchangeGrant(siteUrl: string): Promise<CloudLinkResult & { grant
 
   if (!response.ok) {
     return {
-      status: response.status === 401 ? 'credential_rejected' : 'cloud_unreachable',
+      status:
+        response.status === 401 ? 'credential_rejected' : 'cloud_unreachable',
     }
   }
 
-  const payload = (await response.json().catch(() => null)) as GrantResponse | null
+  const payload = (await response
+    .json()
+    .catch(() => null)) as GrantResponse | null
   if (!payload || typeof payload.grant !== 'string' || !payload.grant) {
     return { status: 'cloud_unreachable' }
   }
@@ -223,7 +241,9 @@ async function exchangeGrant(siteUrl: string): Promise<CloudLinkResult & { grant
  * Phone home to Thally Cloud and refresh the short-lived grant when required.
  * The returned status is deliberately sanitized and never includes a secret.
  */
-export async function connectCloudSite(siteUrl: string): Promise<CloudLinkResult> {
+export async function connectCloudSite(
+  siteUrl: string,
+): Promise<CloudLinkResult> {
   if (getManagedSiteConfig()) return { status: 'connected' }
   const cached = readCachedGrant()
   if (cached) return { status: 'connected' }
@@ -247,7 +267,9 @@ export async function getCloudGrant(siteUrl: string): Promise<string | null> {
  * Managed sites use the revocable release grant embedded in their snapshot;
  * linked external sites reuse their short-lived signed entitlement grant.
  */
-export async function getCloudServiceGrant(siteUrl: string): Promise<string | null> {
+export async function getCloudServiceGrant(
+  siteUrl: string,
+): Promise<string | null> {
   const managed = getManagedSiteConfig()
   if (managed) return managed.runtimeGrant?.trim() || null
   return getCloudGrant(siteUrl)
@@ -259,7 +281,9 @@ export async function getCloudServiceGrant(siteUrl: string): Promise<string | nu
  * is never exposed to browser code. Invalid or legacy grants safely resolve to
  * null so free/self-hosted sites keep using their repository configuration.
  */
-export async function getCloudSiteConfig(siteUrl: string): Promise<CloudGrantPayload | null> {
+export async function getCloudSiteConfig(
+  siteUrl: string,
+): Promise<CloudGrantPayload | null> {
   const managed = getManagedSiteConfig()
   if (managed) return managed
 

@@ -1,7 +1,15 @@
 ---
 title: Multi-Language Support
 description: Add first-class multi-language support to your Thally docs site with build-time translations, automatic fallbacks, and a built-in language switcher.
-keywords: [i18n, internationalization, translation, multi-language, localization, locale]
+keywords:
+  [
+    i18n,
+    internationalization,
+    translation,
+    multi-language,
+    localization,
+    locale,
+  ]
 ---
 
 Thally supports build-time multi-language documentation. Translated MDX files live in your repo alongside your primary content — fully version-controlled, statically generated, and indexed by search engines with real locale-specific URLs.
@@ -9,19 +17,23 @@ Thally supports build-time multi-language documentation. Translated MDX files li
 <CardGroup cols={2}>
 
 <Card title="Real locale URLs" icon="link-simple">
-  `/es/introduction`, `/fr/guides/getting-started` — every locale gets its own indexable URL, never a client-side redirect.
+  `/es/introduction`, `/fr/guides/getting-started` — every locale gets its own
+  indexable URL, never a client-side redirect.
 </Card>
 
 <Card title="AI-powered translation" icon="wrench">
-  One command translates your entire docs site. Code blocks, component tags, and URLs are preserved automatically.
+  One command translates your entire docs site. Code blocks, component tags, and
+  URLs are preserved automatically.
 </Card>
 
 <Card title="Automatic fallbacks" icon="book-open">
-  Untranslated or stale pages fall back to the primary language gracefully, with informative banners instead of 404s.
+  Untranslated or stale pages fall back to the primary language gracefully, with
+  informative banners instead of 404s.
 </Card>
 
 <Card title="Built-in language switcher" icon="grid-round">
-  A globe icon appears automatically in the top bar as soon as you configure two or more locales.
+  A globe icon appears automatically in the top bar as soon as you configure two
+  or more locales.
 </Card>
 
 </CardGroup>
@@ -32,13 +44,13 @@ Thally supports build-time multi-language documentation. Translated MDX files li
 
 The default locale is served without a URL prefix — fully backward-compatible with any existing links. Secondary locales are prefixed with their locale code:
 
-| URL | Content |
-|-----|---------|
-| `/introduction` | English (default) |
-| `/es/introduction` | Spanish |
-| `/fr/introduction` | French |
-| `/guides/getting-started` | English (default) |
-| `/es/guides/getting-started` | Spanish |
+| URL                          | Content           |
+| ---------------------------- | ----------------- |
+| `/introduction`              | English (default) |
+| `/es/introduction`           | Spanish           |
+| `/fr/introduction`           | French            |
+| `/guides/getting-started`    | English (default) |
+| `/es/guides/getting-started` | Spanish           |
 
 Adding a new locale never breaks existing URLs.
 
@@ -48,9 +60,22 @@ Adding a new locale never breaks existing URLs.
 
 <Steps>
 
-<Step title="Add an i18n block to docs.json">
+<Step title="Choose languages in Thally Cloud">
 
-Open `docs.json` at your project root and add an `i18n` key:
+For a managed site, open **Site settings → Languages**, choose every language
+readers should see, and save. Thally publishes the selection with the site's
+portable configuration; the language menu and locale routes update without a
+repository edit.
+
+English remains the source language at unprefixed URLs. Adding a language
+makes its route available immediately, while missing translations display the
+English source content.
+
+</Step>
+
+<Step title="Configure a self-hosted site">
+
+Self-hosted sites can configure the same behavior in `docs.json`:
 
 ```json
 {
@@ -66,7 +91,8 @@ Open `docs.json` at your project root and add an `i18n` key:
 }
 ```
 
-`defaultLocale` must match one of the locale codes. The locales array controls the order items appear in the language switcher dropdown.
+`defaultLocale` must match the repository's source content language. The
+locales array controls the language switcher order.
 
 Once this is saved, a globe icon appears in the top bar automatically.
 
@@ -96,17 +122,19 @@ npx create-thally-docs translate --locale es --force
 
 **All options:**
 
-| Flag | Description |
-|------|-------------|
+| Flag              | Description                                                                  |
+| ----------------- | ---------------------------------------------------------------------------- |
 | `--locale <code>` | Target locale — required. Must match a code in your `docs.json` i18n config. |
-| `--pages <ids>` | Comma-separated page IDs to translate. Omit to translate all pages. |
-| `--force` | Overwrite existing translation files. |
-| `--api-key <key>` | Anthropic API key. Falls back to `ANTHROPIC_API_KEY` env var. |
-| `--model <id>` | Claude model to use. Default: `claude-sonnet-4-6`. |
-| `--yes`, `-y` | Skip the confirmation prompt. |
+| `--pages <ids>`   | Comma-separated page IDs to translate. Omit to translate all pages.          |
+| `--force`         | Overwrite existing translation files.                                        |
+| `--api-key <key>` | Anthropic API key. Falls back to `ANTHROPIC_API_KEY` env var.                |
+| `--model <id>`    | Claude model to use. Default: `claude-sonnet-4-6`.                           |
+| `--yes`, `-y`     | Skip the confirmation prompt.                                                |
 
 <Note type="info" title="API key required">
-The translate command calls Claude via the Anthropic API. Set `ANTHROPIC_API_KEY` in your environment or pass `--api-key` directly. Translating a typical docs page costs a fraction of a cent.
+  The translate command calls Claude via the Anthropic API. Set
+  `ANTHROPIC_API_KEY` in your environment or pass `--api-key` directly.
+  Translating a typical docs page costs a fraction of a cent.
 </Note>
 
 </Step>
@@ -168,6 +196,10 @@ Thally never returns a 404 for a missing translation. Instead, it serves the pri
 
 Both banners appear only on secondary-locale routes. The primary route is never affected.
 
+Source-content fallbacks are canonicalized to the English page and marked
+`noindex, follow`. Crawlers therefore discover real translated content without
+indexing duplicate English prose under locale-prefixed URLs.
+
 To fix a stale or missing translation, run the translate command for that page:
 
 ```bash
@@ -191,24 +223,44 @@ The API Reference tab is auto-generated from your OpenAPI spec. Its content is a
 When navigating to the API Reference tab from a locale page, the URL prefix is preserved so you remain in the locale context (`/es/api/...`). The sidebar and tab bar stay locale-aware; only the operation content itself comes from the spec unchanged.
 
 <Note type="info" title="Localising API content">
-To change the language of API Reference descriptions and summaries, update them directly in your OpenAPI spec file.
+  To change the language of API Reference descriptions and summaries, update
+  them directly in your OpenAPI spec file.
 </Note>
 
 ---
 
 ## SEO
 
-When an `i18n` config is present, Thally automatically adds `hreflang` and `canonical` link tags to every page:
+When a translation exists, Thally automatically adds `hreflang` and
+`canonical` link tags:
 
 ```html
 <link rel="canonical" href="https://docs.example.com/es/introduction" />
-<link rel="alternate" hreflang="en" href="https://docs.example.com/introduction" />
-<link rel="alternate" hreflang="es" href="https://docs.example.com/es/introduction" />
-<link rel="alternate" hreflang="fr" href="https://docs.example.com/fr/introduction" />
-<link rel="alternate" hreflang="x-default" href="https://docs.example.com/introduction" />
+<link
+  rel="alternate"
+  hreflang="en"
+  href="https://docs.example.com/introduction"
+/>
+<link
+  rel="alternate"
+  hreflang="es"
+  href="https://docs.example.com/es/introduction"
+/>
+<link
+  rel="alternate"
+  hreflang="fr"
+  href="https://docs.example.com/fr/introduction"
+/>
+<link
+  rel="alternate"
+  hreflang="x-default"
+  href="https://docs.example.com/introduction"
+/>
 ```
 
-Each translated page is self-canonical. Reciprocal `hreflang` links connect every locale, and `x-default` points to the default-language page. Set `THALLY_SITE_URL` so the correct domain appears in these tags:
+Each translated page is self-canonical. Reciprocal `hreflang` links include
+only authored translations, and `x-default` points to the source-language
+page. Set `THALLY_SITE_URL` so the correct domain appears in these tags:
 
 ```bash
 THALLY_SITE_URL=https://docs.example.com

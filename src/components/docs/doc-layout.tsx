@@ -1,22 +1,39 @@
 import type { DocEntry } from '@/data/docs'
-import { getBreadcrumbs, getPrevNextLinks, getFeedbackConfig } from '@/data/docs'
+import {
+  getBreadcrumbs,
+  getPrevNextLinks,
+  getFeedbackConfig,
+} from '@/data/docs'
 import { DocBreadcrumbs } from '@/components/docs/doc-breadcrumbs'
 import { DocHeader } from '@/components/docs/doc-header'
 import { DocPagination } from '@/components/docs/doc-pagination'
 import { EditOnGithub } from '@/components/docs/edit-on-github'
 import { Feedback } from '@/components/docs/feedback'
 import { TableOfContents } from '@/components/docs/table-of-contents'
-import { ContentStack, DetailColumn, MainColumns } from '@/components/layout/sections'
+import {
+  ContentStack,
+  DetailColumn,
+  MainColumns,
+} from '@/components/layout/sections'
 import { Prose } from '@/components/mdx/prose'
-import { getRequestCloudSiteConfig, getRequestOrigin } from '@/lib/cloud-link/request'
+import {
+  getRequestCloudSiteConfig,
+  getRequestOrigin,
+} from '@/lib/cloud-link/request'
 import { resolveSiteConfig } from '@/lib/site-config'
+import { localeDirection } from '@/lib/i18n/config'
 
 interface DocLayoutProps {
   doc: DocEntry
+  locale?: string
   children: React.ReactNode
 }
 
-export async function DocLayout({ doc, children }: DocLayoutProps) {
+export async function DocLayout({
+  doc,
+  locale = 'en',
+  children,
+}: DocLayoutProps) {
   const { prev, next } = getPrevNextLinks(doc.href)
   const breadcrumbs = getBreadcrumbs(doc.href)
   const mode = doc.mode ?? 'default'
@@ -30,9 +47,9 @@ export async function DocLayout({ doc, children }: DocLayoutProps) {
   const showFeedback = cloud
     ? Boolean(
         cloudFeedback?.thumbsRating ||
-          cloudFeedback?.pageFeedback ||
-          cloudFeedback?.editSuggestions ||
-          cloudFeedback?.issueReporting,
+        cloudFeedback?.pageFeedback ||
+        cloudFeedback?.editSuggestions ||
+        cloudFeedback?.issueReporting,
       )
     : true
   const feedback = showFeedback ? (
@@ -49,7 +66,11 @@ export async function DocLayout({ doc, children }: DocLayoutProps) {
 
   // custom mode: render children directly, no shell chrome
   if (mode === 'custom') {
-    return <>{children}</>
+    return (
+      <div lang={locale} dir={localeDirection(locale)}>
+        {children}
+      </div>
+    )
   }
 
   // home mode: a landing moment — no breadcrumbs, header, or TOC. The page's
@@ -57,7 +78,7 @@ export async function DocLayout({ doc, children }: DocLayoutProps) {
   // remains at the foot to keep readers moving into the docs.
   if (mode === 'home') {
     return (
-      <article className="flex-1">
+      <article className="flex-1" lang={locale} dir={localeDirection(locale)}>
         <div className="space-y-16">
           <Prose className="max-w-none">{children}</Prose>
           <div className="not-prose">
@@ -71,7 +92,11 @@ export async function DocLayout({ doc, children }: DocLayoutProps) {
   // center mode: single centered column, no sidebar-style TOC
   if (mode === 'center') {
     return (
-      <article className="mx-auto w-full max-w-2xl">
+      <article
+        className="mx-auto w-full max-w-2xl"
+        lang={locale}
+        dir={localeDirection(locale)}
+      >
         <ContentStack>
           <div className="not-prose space-y-4">
             <DocBreadcrumbs items={breadcrumbs} />
@@ -91,7 +116,7 @@ export async function DocLayout({ doc, children }: DocLayoutProps) {
   // wide mode: no TOC column, full-width content
   if (mode === 'wide') {
     return (
-      <article className="flex-1">
+      <article className="flex-1" lang={locale} dir={localeDirection(locale)}>
         <ContentStack>
           <div className="not-prose space-y-4">
             <DocBreadcrumbs items={breadcrumbs} />
@@ -111,7 +136,7 @@ export async function DocLayout({ doc, children }: DocLayoutProps) {
   // default: two-column with TOC
   return (
     <MainColumns>
-      <article className="flex-1">
+      <article className="flex-1" lang={locale} dir={localeDirection(locale)}>
         <ContentStack>
           <div className="not-prose space-y-4">
             <DocBreadcrumbs items={breadcrumbs} />
