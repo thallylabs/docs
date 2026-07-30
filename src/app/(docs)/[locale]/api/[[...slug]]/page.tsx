@@ -3,7 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import { ApiLayout } from '@/components/api/api-layout'
 import { OperationPanel } from '@/components/api/operation-panel'
 import { JsonLdScript } from '@/components/seo/json-ld-script'
-import { getSiteUrl } from '@/lib/site-url'
+import { getRequestOrigin } from '@/lib/cloud-link/request'
 import { apiReferenceConfig, getOpenApiSpecUrl } from '@/config/api-reference'
 import {
   getAllApiOperationNodes,
@@ -18,6 +18,7 @@ import {
   getEffectiveI18nConfig,
   getRepositoryI18nConfig,
 } from '@/lib/i18n/request'
+import { resolveSiteConfig } from '@/lib/site-config'
 
 interface PageProps {
   params: Promise<{ locale: string; slug?: Array<string> }>
@@ -47,7 +48,7 @@ export async function generateMetadata({
   const resolved = await params
   const i18n = await getEffectiveI18nConfig()
   if (!isValidSecondaryLocale(resolved.locale, i18n)) return {}
-  const siteUrl = getSiteUrl()
+  const siteUrl = await getRequestOrigin()
   const specUrl = getOpenApiSpecUrl(siteUrl)
   const node = await getApiOperationBySlug(resolved.slug)
   if (!node) return {}
@@ -62,7 +63,7 @@ export async function generateMetadata({
       // exist. Keep the locale route useful without claiming duplicate prose.
       canonical: `${siteUrl}${node.href}`,
       types: {
-        ...buildAgentAlternateLinks(node.href),
+        ...buildAgentAlternateLinks(node.href, siteUrl),
         ...(specUrl ? { 'application/vnd.oai.openapi': specUrl } : {}),
       },
     },
@@ -71,9 +72,12 @@ export async function generateMetadata({
 
 export default async function LocaleApiReferencePage({ params }: PageProps) {
   const resolved = await params
-  const siteUrl = getSiteUrl()
+  const siteUrl = await getRequestOrigin()
   const specUrl = getOpenApiSpecUrl(siteUrl)
-  const i18n = await getEffectiveI18nConfig()
+  const [i18n, effectiveSite] = await Promise.all([
+    getEffectiveI18nConfig(),
+    resolveSiteConfig(siteUrl),
+  ])
 
   if (!isValidSecondaryLocale(resolved.locale, i18n)) {
     notFound()
@@ -97,6 +101,7 @@ export default async function LocaleApiReferencePage({ params }: PageProps) {
   const pageUrl = `${siteUrl}${node.href}`
   const jsonLd = buildApiOperationJsonLd({
     siteUrl,
+    siteName: effectiveSite.name,
     pageUrl,
     title: node.operation.title,
     description:

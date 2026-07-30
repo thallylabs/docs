@@ -5,7 +5,7 @@ import { DocLayout } from '@/components/docs/doc-layout'
 import { getDocEntries, getNavContext } from '@/data/docs'
 import { getDocFromParams } from '@/data/get-doc'
 import { isRemoteContentSource } from '@/lib/content-source'
-import { getSiteUrl } from '@/lib/site-url'
+import { getRequestOrigin } from '@/lib/cloud-link/request'
 import { JsonLdScript } from '@/components/seo/json-ld-script'
 import { buildAgentAlternateLinks } from '@/lib/agent-discovery'
 import { buildDocPageJsonLd } from '@/lib/json-ld'
@@ -13,6 +13,7 @@ import { buildOgImageUrl } from '@/lib/og'
 import { getContentI18nConfig } from '@/lib/i18n/content'
 import { buildLocaleAlternates } from '@/lib/i18n/metadata'
 import { getEffectiveI18nConfig } from '@/lib/i18n/request'
+import { resolveSiteConfig } from '@/lib/site-config'
 
 interface PageProps {
   params: Promise<{ slug?: Array<string> }>
@@ -38,7 +39,7 @@ export async function generateMetadata({
     return {}
   }
 
-  const siteUrl = getSiteUrl()
+  const siteUrl = await getRequestOrigin()
   const primaryHref = doc.slug.length ? `/${doc.slug.join('/')}` : '/'
   const i18n = await getContentI18nConfig(
     resolved.slug,
@@ -62,7 +63,7 @@ export async function generateMetadata({
     alternates: {
       canonical: `${siteUrl}${primaryHref}`,
       ...(alternateLanguages ? { languages: alternateLanguages } : {}),
-      types: buildAgentAlternateLinks(primaryHref),
+      types: buildAgentAlternateLinks(primaryHref, siteUrl),
     },
     openGraph: {
       title: doc.title,
@@ -87,13 +88,15 @@ export default async function DocsPage({ params }: PageProps) {
     notFound()
   }
 
-  const siteUrl = getSiteUrl()
+  const siteUrl = await getRequestOrigin()
+  const effectiveSite = await resolveSiteConfig(siteUrl)
   const primaryHref = doc.slug.length ? `/${doc.slug.join('/')}` : '/'
   const pageUrl = `${siteUrl}${primaryHref}`
   const locale = (await getEffectiveI18nConfig()).defaultLocale
   const nav = getNavContext(doc.id)
   const jsonLd = buildDocPageJsonLd({
     siteUrl,
+    siteName: effectiveSite.name,
     pageUrl,
     id: doc.id,
     title: doc.title,

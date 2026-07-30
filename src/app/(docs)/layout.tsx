@@ -9,7 +9,11 @@ import {
 import type { NavigationSection } from '@/data/docs'
 import { buildApiNavigation } from '@/data/api-reference'
 import { DocsChatLauncher } from '@/components/docs/docs-chat-launcher'
+import { getRequestOrigin } from '@/lib/cloud-link/request'
 import { getEffectiveI18nConfig } from '@/lib/i18n/request'
+import { resolveSiteConfig, siteIdentity } from '@/lib/site-config'
+
+export const dynamic = 'force-dynamic'
 
 interface DocsLayoutProps {
   children: React.ReactNode
@@ -42,6 +46,8 @@ export default async function DocsLayout({ children }: DocsLayoutProps) {
   const i18nConfig = await getEffectiveI18nConfig()
   const navbarConfig = getNavbarConfig()
   const footerConfig = getFooterConfig()
+  const origin = await getRequestOrigin()
+  const effectiveSite = await resolveSiteConfig(origin)
 
   return (
     <>
@@ -51,6 +57,7 @@ export default async function DocsLayout({ children }: DocsLayoutProps) {
         i18nConfig={i18nConfig}
         navbarConfig={navbarConfig}
         footerConfig={footerConfig}
+        identity={siteIdentity(effectiveSite)}
       >
         {children}
       </SiteShell>

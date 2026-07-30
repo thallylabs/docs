@@ -4,7 +4,7 @@ import { DocLayout } from '@/components/docs/doc-layout'
 import { getDocEntries, getNavContext } from '@/data/docs'
 import { getDocFromParams } from '@/data/get-doc'
 import { isRemoteContentSource } from '@/lib/content-source'
-import { getSiteUrl } from '@/lib/site-url'
+import { getRequestOrigin } from '@/lib/cloud-link/request'
 import { getApiOperationByKey } from '@/data/api-reference'
 import { DocHeader } from '@/components/docs/doc-header'
 import { ApiLayout } from '@/components/api/api-layout'
@@ -26,6 +26,7 @@ import {
   getEffectiveI18nConfig,
   getRepositoryI18nConfig,
 } from '@/lib/i18n/request'
+import { resolveSiteConfig } from '@/lib/site-config'
 
 interface PageProps {
   params: Promise<{ locale: string; slug?: Array<string> }>
@@ -69,7 +70,7 @@ export async function generateMetadata({
   )
   if (!doc) return {}
 
-  const siteUrl = getSiteUrl()
+  const siteUrl = await getRequestOrigin()
   const primaryHref = doc.slug.length ? `/${doc.slug.join('/')}` : '/'
   const requestedHref = isLocaleRoute
     ? localizedPath(primaryHref, resolved.locale, i18n.defaultLocale)
@@ -93,7 +94,7 @@ export async function generateMetadata({
     alternates: {
       canonical: `${siteUrl}${canonicalHref}`,
       languages: buildLocaleAlternates(siteUrl, primaryHref, availableI18n),
-      types: buildAgentAlternateLinks(canonicalHref),
+      types: buildAgentAlternateLinks(canonicalHref, siteUrl),
     },
     openGraph: {
       title: doc.title,
@@ -112,8 +113,11 @@ export async function generateMetadata({
 
 export default async function LocaleDocsPage({ params }: PageProps) {
   const resolved = await params
-  const siteUrl = getSiteUrl()
-  const i18n = await getEffectiveI18nConfig()
+  const siteUrl = await getRequestOrigin()
+  const [i18n, effectiveSite] = await Promise.all([
+    getEffectiveI18nConfig(),
+    resolveSiteConfig(siteUrl),
+  ])
   const isLocaleRoute = isValidSecondaryLocale(resolved.locale, i18n)
   const slug = isLocaleRoute
     ? resolved.slug
@@ -133,6 +137,7 @@ export default async function LocaleDocsPage({ params }: PageProps) {
   const pageUrl = `${siteUrl}${canonicalHref}`
   const jsonLd = buildDocPageJsonLd({
     siteUrl,
+    siteName: effectiveSite.name,
     pageUrl,
     id: doc.id,
     title: doc.title,

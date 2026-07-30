@@ -3,7 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import { ApiLayout } from '@/components/api/api-layout'
 import { OperationPanel } from '@/components/api/operation-panel'
 import { DocLayout } from '@/components/docs/doc-layout'
-import { getSiteUrl } from '@/lib/site-url'
+import { getRequestOrigin } from '@/lib/cloud-link/request'
 import { JsonLdScript } from '@/components/seo/json-ld-script'
 import { apiReferenceConfig, getOpenApiSpecUrl } from '@/config/api-reference'
 import { getAllApiOperationNodes, getApiOperationBySlug, getApiOperationNodes } from '@/data/api-reference'
@@ -12,6 +12,7 @@ import { getDocFromParams } from '@/data/get-doc'
 import { buildAgentAlternateLinks } from '@/lib/agent-discovery'
 import { buildLanguageAlternates } from '@/lib/i18n-seo'
 import { buildApiOperationJsonLd, buildDocPageJsonLd } from '@/lib/json-ld'
+import { resolveSiteConfig } from '@/lib/site-config'
 
 interface PageProps {
   params: Promise<{ slug?: Array<string> }>
@@ -31,7 +32,7 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const resolved = await params
-  const siteUrl = getSiteUrl()
+  const siteUrl = await getRequestOrigin()
   const specUrl = getOpenApiSpecUrl(siteUrl)
 
   const node = await getApiOperationBySlug(resolved.slug)
@@ -44,7 +45,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         canonical: `${siteUrl}${node.href}`,
         ...(languages ? { languages } : {}),
         types: {
-          ...buildAgentAlternateLinks(node.href),
+          ...buildAgentAlternateLinks(node.href, siteUrl),
           ...(specUrl ? { 'application/vnd.oai.openapi': specUrl } : {}),
         },
       },
@@ -61,7 +62,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       alternates: {
         canonical: `${siteUrl}${primaryHref}`,
         ...(languages ? { languages } : {}),
-        types: buildAgentAlternateLinks(primaryHref),
+        types: buildAgentAlternateLinks(primaryHref, siteUrl),
       },
     }
   }
@@ -71,7 +72,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ApiReferencePage({ params }: PageProps) {
   const resolved = await params
-  const siteUrl = getSiteUrl()
+  const siteUrl = await getRequestOrigin()
+  const effectiveSite = await resolveSiteConfig(siteUrl)
   const specUrl = getOpenApiSpecUrl(siteUrl)
 
   // No slug — redirect to the first MDX page in the API group if one exists,
@@ -94,6 +96,7 @@ export default async function ApiReferencePage({ params }: PageProps) {
     const pageUrl = `${siteUrl}${node.href}`
     const jsonLd = buildApiOperationJsonLd({
       siteUrl,
+      siteName: effectiveSite.name,
       pageUrl,
       title: node.operation.title,
       description: node.operation.description ?? `${node.operation.method} ${node.operation.path}`,
@@ -128,6 +131,7 @@ export default async function ApiReferencePage({ params }: PageProps) {
   const pageUrl = `${siteUrl}${doc.href}`
   const jsonLd = buildDocPageJsonLd({
     siteUrl,
+    siteName: effectiveSite.name,
     pageUrl,
     id: doc.id,
     title: doc.title,
