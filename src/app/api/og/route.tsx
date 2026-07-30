@@ -1,20 +1,21 @@
 import { ImageResponse } from 'next/og'
 import { type NextRequest } from 'next/server'
-import { siteConfig } from '@/data/site'
 import { resolveOgConfig } from '@/lib/og'
 import { getBrandAsset } from '@/lib/admin/settings'
+import { resolveSiteConfig } from '@/lib/site-config'
 
 // Node (not edge) because the admin storage adapter may use Node facilities.
 export const runtime = 'nodejs'
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl
-  const title = searchParams.get('title') || `${siteConfig.name} Documentation`
-  const rawDescription = searchParams.get('description') || siteConfig.description
+  const effectiveSite = await resolveSiteConfig(request.nextUrl.origin)
+  const title = searchParams.get('title') || `${effectiveSite.name} Documentation`
+  const rawDescription = searchParams.get('description') || effectiveSite.description
   const description = rawDescription.length > 120 ? `${rawDescription.slice(0, 117)}...` : rawDescription
   const group = searchParams.get('group') || ''
 
-  const og = resolveOgConfig(searchParams.get('accent') || undefined)
+  const og = resolveOgConfig(searchParams.get('accent') || undefined, effectiveSite, request.nextUrl.origin)
   // Admin-uploaded logo first, then the bundled default mark (public/brand —
   // the dark variant, since the OG canvas uses the dark brand surface). The
   // bundled mark is square, so it can carry an explicit width (Satori cannot

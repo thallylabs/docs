@@ -1,6 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import {
+  createContext,
+  createElement,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from 'react'
 import { siteConfig } from '@/data/site'
 
 let siteNameRequest: Promise<string | null> | null = null
@@ -17,22 +24,52 @@ function loadSiteName() {
   return siteNameRequest
 }
 
-/** The effective site name — build config, overridden live by the dashboard. */
-export function useSiteName(loadWhen: 'always' | 'desktop' = 'always'): string {
-  const [name, setName] = useState(siteConfig.name)
+const SiteNameContext = createContext<string | null>(null)
+
+interface SiteNameProviderProps {
+  children: ReactNode
+  initialName: string
+}
+
+/**
+ * Hydrate every client identity consumer from the request-bound server value.
+ *
+ * The API refresh keeps dashboard edits live, while `initialName` prevents a
+ * forked release from flashing the baseline identity on its first paint.
+ */
+export function SiteNameProvider({ children, initialName }: SiteNameProviderProps) {
+  const [name, setName] = useState(initialName)
   useEffect(() => {
+    let active = true
+    loadSiteName().then((liveName) => {
+      if (active && liveName) setName(liveName)
+    })
+    return () => {
+      active = false
+    }
+  }, [])
+  return createElement(SiteNameContext.Provider, { value: name }, children)
+}
+
+/** The effective site name — request snapshot, refreshed live by the dashboard. */
+export function useSiteName(loadWhen: 'always' | 'desktop' = 'always'): string {
+  const requestName = useContext(SiteNameContext)
+  const [name, setName] = useState(requestName ?? siteConfig.name)
+  useEffect(() => {
+    if (requestName) {
+      setName(requestName)
+      return
+    }
     if (loadWhen === 'desktop' && !window.matchMedia('(min-width: 1024px)').matches) {
       return
     }
     let active = true
     loadSiteName().then((liveName) => {
-      if (active && liveName) {
-        setName(liveName)
-      }
+      if (active && liveName) setName(liveName)
     })
     return () => {
       active = false
     }
-  }, [loadWhen])
+  }, [loadWhen, requestName])
   return name
 }
