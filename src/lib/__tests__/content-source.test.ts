@@ -156,6 +156,30 @@ describe('filesystem source parity (regression: default behavior unchanged)', ()
 })
 
 describe('assets source', () => {
+  it('prefers a published AGENTS.md over the embedded baseline override', async () => {
+    process.env.THALLY_CONTENT_SOURCE = 'assets'
+    resetContentSourceForTests()
+    const agentsManifest: ContentManifest = {
+      version: 1,
+      files: { 'AGENTS.md': { modifiedAtMs: 5555 } },
+    }
+    const assets = fakeAssets(agentsManifest, {
+      'AGENTS.md': '# Customer-specific agent guidance\n',
+    })
+    setContentAssetFetcher(assets.fetcher)
+
+    const override = await getContentSource().read('AGENTS.md')
+
+    expect(override).toEqual({
+      content: '# Customer-specific agent guidance\n',
+      modifiedAtMs: 5555,
+    })
+    expect(assets.calls).toEqual([
+      CONTENT_MANIFEST_PATH,
+      '/_thally/content/AGENTS.md',
+    ])
+  })
+
   it('answers exists/list/modifiedAt from the manifest', async () => {
     const assets = fakeAssets(manifest, files)
     const source = createAssetsContentSource(stubFallback(), () => assets.fetcher)
@@ -218,8 +242,10 @@ describe('assets source', () => {
     const source = createAssetsContentSource(fallback, () => async () => new Response('boom', { status: 500 }))
 
     expect((await source.read('src/content/introduction.mdx'))?.content).toBe('embedded fallback')
+    expect(await source.read('AGENTS.md')).toBeNull()
     expect(await source.list('src/content')).toEqual(['embedded/list'])
     expect(fallback.reads).toContain('src/content/introduction.mdx')
+    expect(fallback.reads).not.toContain('AGENTS.md')
     // The warning fires once, not per operation.
     expect(warn).toHaveBeenCalledOnce()
   })
