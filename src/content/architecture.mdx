@@ -342,7 +342,8 @@ MCP endpoint, or Track can read them.
 ┌────────────────────────────────────────────────────────────────────────────┐
 │ Product knowledge                                       3 sources current │
 ├────────────────────────────────────────────────────────────────────────────┤
-│ Sources  3   Product facts  248   Recent changes  7   Reviews  1         │
+│ Sources  3   Current entities  248   Recent changes  7                    │
+│ Pages to review  1                                                        │
 ├────────────────────────────────────────────────────────────────────────────┤
 │ Source freshness                    │ Change → impact → update             │
 │ payments-api  current  a84c21       │ field became required               │
@@ -489,9 +490,9 @@ release never replaces it.
 ```
 
 Rollback changes the pointer to an earlier checked release. It does not
-rebuild the site, change DNS, or rewrite the repository. The dashboard asks for
-confirmation and names the release, commit, and domain before changing
-production.
+rebuild the site, change DNS, or rewrite the repository. Both rollback entry
+points ask for confirmation. The history row names the release, commit, and
+domain; the live summary names the previous commit and production domain.
 
 ### How a live request reaches the right site
 
