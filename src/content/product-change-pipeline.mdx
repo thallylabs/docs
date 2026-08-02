@@ -19,26 +19,27 @@ Thally is built to own that handoff.
 
 > Every product change. Every knowledge surface. Automatically in sync.
 
-That is the direction of the product. The first implementation is intentionally
-narrow: connect GitHub product changes to documentation, determine what is
-affected, and prepare a pull request for a person to review.
+That is the direction of the product. The working loop connects GitHub product
+changes to an evidence-backed product map, explains which documentation is
+affected, and prepares a pull request for a person to review.
 
 ## How it works today
 
 <Steps>
   <Step title="A product change supplies the evidence">
-    A merged pull request contains the diff, discussion, files, and intent
-    behind a completed change. Track uses that reviewed record instead of
-    guessing from an isolated commit.
+    After a product pull request merges, Thally reads the exact merged commit.
+    It extracts supported facts from OpenAPI, MDX, and TypeScript without
+    running customer code, and keeps a link to the file evidence.
   </Step>
-  <Step title="Track determines whether communication work exists">
-    Repository and path rules establish the candidate scope. Track distills the
-    change into a documentation task only when the evidence indicates a
-    customer-facing effect.
+  <Step title="Thally explains what the change affects">
+    The Product Knowledge Graph compares the new facts with the previous
+    version. Impact analysis keeps a docs page only when a supported graph path
+    and evidence explain why it may need work.
   </Step>
-  <Step title="The docs agent updates the affected source">
-    The agent reads the product evidence and the existing docs together,
-    updates relevant pages, and validates the result with `thally check`.
+  <Step title="Track updates the affected source">
+    Track receives a bounded list of pages and evidence, updates the relevant
+    MDX in a disposable sandbox, and validates the result with `thally check`.
+    If no docs are affected, the loop stops without AI work or a pull request.
   </Step>
   <Step title="A person decides what publishes">
     The result is a normal pull request. Reviewers can accept, correct, or
@@ -75,11 +76,12 @@ affected, and prepare a pull request for a person to review.
 
 | Area | Available now | Product direction |
 | --- | --- | --- |
-| Product source | GitHub pull requests, paths, and repositories | Additional integrations that extend—not unlock—the pipeline |
-| Knowledge surface | Documentation pages and API-reference content in a Thally project | SDK references, tutorials, release notes, examples, AI context, and future surfaces |
-| Output | Evidence-backed documentation pull requests | Coordinated updates across every affected surface |
+| Product source | Connected GitHub repositories with OpenAPI, MDX, and TypeScript evidence | More source types and integrations |
+| Product understanding | Versioned product facts and links tied to exact commits and inspectable evidence | Broader fact coverage across product tools |
+| Knowledge surface | Documentation pages and API-reference content in a Thally project | SDK references, tutorials, release notes, examples, and other customer-facing surfaces |
+| Output | Explained impact results and evidence-checked documentation pull requests | Coordinated updates across every affected surface |
 | Approval | Existing GitHub review and deployment workflow | Human control over every important communication |
-| Learning | Accepted content and repository configuration | A customer-specific Product Knowledge Graph strengthened by reviews and corrections |
+| Learning | Reviewer corrections improve later ranking after enough examples exist | More useful team-specific ranking without weakening evidence rules |
 
 <Note type="info" title="Not another knowledge destination">
 Thally includes an open documentation engine, but the product is not trying to
@@ -89,6 +91,8 @@ job is to keep it synchronized as the product changes.
 
 ## Put the pipeline to work
 
+- [Read the full architecture guide](/architecture) to follow site creation,
+  product reading, impact analysis, Track, and managed publication as one flow.
 - [Set up Thally Track](/guides/thally-track) to connect a product repository.
 - [Initialize the docs agent](/guides/docs-agent) to prepare reviewable pull
   requests.
