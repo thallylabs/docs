@@ -148,6 +148,13 @@
           ]
         },
         {
+          "group": "Architecture",
+          "icon": "diagram-project",
+          "pages": [
+            "architecture"
+          ]
+        },
+        {
           "group": "Features",
           "icon": "party-horn",
           "pages": [
