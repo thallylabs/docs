@@ -37,7 +37,7 @@ affected, and prepares a pull request for a person to review.
     and evidence explain why it may need work.
   </Step>
   <Step title="Track updates the affected source">
-    Track receives a bounded list of pages and evidence, updates the relevant
+    Track receives a limited list of pages and evidence, updates the relevant
     MDX in a disposable sandbox, and validates the result with `thally check`.
     If no docs are affected, the loop stops without AI work or a pull request.
   </Step>
@@ -45,7 +45,7 @@ affected, and prepares a pull request for a person to review.
     The result is a normal pull request. Reviewers can accept, correct, or
     reject it; the agent never merges its own work.
   </Step>
-  <Step title="One reviewed source feeds every projection">
+  <Step title="One reviewed source feeds every output">
     After approval, the content engine serves the same structured source as
     HTML, Markdown, JSON, JSON-LD, search, embeddings, and agent context.
   </Step>

@@ -65,7 +65,7 @@ they do not take ownership of it.
 | --- | --- |
 | GitHub | Product code, documentation MDX, configuration, branches, pull requests, and commit history |
 | Neon Postgres | Workspaces, sites, jobs, facts, links, graph versions, impact results, Track runs, and deployment records |
-| Cloudflare R2 | Bounded evidence bundles and fixed release files |
+| Cloudflare R2 | Size-limited evidence bundles and unchangeable release files |
 | Cloudflare Vectorize | Search vectors used to find possible matching docs; a vector alone can never prove impact |
 | Cloudflare Queues | Small job messages for product reading, Track, and managed publishing |
 | Cloudflare Workers and Sandboxes | Isolated product reading, Track runs, site builds, routing, and delivery |
@@ -123,8 +123,10 @@ The site wizard keeps the choices in a short, visible sequence.
 ### Why the site is saved first
 
 The browser creates one stable creation key. Thally writes a pending site row
-before asking GitHub to create a repository or before starting a release.
-Retrying the request resumes that row instead of creating another site.
+and a durable provisioning job before asking GitHub to create a repository or
+before starting a release. The request may try the job immediately, but a
+recovery worker can reclaim it if the web process stops. Retrying setup resumes
+that row instead of creating another site.
 
 ```text
 pending  →  repository ready  →  deploying  →  ready
@@ -135,6 +137,10 @@ pending  →  repository ready  →  deploying  →  ready
 Only workspace owners and editors can create a site. Every repository is
 checked again at the time it is connected, including its owner, default
 branch, and the GitHub App's access.
+
+If setup fails, Home shows the safe failure reason and the action that matches
+the saved phase: retry setup, publish the repository that is already ready, or
+reconnect GitHub. The browser draft is removed only after the site is ready.
 
 ### New repository or existing repository
 
@@ -219,9 +225,10 @@ sequenceDiagram
     participant Store as Evidence and graph store
 
     GH->>App: Signed push or pull-request event
+    App->>App: Save the verified delivery before replying
     App->>App: Save repository, branch, and exact commit
     App->>Q: Queue a short-lived job claim
-    Q->>Reader: Start one bounded reading job
+    Q->>Reader: Start one size-limited reading job
     Reader->>GH: Fetch the exact commit archive
     Reader->>Reader: Read supported files without running code
     Reader->>Store: Save evidence, facts, and links
@@ -244,6 +251,10 @@ partly trusted.
 
 Unchanged files reuse their earlier evidence. Changed files create new
 evidence tied to the new commit.
+
+The verified delivery inbox is also the recovery boundary. If the first save
+fails, GitHub receives a retryable response. If later processing stops, a
+short-lived claim lets another worker safely resume the saved delivery.
 
 ### Current branch and pull-request views
 
@@ -315,10 +326,15 @@ The rank considers:
 Contradictory or stale evidence lowers confidence. Sparse feedback is never
 allowed to overrule current evidence.
 
-The work is deliberately bounded: one run accepts at most 500 possible pages,
-keeps graph paths no deeper than five links, and returns at most 100 affected
+The work is deliberately limited: one run accepts at most 500 possible pages,
+keeps graph paths no deeper than five links, and saves at most 50 affected
 pages. A typical run asks for only the top ten. These limits keep one noisy
-repository from creating unbounded work.
+repository from creating unlimited work.
+
+Impact work uses a renewable, time-limited claim and three attempts. A stopped
+worker cannot leave a run permanently stuck as `running`. Results are filtered
+through the destination site's documentation-source connection before the UI,
+MCP endpoint, or Track can read them.
 
 ### What the Product knowledge screen communicates
 
@@ -333,19 +349,21 @@ repository from creating unbounded work.
 │ web-app       current  91d3aa       │ 4 affected pages                    │
 │ sdk           reading  b601ff       │ Track pull request ready            │
 ├────────────────────────────────────────────────────────────────────────────┤
-│ Why these docs are affected                                              │
-│ 1  /api/refunds      strong direct link     3 paths · 5 evidence items    │
-│ 2  /guides/refunds   matching example       2 paths · 3 evidence items    │
-│                                                                            │
-│ [Affected]  [Not affected]  [False positive]  [Review later]              │
+│ Review queue                                                              │
+│ 1  Refund API          /api/refunds          strong match                  │
+│ 2  Refund guide        /guides/refunds       likely match                  │
 └────────────────────────────────────────────────────────────────────────────┘
 ```
 
-Owners and editors can correct an impact result. Viewers can inspect it. The
-screen shows a fact index and evidence, not a decorative web of dots.
+Opening a result shows the product value before and after the change, the
+strongest supported relationship path, expandable file-and-commit evidence,
+and a plain-language score explanation. Owners and editors can save or change
+an Affected, Not affected, False positive, or Review later decision. The saved
+choice is visible and completed reviews leave the pending count. Viewers can
+inspect the explanation without changing it.
 
 Agents can inspect the same knowledge through a site-scoped, read-only token.
-The token is shown once, can be revoked, and offers four bounded operations:
+The token is shown once, can be revoked, and offers four size-limited operations:
 search facts, get one fact, get nearby facts, and explain one impact result.
 It does not accept database queries or an arbitrary workspace ID.
 
@@ -372,7 +390,7 @@ sequenceDiagram
     alt No affected docs
         Impact-->>Product: Complete without AI work or a pull request
     else Docs need work
-        Impact->>Track: Send bounded pages, paths, and evidence
+        Impact->>Track: Send a limited set of pages, paths, and evidence
         Track->>Docs: Check out docs in a disposable sandbox
         Track->>Track: Edit MDX and run validation
         Track->>Docs: Open a Track pull request
@@ -402,7 +420,7 @@ Track never merges its own pull request by default. Reviewers can change or
 reject the draft. Their decisions improve later ranking only after enough
 examples exist.
 
-If a GitHub delivery is missed, a reconciliation job checks completed Track
+If a GitHub delivery is missed, a recovery check finds completed Track
 pull requests and reconnects the merge to its deployment. Replaying an event
 is safe because jobs and releases have stable keys.
 
@@ -415,7 +433,7 @@ safe content or also changed executable site code.
 <Mermaid>{`
 flowchart TD
     Push["Verified push at an exact commit"] --> Diff{"What changed?"}
-    Diff -- "Docs, navigation, or public files only" --> Content["Fast content release"]
+    Diff -- "Docs pages, snippets, or docs.json only" --> Content["Fast content release"]
     Diff -- "Site code, packages, or build settings" --> Build["Full isolated build"]
     Diff -- "Cannot prove the difference" --> Build
 
@@ -430,7 +448,10 @@ flowchart TD
 
 For a content-only change, Thally reuses the checked site code from the active
 build and replaces the content assets. It still creates a new fixed release,
-uploads it under a new identity, and smoke-checks it before promotion.
+uploads it under a new identity, and smoke-checks it before promotion. Existing
+pages can be edited, added, deleted, or renamed. Deleting or renaming
+`docs.json`, changing a public asset, or changing executable code safely falls
+back to a full build.
 
 ### Full build
 
@@ -468,7 +489,9 @@ release never replaces it.
 ```
 
 Rollback changes the pointer to an earlier checked release. It does not
-rebuild the site, change DNS, or rewrite the repository.
+rebuild the site, change DNS, or rewrite the repository. The dashboard asks for
+confirmation and names the release, commit, and domain before changing
+production.
 
 ### How a live request reaches the right site
 
@@ -496,8 +519,9 @@ not parse separate copies for different readers.
 These rules hold across the full flow:
 
 - Every site, source, graph query, impact result, and job is checked against
-  the active workspace on the server.
-- GitHub webhooks are signature-checked before work is accepted.
+  the active workspace and an active site on the server.
+- GitHub webhooks are signature-checked and durably saved before work is
+  accepted.
 - Repository access uses short-lived GitHub App tokens tied to an installation.
 - Queue messages carry claims for one job, not reusable credentials or source
   archives.
@@ -509,21 +533,28 @@ These rules hold across the full flow:
 - Preview releases cannot promote themselves to production.
 - A failed build, smoke test, or evidence check leaves the current live site
   unchanged.
-- Deleting a knowledge source removes its evidence files, search vectors,
-  cached results, model output, and queued work before relational records are
-  removed.
+- Deleting a site immediately revokes its site and Product Knowledge tokens and
+  prevents queued or running Track capabilities from obtaining repository
+  access.
+- Deleting knowledge first marks the source as unavailable, stops and waits for
+  active readers, then removes evidence files, search vectors, cached results,
+  model output, and relational records. Completion is recorded only after the
+  external stores have been checked.
 
 ## 7. Failure and recovery
 
 | Failure | What Thally does |
 | --- | --- |
 | The create-site request is retried | Resumes the row with the same creation key |
-| GitHub takes time to expose a generated repo | Polls with a bounded delay before declaring it incompatible |
+| The site-creation web process stops | Another worker resumes the saved provisioning job after its time-limited claim expires |
+| A verified GitHub delivery fails after capture | The inbox retries it after the earlier worker's claim expires |
+| GitHub takes time to expose a generated repo | Polls for a limited time before declaring it incompatible |
 | The fresh-site shortcut is unavailable or unsafe | Runs a full build |
 | A product archive is too large or contains unsupported paths | Rejects the reading job rather than trusting partial output |
 | Product reading fails | Keeps the earlier current graph and retries the job |
 | Two product sources disagree | Keeps both statements and opens a review item |
 | No docs are affected | Completes without AI use or a pull request |
+| An impact worker stops | A later worker resumes the job; three failed attempts become a visible failure |
 | Track cannot support a statement with allowed evidence | Opens no pull request |
 | A Track merge webhook is missed | Reconciliation reconnects the merged pull request and deployment |
 | A release fails validation or smoke checks | Keeps the previous release live |
@@ -542,7 +573,7 @@ Imagine that `payments-api` changes the `reason` field on
 5. The affected-docs check finds `/api/refunds` through its direct OpenAPI link
    and `/guides/refunds` through a short supported path and matching example.
 6. The impact screen shows both pages, their paths, and evidence.
-7. Track receives only those pages and the bounded evidence needed to update
+7. Track receives only those pages and the limited evidence needed to update
    them.
 8. Track edits the MDX, runs validation, proves its factual statements, and
    opens a documentation pull request.
