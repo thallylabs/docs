@@ -1,5 +1,5 @@
 ---
-title: OG Image Previews
+title: Customize link previews
 description: Configure dynamic Open Graph images for social media link previews.
 ---
 
@@ -13,11 +13,12 @@ Every doc page automatically gets an OG image URL in its metadata:
 /api/og?title=Quickstart&description=Get+started+in+five+minutes&group=Getting+Started
 ```
 
-The `/api/og` route runs on the edge and renders a 1200×630 PNG using [Satori](https://github.com/vercel/satori). It reads your brand colors from `src/data/site.ts` so the image matches your theme out of the box.
+The `/api/og` route renders a 1200×630 PNG using [Satori](https://github.com/vercel/satori).
+It reads the brand colors in `src/data/site.ts` so the image matches your theme.
 
 ## Default behavior
 
-With zero configuration, Thally will:
+By default, Thally will:
 
 - Use your **dark theme** brand palette for the image background, accent bar, and text colors
 - Display the **site name** and **domain** (from `THALLY_SITE_URL`) in the bottom bar

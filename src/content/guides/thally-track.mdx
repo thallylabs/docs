@@ -45,7 +45,8 @@ Track is **opt-in**. A freshly scaffolded Thally site (`npx create-thally-docs`)
 thally track add acme/api-server --paths "src/**,openapi.yaml" --tab "API Reference"
 ```
 
-This writes a `tracking` block into `docs.json` — version-controlled, so tracking a new repo is a reviewed change, just like the team roster:
+This writes a version-controlled `tracking` block to `docs.json`, so adding a
+repository becomes a reviewable configuration change:
 
 ```json
 "tracking": {

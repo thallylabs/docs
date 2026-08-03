@@ -189,7 +189,7 @@
       "tab": "Guides",
       "groups": [
         {
-          "group": "Document APIs",
+          "group": "Document your API",
           "icon": "link-simple",
           "pages": [
             "guides/api-reference-setup",

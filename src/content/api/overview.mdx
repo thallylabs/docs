@@ -1,107 +1,69 @@
 ---
-title: Overview
-description: Base URL, authentication, rate limits, and error handling for the Pet Store API.
+title: Explore the API reference demo
+description: See how Thally turns the included JSONPlaceholder OpenAPI spec into interactive endpoint pages.
 ---
 
-The Pet Store API is a RESTful HTTP API that lets you manage pets, place orders, and query store inventory. All requests and responses use JSON.
+Thally reads `openapi.yaml` and creates one page for each operation. The generated
+pages include parameters, request and response schemas, a cURL example, and the
+**Try It** panel.
 
-## Base URL
+<Note type="info" title="This is sample content">
+  This tab documents JSONPlaceholder so you can test Thally's API-reference
+  experience. It does not describe a Thally service API. Replace the sample
+  specification before you publish your own documentation.
+</Note>
 
-All endpoints are relative to the base URL:
+## Try the included specification
 
-```
-https://api.example.com/v1
-```
+The sample points to `https://jsonplaceholder.typicode.com` and does not define
+authentication. Open a generated endpoint such as **List posts**, select
+**Try It**, and send the request to see the complete flow.
 
-There is no versioning in the path beyond `v1`. Breaking changes are communicated with a deprecation notice and a migration window.
+`GET` requests return sample data. JSONPlaceholder accepts write requests but
+does not persist the changes.
 
-## OpenAPI specification
+## View the source specification
 
-You can fetch the full API specification directly from the docs site:
+Thally serves the configured specification in both formats:
 
-- YAML: `/openapi.yaml`
-- JSON: `/openapi.json`
+- YAML: [`/openapi.yaml`](/openapi.yaml)
+- JSON: [`/openapi.json`](/openapi.json)
 
-For local development:
+From a local development server:
 
 ```bash
 curl http://localhost:3040/openapi.yaml
 curl http://localhost:3040/openapi.json
 ```
 
-## Authentication
+## Replace the demo with your API
 
-The API supports two authentication methods. Include one of the following on every request.
+<Steps>
 
-### Bearer token
+<Step title="Add your specification">
+Replace the root `openapi.yaml` file, or add an OpenAPI JSON file.
+</Step>
 
-Pass a JWT bearer token in the `Authorization` header:
-
-```bash
-Authorization: Bearer <token>
-```
-
-### API key
-
-Pass your API key in the `X-API-Key` header:
-
-```bash
-X-API-Key: <your-api-key>
-```
-
-<Note type="info" title="Which should I use?">
-Use **Bearer tokens** for server-to-server integrations. Use **API keys** for quick testing and internal tooling. Both grant the same level of access.
-</Note>
-
-## Rate limits
-
-Requests are rate-limited per API key. Exceeding the limit returns `429 Too Many Requests`.
-
-| Plan | Requests / minute |
-| --- | --- |
-| Free | 60 |
-| Pro | 600 |
-| Enterprise | Unlimited |
-
-When rate-limited, the response includes a `Retry-After` header indicating how many seconds to wait before retrying.
-
-## Errors
-
-All error responses use a consistent JSON shape:
+<Step title="Update docs.json">
+Point the API Reference tab at your file and list any tags you want to appear first.
 
 ```json
 {
-  "code": "not_found",
-  "message": "The requested resource was not found."
+  "tab": "API Reference",
+  "api": {
+    "source": "openapi.yaml",
+    "tagsOrder": ["Authentication", "Users"]
+  }
 }
 ```
+</Step>
 
-| Status | Code | Meaning |
-| --- | --- | --- |
-| `400` | `bad_request` | Malformed request or missing required fields |
-| `401` | `unauthorized` | Missing or invalid credentials |
-| `404` | `not_found` | Resource does not exist |
-| `422` | `validation_error` | Request body failed schema validation |
-| `429` | `rate_limited` | Too many requests — check `Retry-After` |
-| `500` | `internal_error` | Unexpected server error |
+<Step title="Check the generated pages">
+Run `npx thally dev`, open at least one endpoint, and compare its parameters and
+schemas with your specification.
+</Step>
 
-## Pagination
+</Steps>
 
-List endpoints use **cursor-based pagination**. Pass the `next_cursor` from a response as the `cursor` query parameter in your next request. When `next_cursor` is `null`, you have reached the last page.
-
-```bash
-GET /pets?limit=20&cursor=eyJpZCI6ImIyYzNkNGU1In0
-```
-
-## SDKs
-
-Official client libraries are available for the most common languages:
-
-<CardGroup cols={2}>
-  <Card title="TypeScript / Node.js" icon="code-simple" href="/sdks">
-    Fully typed, Promise-based client with tree-shakeable imports.
-  </Card>
-  <Card title="Python" icon="code-simple" href="/sdks">
-    Async-first client compatible with FastAPI, Django, and Flask.
-  </Card>
-</CardGroup>
+Next, follow [Generate an API reference](/guides/api-reference-setup) for
+operation overrides, grouping, authentication placeholders, and validation.

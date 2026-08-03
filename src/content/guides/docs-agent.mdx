@@ -9,7 +9,10 @@ keywords:
   - agent-native
 ---
 
-The **docs agent** turns a *task* into documentation edits. A task is just an instruction plus optional context (a git diff, or a product PR) — the agent reads your existing docs, drafts the smallest correct change in your house style, validates its own work with `thally check`, and hands you a branch or a pull request to review.
+The **docs agent** turns an instruction and optional context—a git diff or
+product pull request—into documentation edits. It reads the existing docs,
+drafts a focused change in your house style, runs `thally check`, and gives you
+a branch or pull request to review.
 
 It runs on **your** infrastructure with **your** Anthropic key. Nothing is hosted by Thally.
 
