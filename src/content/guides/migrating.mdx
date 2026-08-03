@@ -12,6 +12,18 @@ This guide takes you from an existing documentation source to a managed Thally d
   Thally Cloud does not crawl the source site. Run the migration with the CLI, push the generated project to GitHub, then connect that repository to Thally Cloud.
 </Note>
 
+<AgentPrompt
+  title="Ask an agent to run and review a migration"
+>
+
+Migrate SOURCE_URL into a new Thally project at TARGET_DIRECTORY.
+
+Prefer the source GitHub repository over a live crawl when it is available. Use the Thally MCP migrate_docs tool if connected; otherwise run npx create-thally-docs@latest migrate SOURCE_URL TARGET_DIRECTORY. Never use import_docs or --into unless I explicitly request an in-place merge.
+
+After migration, install dependencies, run npx thally check and npm run build, and inspect the homepage, navigation, representative content pages, code blocks, images, and API reference. Report warnings and anything that needs human review. Do not overwrite a non-empty directory, deploy, commit, or push without asking.
+
+</AgentPrompt>
+
 ## Before you begin
 
 You need:

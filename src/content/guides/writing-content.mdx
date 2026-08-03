@@ -8,6 +8,18 @@ Use this guide to create one complete MDX page and choose the built-in
 components that make its task easier to follow. For content strategy, start
 with [Choose the right content type](/guides/content-types).
 
+<AgentPrompt
+  title="Ask an agent to write a page"
+>
+
+Create or improve a task-focused page in this Thally project about TASK.
+
+Inspect docs.json and search existing content before editing. Prefer updating an existing page when it already owns the task. Otherwise create one MDX file under src/content, add it to the most relevant navigation group, and use navTitle if the full page title would wrap in the sidebar.
+
+Write prerequisites, ordered steps, tested examples, and a clear success check. Use built-in Thally components only when they make the task easier to scan. Run npx thally check and npm run build, then summarize the changed files. Do not commit or push.
+
+</AgentPrompt>
+
 ## Create a page
 
 Add a file under `src/content/`. Its path becomes the URL, so

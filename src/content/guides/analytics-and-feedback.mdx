@@ -53,6 +53,33 @@ THALLY_ANALYTICS_DB_TOKEN=your-token
 Local development and persistent-disk hosts can use the `.data/analytics/`
 database created by the runtime.
 
+## Cookies and consent
+
+Thally's native traffic collection runs on the server. It records the requested
+path, content slug, request format, referrer, and whether the request appears to
+come from a human or an agent. It does **not** create a persistent visitor ID or
+analytics cookie, so a public site using only native Thally analytics does not
+need a cookie banner for that feature.
+
+Thally does use strictly necessary, `HttpOnly` cookies when you enable features
+that require a session:
+
+- admin password or OIDC sign-in;
+- password-protected documentation;
+- the short-lived OIDC login flow.
+
+Those cookies use `SameSite=Lax`, are marked `Secure` in production, and are not
+used for advertising or cross-site tracking. A dismissible site banner stores
+its dismissed state in `localStorage`, not a cookie.
+
+<Warning title="Third-party scripts can change the requirement">
+Google Analytics, PostHog, advertising pixels, embedded media, or custom scripts
+may set cookies or similar identifiers. If you enable them, add consent controls
+that match the providers, your configuration, and the regions you serve. Do not
+show a generic consent banner that cannot actually prevent those scripts from
+loading.
+</Warning>
+
 ## Review useful signals
 
 Use the dashboard to look for:
