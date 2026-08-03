@@ -1,5 +1,6 @@
 ---
 title: Frontmatter reference
+navTitle: Frontmatter
 description: Configure page titles, descriptions, search metadata, provenance, API operations, visibility, and layouts in MDX frontmatter.
 ---
 
@@ -9,6 +10,7 @@ controls how Thally labels, describes, indexes, verifies, and renders the page.
 ```yaml
 ---
 title: Configure single sign-on
+navTitle: Single sign-on
 description: Connect your identity provider and verify team sign-in.
 keywords:
   - SSO
@@ -23,7 +25,8 @@ verifiedVersion: 2.4.0
 
 | Field | Type | Default | Purpose |
 | --- | --- | --- | --- |
-| `title` | string | File name converted to words | Page heading, browser title, search result, and sidebar label. |
+| `title` | string | File name converted to words | Page heading, browser title, and search result. |
+| `navTitle` | string | `title` | Optional compact label for the sidebar and previous/next navigation. |
 | `description` | string | Empty | Search and social summary shown below the title. |
 | `badge` | string | None | Short status label shown with the page in navigation. |
 | `keywords` | string array | Derived from the page | Additional terms used by documentation search. |

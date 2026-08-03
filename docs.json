@@ -1,9 +1,5 @@
 {
   "theme": "default",
-  "banner": {
-    "content": "Thally v2 is coming — faster builds, more themes, and a brand-new component library. [See what's coming →](/changelog)",
-    "dismissible": true
-  },
   "ai": {
     "chat": true,
     "label": "ThallyAI",
