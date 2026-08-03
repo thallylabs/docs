@@ -1,10 +1,10 @@
 'use client'
 
-import Link from 'next/link'
 import { useState } from 'react'
 import type { ApiNavigationGroup } from '@/data/api-reference'
 import { getMethodToken } from '@/components/api/tokens'
 import { cn } from '@/lib/utils'
+import { IntentPrefetchLink } from '@/components/navigation/intent-prefetch-link'
 
 type HttpMethod = 'ALL' | 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'OPTIONS' | 'HEAD' | 'TRACE'
 
@@ -71,7 +71,7 @@ export function OperationNav({ navigation, activeOperationId, variant = 'sidebar
             const active = operation.id === activeOperationId
             const token = getMethodToken(operation.method)
             return (
-              <Link
+              <IntentPrefetchLink
                 key={operation.id}
                 href={operation.href}
                 className={cn(
@@ -88,7 +88,7 @@ export function OperationNav({ navigation, activeOperationId, variant = 'sidebar
                   </div>
                   <p className="break-all text-[10px] text-foreground/60 sm:text-xs">{operation.path}</p>
                 </div>
-              </Link>
+              </IntentPrefetchLink>
             )
           })}
           {!filteredOperations.length ? <p className="text-[10px] text-foreground/50 sm:text-xs">No operations match this method.</p> : null}

@@ -62,11 +62,10 @@ function shouldTrackPath(pathname: string): boolean {
 
 // A prefetch/prerender is speculative — the browser fetches a link the user may
 // never visit, so counting it as a view inflates traffic. We match the standard
-// `Sec-Purpose`/`Purpose` request headers. (Next.js <Link> prefetches send
-// `Next-Router-Prefetch`, but the framework strips that header before middleware
-// can read it — verified — so those can't be caught here. Admin-page prefetches
-// are instead excluded by isFromAdmin via the referer.)
+// `Sec-Purpose`/`Purpose` request headers plus Next.js's router-prefetch signal.
+// Admin-page prefetches are also excluded by isFromAdmin via the referer.
 function isPrefetchRequest(request: NextRequest): boolean {
+  if (request.headers.get('next-router-prefetch') === '1') return true
   const secPurpose = request.headers.get('sec-purpose') ?? ''
   if (secPurpose.includes('prefetch') || secPurpose.includes('prerender')) return true
   const purpose = (request.headers.get('purpose') ?? request.headers.get('x-purpose') ?? '').toLowerCase()
@@ -91,11 +90,24 @@ function shouldTrackRequest(request: NextRequest, pathname: string): boolean {
   return shouldTrackPath(pathname) && !isPrefetchRequest(request) && !isFromAdmin(request)
 }
 
-function isCacheableDocsPage(request: NextRequest, pathname: string): boolean {
+/**
+ * Browser documents and App Router payloads are safe to cache only when they
+ * are public and URL-distinct. RSC payloads require the `_rsc` query key so a
+ * CDN can never serve component data for a plain HTML request.
+ */
+function isCacheableDocsRequest(
+  request: NextRequest,
+  pathname: string,
+  docsAccessEnabled: boolean,
+): boolean {
+  const isHtmlDocument = request.headers.get('accept')?.includes('text/html') === true
+  const isRscPayload =
+    request.headers.get('rsc') === '1' && request.nextUrl.searchParams.has('_rsc')
+
   return (
     request.method === 'GET' &&
-    request.headers.get('accept')?.includes('text/html') === true &&
-    !isDocsAccessEnabledEdge() &&
+    (isHtmlDocument || isRscPayload) &&
+    !docsAccessEnabled &&
     !pathname.startsWith('/api') &&
     !pathname.startsWith('/admin') &&
     !pathname.startsWith('/_next')
@@ -337,11 +349,11 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
     response.headers.set('X-Llms-Txt', `${request.nextUrl.origin}/llms.txt`)
     response.headers.set('Content-Language', requestLocale)
   }
-  if (isCacheableDocsPage(request, pathname)) {
+  if (isCacheableDocsRequest(request, pathname, docsAccessEnabled)) {
     // Netlify treats responses that pass through middleware as dynamic. The
-    // document itself is prerendered, and atomic deploys invalidate this cache,
-    // so let CDNs serve it without a function round trip while browsers retain
-    // Next.js's normal revalidation behavior.
+    // document and URL-keyed RSC payloads are immutable within an atomic
+    // deploy, so let CDNs serve them without a function round trip while
+    // browsers retain Next.js's normal revalidation behavior.
     const cdnCache = 'public, s-maxage=31536000, stale-while-revalidate=86400'
     response.headers.set(
       'Cache-Control',

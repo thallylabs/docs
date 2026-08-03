@@ -1,12 +1,12 @@
 'use client'
 
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { NavigationSection } from '@/data/docs'
 import { Badge } from '@/components/ui/badge'
 import { ContentIcon } from '@/components/ui/content-icon'
 import { layout, typography } from '@/config/layout'
 import { cn } from '@/lib/utils'
+import { IntentPrefetchLink } from '@/components/navigation/intent-prefetch-link'
 
 interface SidebarProps {
   sections: Array<NavigationSection>
@@ -60,10 +60,9 @@ export function Sidebar({ sections, title, className }: SidebarProps) {
                     {section.items.map((item) => {
                       const active = isActive(item.href)
                       return (
-                        <Link
+                        <IntentPrefetchLink
                           key={item.id}
                           href={item.href}
-                          prefetch={false}
                           aria-current={active ? 'page' : undefined}
                           className={cn(
                             'group relative block px-3 py-[7px] text-left transition',
@@ -88,7 +87,7 @@ export function Sidebar({ sections, title, className }: SidebarProps) {
                             <span className="line-clamp-2 break-words">{item.title}</span>
                             {item.badge ? <Badge className="shrink-0 text-[10px] uppercase">{item.badge}</Badge> : null}
                           </span>
-                        </Link>
+                        </IntentPrefetchLink>
                       )
                     })}
                   </div>

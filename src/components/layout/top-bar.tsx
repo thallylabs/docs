@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { ExternalLink } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import type { SidebarCollection, DocsJsonNavbar } from '@/data/docs'
@@ -15,6 +14,7 @@ import { cn } from '@/lib/utils'
 import type { SiteLink } from '@/data/site'
 import { Logo } from '@/components/layout/logo'
 import { useSiteName } from '@/components/layout/use-site-name'
+import { IntentPrefetchLink } from '@/components/navigation/intent-prefetch-link'
 
 function matchesPath(targetHref: string, pathname: string) {
   if (!targetHref || /^https?:\/\//i.test(targetHref)) {
@@ -81,11 +81,11 @@ export function TopBar({
     <header className="thally-docs-topbar sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-xl">
       <div className={cn('thally-docs-topbar-inner flex h-12 items-center gap-3', shell.topbar)}>
         <MobileNav sections={activeSections} />
-        <Link href="/" prefetch={false} className="thally-docs-brand flex shrink-0 items-center gap-2 text-foreground">
+        <IntentPrefetchLink href="/" className="thally-docs-brand flex shrink-0 items-center gap-2 text-foreground">
           <Logo showText={false} className="shrink-0" />
           <span className="font-heading text-[1rem] font-bold tracking-[-0.015em]">{siteName}</span>
           <span className="-ml-1 font-heading text-[1rem] font-medium text-foreground/55">Docs</span>
-        </Link>
+        </IntentPrefetchLink>
         <nav className="thally-docs-tabs flex h-full items-center gap-[17px]" aria-label="Documentation sections">
           {collections.map((collection) => {
             const isActive = collection.id === activeCollectionId
@@ -111,14 +111,13 @@ export function TopBar({
                 )
               }
               return (
-                <Link
+                <IntentPrefetchLink
                   key={collection.id}
                   href={collection.href}
-                  prefetch={false}
                   className={baseClasses}
                 >
                   {collection.label}
-                </Link>
+                </IntentPrefetchLink>
               )
             }
             return (
@@ -156,10 +155,10 @@ export function TopBar({
                 )
               })
             : supportLink ? (
-                <Link href={supportLink.href} prefetch={false} className="thally-docs-topbar-link hidden whitespace-nowrap text-[0.86rem] font-medium text-foreground/70 hover:text-foreground sm:inline-flex">{supportLink.label}</Link>
+                <IntentPrefetchLink href={supportLink.href} className="thally-docs-topbar-link hidden whitespace-nowrap text-[0.86rem] font-medium text-foreground/70 hover:text-foreground sm:inline-flex">{supportLink.label}</IntentPrefetchLink>
               ) : null}
           {primaryCta ? (
-            <Link href={primaryCta.href} prefetch={false} className="thally-docs-primary inline-flex h-[30px] items-center rounded-[9px] bg-primary px-3 text-[0.84rem] font-semibold text-primary-foreground transition hover:brightness-125 active:scale-[0.98]">{primaryCta.label}</Link>
+            <IntentPrefetchLink href={primaryCta.href} className="thally-docs-primary inline-flex h-[30px] items-center rounded-[9px] bg-primary px-3 text-[0.84rem] font-semibold text-primary-foreground transition hover:brightness-125 active:scale-[0.98]">{primaryCta.label}</IntentPrefetchLink>
           ) : null}
           <VersionSwitcher />
           {i18nConfig && i18nConfig.locales.length >= 2 ? (
