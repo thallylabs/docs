@@ -10,24 +10,24 @@ keywords:
   - agent-native
 ---
 
-Alongside `/llms.txt`, Thally generates two agent-facing manifests automatically —
-no configuration required. Both describe your documentation *to agents*, and both
-stay in sync with your content because they're generated from the same content
-graph.
+Thally publishes a set of agent-facing surfaces automatically. They all come
+from the same content graph, so agents can discover, retrieve, cite, and safely
+edit your documentation without relying on a second copy of the content.
 
 ## `skill.md` — a capability manifest
 
 Served at **`/skill.md`**, this is a Claude-skill-shaped description of what your
-product is and how an agent can read your docs programmatically: the `llms.txt`
-index, per-page Markdown (`.md`) and JSON endpoints, the search API, and your
-OpenAPI spec. Point an agent at it and it knows how to work with your docs.
+product is and how an agent can read your docs programmatically. It tells the
+agent to search before reading deeply, cite canonical page URLs, separate
+documented facts from inference, and treat the public MCP server as read-only.
 
 ## `AGENTS.md` — guidance for editing the docs
 
 Served at **`/AGENTS.md`**, this tells an agent *working on your repo* how the
-project is laid out and how to add or edit pages safely (frontmatter rules,
-`docs.json` registration, running `thally check`). It's also the config surface the
-`thally agent` reads.
+project is laid out and how to add or edit pages safely. It covers task-focused
+page structure, `docs.json` navigation, ownership boundaries, product-fact
+verification, validation, browser review, and actions that require explicit
+approval. It's also the config surface the `thally agent` reads.
 
 <Note type="tip">
 Drop a physical `AGENTS.md` at your project root to override the generated one
@@ -35,9 +35,21 @@ with hand-tuned guidance — style rules, files to never touch, review requireme
 The file wins over the generated default.
 </Note>
 
-## Discovery
+## Discovery and retrieval surfaces
 
-Both manifests are linked from `/llms.txt`, and Thally advertises the index on every
-page with `Link: </llms.txt>; rel="llms-txt"` and `X-Llms-Txt` response headers,
-plus a `/.well-known/llms.txt` mirror — so agents and crawlers find everything
-without guessing.
+| Surface | What it gives an agent |
+| --- | --- |
+| `/llms.txt` | A concise documentation index and the recommended retrieval workflow |
+| `/llms-full.txt` | The complete published corpus in one text response |
+| `/.well-known/llms.txt` | A standards-friendly mirror of the concise index |
+| `/ai.txt` | Content-negotiation rules, allowed agent routes, and retrieval endpoints |
+| `/robots.txt` | Crawler permissions plus pointers to `llms.txt`, `skill.md`, and `AGENTS.md` |
+| `/api/docs-index` | A structured JSON index with page metadata and discovery links |
+| `/api/search` | Ranked page discovery for a natural-language query |
+| `/api/docs/{slug}` | One page as JSON, JSON-LD, or Markdown |
+| `/api/mcp` | Four public, read-only tools for search, page retrieval, listing, and readiness |
+| `/api/agent-readiness` | A machine-readable report of missing or weak agent surfaces |
+
+Thally advertises `/llms.txt` on every page with
+`Link: </llms.txt>; rel="llms-txt"` and `X-Llms-Txt` response headers. Agents can
+start from any discovery surface without guessing undocumented routes.
