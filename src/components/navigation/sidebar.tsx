@@ -36,7 +36,7 @@ export function Sidebar({ sections, title, className }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'thally-docs-sidebar relative hidden shrink-0 border-r border-border bg-sidebar lg:block',
+        'thally-docs-sidebar relative hidden shrink-0 border-r border-border bg-background lg:block',
         layout.sidebarWidth,
         className,
       )}
