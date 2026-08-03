@@ -125,7 +125,7 @@ Leave a setting untouched in the dashboard and the file default applies. This le
 
 Locally, analytics and admin state write to on-disk SQLite files under `.data/` — zero config. On **serverless** hosts (for example Vercel), that filesystem does not persist, so Home metrics stay empty and Analytics may show an error until you point Thally at a remote libSQL database (Turso).
 
-Set `THALLY_ANALYTICS_DB_URL` / `THALLY_ANALYTICS_DB_TOKEN` for traffic data, and `THALLY_DATABASE_URL` / `THALLY_DATABASE_TOKEN` for durable admin settings and related state. Full setup steps are in [Deploying → Analytics & durable storage](/guides/deploying#analytics--durable-storage).
+Set `THALLY_ANALYTICS_DB_URL` / `THALLY_ANALYTICS_DB_TOKEN` for traffic data, and `THALLY_DATABASE_URL` / `THALLY_DATABASE_TOKEN` for durable admin settings and related state. See the [environment variable reference](/guides/environment-variables#durable-storage-and-analytics).
 
 Agent Readiness does not use this database — it scores your docs content directly.
 

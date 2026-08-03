@@ -128,7 +128,7 @@
   },
   "tabs": [
     {
-      "tab": "Overview",
+      "tab": "Get started",
       "groups": [
         {
           "group": "Start here",
@@ -137,16 +137,30 @@
             "introduction",
             "quickstart",
             "guides/getting-started",
-            "guides/cli-reference"
+            "guides/preview-locally",
+            "guides/project-structure"
           ]
         },
         {
-          "group": "Create and organize",
+          "group": "Create content",
           "icon": "book-open",
           "pages": [
             "guides/writing-content",
+            "guides/content-types",
+            "guides/frontmatter-reference",
+            "guides/images-and-files",
+            "guides/reusable-snippets",
+            "guides/page-modes",
+            "guides/multi-language"
+          ]
+        },
+        {
+          "group": "Organize your docs",
+          "icon": "grid-round",
+          "pages": [
             "guides/configuring-navigation",
-            "guides/api-reference-setup"
+            "guides/seo-and-visibility",
+            "guides/redirects"
           ]
         },
         {
@@ -155,15 +169,18 @@
           "pages": [
             "guides/branding-and-theming",
             "guides/navbar-and-footer",
-            "guides/custom-fonts"
+            "guides/custom-fonts",
+            "guides/site-banner",
+            "guides/og-images",
+            "guides/custom-404",
+            "guides/custom-scripts"
           ]
         },
         {
-          "group": "Publish confidently",
+          "group": "Validate and publish",
           "icon": "wrench",
           "pages": [
-            "guides/ci-checks",
-            "guides/deploying"
+            "guides/ci-checks"
           ]
         }
       ]
@@ -172,23 +189,36 @@
       "tab": "Guides",
       "groups": [
         {
-          "group": "Create and extend",
-          "icon": "book-open",
+          "group": "Document APIs",
+          "icon": "link-simple",
           "pages": [
-            "guides/extending",
-            "guides/page-modes",
-            "guides/multi-language"
+            "guides/api-reference-setup",
+            "guides/api-playground",
+            "guides/api-troubleshooting",
+            "api/overview",
+            "api/reference"
           ]
         },
         {
-          "group": "Shape the experience",
+          "group": "Deploy",
+          "icon": "wrench",
+          "pages": [
+            "guides/deploying",
+            "guides/deploy-vercel",
+            "guides/deploy-cloudflare",
+            "guides/deploy-docker",
+            "guides/private-docs",
+            "guides/environment-variables"
+          ]
+        },
+        {
+          "group": "Operate and improve",
           "icon": "grid-round",
           "pages": [
-            "guides/og-images",
-            "guides/site-banner",
-            "guides/redirects",
-            "guides/custom-404",
-            "guides/custom-scripts"
+            "guides/admin-dashboard",
+            "guides/analytics-and-feedback",
+            "guides/troubleshooting",
+            "guides/migrating"
           ]
         },
         {
@@ -206,18 +236,19 @@
           ]
         },
         {
-          "group": "Operate and migrate",
-          "icon": "wrench",
+          "group": "Reference",
+          "icon": "link-simple",
           "pages": [
-            "guides/admin-dashboard",
-            "guides/seo-and-visibility",
-            "guides/migrating",
-            "architecture"
+            "guides/docs-json-reference",
+            "guides/cli-reference",
+            "architecture",
+            "guides/extending"
           ]
         },
         {
-          "group": "Template reference",
-          "icon": "link-simple",
+          "group": "Example content",
+          "icon": "book-open",
+          "hidden": true,
           "pages": [
             "authentication",
             "pagination",
@@ -232,15 +263,6 @@
     },
     {
       "tab": "API Reference",
-      "groups": [
-        {
-          "group": "Overview",
-          "pages": [
-            "api/overview",
-            "api/reference"
-          ]
-        }
-      ],
       "api": {
         "source": "openapi.yaml",
         "tagsOrder": [

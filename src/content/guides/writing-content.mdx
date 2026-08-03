@@ -3,6 +3,16 @@ title: Create and edit pages
 description: Create task-focused MDX pages with frontmatter, code examples, and built-in documentation components.
 ---
 
+Use this guide to create one complete MDX page and choose the built-in
+components that make its task easier to follow. For content strategy, start
+with [Choose the right content type](/guides/content-types).
+
+## Create a page
+
+Add a file under `src/content/`. Its path becomes the URL, so
+`src/content/guides/invite-a-member.mdx` is available at
+`/guides/invite-a-member`.
+
 ## MDX basics
 
 Every page in Thally is an `.mdx` file — Markdown with JSX support. You can use standard Markdown syntax plus React components inline.
@@ -35,6 +45,9 @@ description: A short summary for search results and meta tags.
 | `description` | Yes | Meta description and search snippet |
 
 The title from frontmatter is automatically rendered as the page heading — you don't need to add an `# H1` in the body.
+
+See the [frontmatter reference](/guides/frontmatter-reference) for search,
+provenance, visibility, API-operation, and page-layout fields.
 
 ## Code blocks
 
@@ -158,6 +171,9 @@ Wrap images in a `<Frame>` for a styled border with an optional caption. Frames 
 
 Disable zoom with `<Frame zoom={false}>`.
 
+For asset organization, alt text, downloads, and review guidance, see
+[Add images and downloadable files](/guides/images-and-files).
+
 ## Heading anchor links
 
 Every `h2` and `h3` heading is automatically a permalink. Clicking the heading copies the full section URL to the clipboard without adding a visible marker beside the heading. This makes it easy to share links to specific sections while keeping the page visually clean.
@@ -187,3 +203,25 @@ src/content/
 ```
 
 The URL path matches the file path relative to `src/content/`, minus the `.mdx` extension.
+
+## Add the page to navigation
+
+In `docs.json`, add the page ID to the intended group's `pages` array. For the
+example above, use `"guides/invite-a-member"`. See
+[Organize your navigation](/guides/configuring-navigation).
+
+## Verify the page
+
+Open the page in the [local preview](/guides/preview-locally), follow its
+instructions, test links and interactive components, then run:
+
+```bash
+npx thally check
+npm run build
+```
+
+## Next steps
+
+- [Reuse content with snippets](/guides/reusable-snippets)
+- [Choose a page layout](/guides/page-modes)
+- [Browse the component reference](/components/badge)

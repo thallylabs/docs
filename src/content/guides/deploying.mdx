@@ -1,178 +1,86 @@
 ---
 title: Deploy your documentation site
-description: Build, configure, and publish a Thally site on your preferred hosting platform.
+description: Prepare a Thally site for production, choose a supported hosting path, and verify the deployed documentation.
 ---
 
-## Build for production
+Every deployment starts with the same production checks. The host-specific
+pages cover the commands and settings for Vercel, Cloudflare, and Docker.
 
-```bash
-npm run build
-```
+## Before you deploy
 
-This generates an optimized production build in the `.next/` directory. All documentation pages are statically pre-rendered for fast loading.
+1. Set the production origin:
 
-## Environment variables
+   ```bash
+   THALLY_SITE_URL=https://docs.example.com
+   ```
 
-Before deploying, set the `THALLY_SITE_URL` environment variable to your production domain. This is used for OpenGraph metadata and canonical URLs:
+2. Validate content and navigation:
 
-```bash
-THALLY_SITE_URL=https://docs.yourproduct.com
-```
+   ```bash
+   npx thally check --ci
+   ```
 
-Depending on which features you use, you may also want to set:
+3. Create a production build:
 
-| Variable | Enables |
-| --- | --- |
-| `THALLY_SITE_URL` | OpenGraph metadata and canonical URLs (recommended for every deploy) |
-| `THALLY_CLOUD_SITE_TOKEN` | Connects an externally hosted deployment to its Thally Cloud site (server-only) |
-| `THALLY_CLOUD_URL` | Overrides the Thally Cloud control-plane URL for staging or a public development tunnel |
-| `THALLY_CLOUD_SITE_CONFIG` | Managed-hosting settings snapshot injected automatically by Thally Cloud; do not set this yourself |
-| `ANTHROPIC_API_KEY` | The in-docs AI assistant ([AI features](/guides/ai-features)) |
-| `THALLY_ADMIN_PASSWORD` | Break-glass Owner access to the `/admin` dashboard |
-| `THALLY_OIDC_ISSUER` / `THALLY_OIDC_CLIENT_ID` / `THALLY_OIDC_CLIENT_SECRET` | Team sign-in to the dashboard via your IdP |
-| `THALLY_AUTH_SECRET` | Signs admin sessions and encrypts stored secrets (required with OIDC, and for the Connect-GitHub app key) |
-| `THALLY_ANALYTICS_DB_URL` / `THALLY_ANALYTICS_DB_TOKEN` | Durable analytics store on serverless hosts (see [Analytics & durable storage](#analytics--durable-storage)) |
-| `THALLY_DATABASE_URL` / `THALLY_DATABASE_TOKEN` | Durable admin storage (settings, tasks, rate limits) on serverless hosts |
-| `THALLY_TRACK_WEBHOOK_SECRET` / `THALLY_GITHUB_TOKEN` | [Thally Track](/guides/thally-track) — the manual-webhook path (not needed if you Connect a GitHub App) |
-| `THALLY_GITHUB_APP_ID` / `THALLY_GITHUB_APP_INSTALLATION_ID` / `THALLY_GITHUB_APP_PRIVATE_KEY` | Optional — wire the Track GitHub App by hand instead of the admin "Connect GitHub" button |
+   ```bash
+   npm run build
+   ```
 
-Only `THALLY_SITE_URL` is needed for a basic docs site. Analytics and admin storage work with zero config locally; on serverless you need a remote database (below). See [Admin dashboard & team access](/guides/admin-dashboard) for the auth variables in context, and [Thally Track](/guides/thally-track) for the code-triggered-docs variables.
+`THALLY_SITE_URL` supplies canonical links, Open Graph metadata, sitemaps, and
+agent-facing URLs. Set it in the hosting provider rather than committing it to
+the repository.
 
-## Analytics & durable storage
+## Choose a deployment target
 
-Thally stores first-party analytics and some admin state in **libSQL** (SQLite-compatible). Locally this is automatic — no account, no setup.
+<CardGroup cols={3}>
+  <Card title="Deploy to Vercel" icon="code-simple" href="/guides/deploy-vercel">
+    Import the repository or deploy it with the Thally CLI.
+  </Card>
+  <Card title="Deploy to Cloudflare" icon="wrench" href="/guides/deploy-cloudflare">
+    Build and publish the OpenNext Worker artifact.
+  </Card>
+  <Card title="Deploy with Docker" icon="grid-round" href="/guides/deploy-docker">
+    Run the site on a container host with persistent storage when needed.
+  </Card>
+</CardGroup>
 
-| Environment | What happens |
-| --- | --- |
-| **Local (`npm run dev`)** | Analytics writes to `.data/analytics/events.db`. General admin KV storage uses `.data/thally.db`. Both are created on first use. |
-| **Server with a persistent disk** (Docker volume, VPS) | The same on-disk files work if the volume survives restarts. |
-| **Serverless** (Vercel, Lambda, etc.) | The filesystem is ephemeral. Without a remote database, Home/Analytics show empty values or fail to load, and runtime admin settings may not persist across deploys. |
+## Choose the required runtime
 
-### When you need a remote database
+Use a server-capable deployment for:
 
-Point Thally at a hosted libSQL database such as [Turso](https://turso.tech) when you deploy to serverless **and** you want any of:
+- API **Try It** requests;
+- AI chat and remote MCP routes;
+- the admin dashboard and analytics ingestion;
+- password-protected documentation;
+- Thally Track webhooks and other server APIs.
 
-- Admin **Analytics** / Home traffic metrics
-- Durable admin settings, docs-task queue state, or rate-limit counters across instances
+A fully static export is suitable only when you need rendered documentation
+pages and static assets. The features above depend on server routes and will
+not work in an `output: 'export'` build.
 
-Agent Readiness still works without a database — it is computed from your docs content, not from the analytics store.
+## Add production configuration
 
-### Set up Turso (recommended for Vercel)
+Only `THALLY_SITE_URL` is required for a basic public site. Add credentials and
+storage variables only for features you enable. See the complete
+[environment variable reference](/guides/environment-variables).
 
-1. Create a free database (CLI or [Turso dashboard](https://turso.tech)):
+For serverless hosts, configure remote libSQL storage when analytics, settings,
+task state, or rate-limit counters must survive redeploys. A Docker host or VPS
+can instead persist the local `.data/` directory on a volume.
 
-```bash
-brew install tursodatabase/tap/turso   # or follow Turso's install docs
-turso auth login
-turso db create your-docs
-turso db show your-docs --url
-turso db tokens create your-docs
-```
+## Verify the live site
 
-2. Add these environment variables on your host (Production):
+After deployment:
 
-```bash
-# Analytics (page views, human vs agent traffic, search terms)
-THALLY_ANALYTICS_DB_URL=libsql://your-docs-….turso.io
-THALLY_ANALYTICS_DB_TOKEN=…
+1. Open the homepage and one nested page on desktop and mobile.
+2. Follow sidebar, search, breadcrumb, and previous/next links.
+3. Check `/sitemap.xml`, `/robots.txt`, and `/llms.txt`.
+4. Test any enabled server feature, including Try It, chat, feedback, admin, or
+   access protection.
+5. Confirm canonical URLs use the production domain.
 
-# Admin KV (settings overrides, tasks, rate limits) — can be the same database
-THALLY_DATABASE_URL=libsql://your-docs-….turso.io
-THALLY_DATABASE_TOKEN=…
-```
+## Next steps
 
-3. Redeploy. Thally creates the required tables on first connect — you do not run migrations by hand.
-
-You can use one Turso database for both pairs of variables, or separate databases if you prefer.
-
-<Note type="info" title="Local data stays local">
-  Your laptop's `.data/` files are not uploaded to production. After connecting Turso, production analytics start empty and fill as real traffic hits the live site.
-</Note>
-
-## Cloudflare Workers
-
-The repository ships with the OpenNext adapter and a checked-in `wrangler.jsonc`.
-Build the Worker, run the same artifact locally under workerd, then deploy it:
-
-```bash
-npm run build:cloudflare
-npm run smoke:cloudflare
-npm run deploy:cloudflare
-```
-
-The build creates `.open-next/worker.js` and its static-asset directory. Configure
-`THALLY_SITE_URL` and any optional secrets in the Worker environment before the
-production deploy. Thally Cloud performs these steps automatically for managed
-sites.
-
-## Vercel
-
-The fastest way to deploy — push to GitHub and import the repo:
-
-1. Push your docs repo to GitHub
-2. Go to [vercel.com/new](https://vercel.com/new) and import the repository
-3. Set `THALLY_SITE_URL` in the environment variables
-4. If you want admin analytics and durable settings, also set the Turso variables from [Analytics & durable storage](#analytics--durable-storage)
-5. Deploy
-
-Vercel auto-detects Next.js and configures everything.
-
-## Docker
-
-Create a `Dockerfile`:
-
-```dockerfile
-FROM node:22-alpine AS builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
-
-FROM node:22-alpine AS runner
-WORKDIR /app
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/src/content ./src/content
-COPY --from=builder /app/openapi.yaml ./
-COPY --from=builder /app/docs.json ./
-
-EXPOSE 3000
-CMD ["npm", "start"]
-```
-
-Build and run:
-
-```bash
-docker build -t my-docs .
-docker run -p 3000:3000 my-docs
-```
-
-## Static export
-
-If you don't need server-side features (like the Try It proxy), you can export as a fully static site. Add to `next.config.ts`:
-
-```ts
-const nextConfig = {
-  output: 'export',
-}
-```
-
-Then run `npm run build` — the output will be in the `out/` directory, ready for any static host.
-
-<Note type="warning" title="Static export limitation">
-  The API "Try It" panel requires a server-side proxy route and won't work with static export. All other features work fine.
-</Note>
-
-## SEO and feeds
-
-Once deployed, Thally automatically serves:
-
-- **`/sitemap.xml`** — includes all doc pages, API reference pages, and the changelog
-- **`/robots.txt`** — allows crawlers on all pages, blocks internal API routes (`/api/og`, `/api/try-it`)
-- **`/changelog/rss.xml`** — RSS feed for changelog updates
-- **Dynamic OG images** — every page gets a branded social preview image via `/api/og`
-
-All of these use `THALLY_SITE_URL` to generate absolute URLs, so make sure it's set before deploying.
+- [Protect private documentation](/guides/private-docs)
+- [Validate documentation in CI](/guides/ci-checks)
+- [Troubleshoot a deployment](/guides/troubleshooting)
