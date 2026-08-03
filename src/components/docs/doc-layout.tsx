@@ -78,9 +78,9 @@ export async function DocLayout({
   // remains at the foot to keep readers moving into the docs.
   if (mode === 'home') {
     return (
-      <article className="flex-1" lang={locale} dir={localeDirection(locale)}>
+      <article className="thally-docs-article flex-1" lang={locale} dir={localeDirection(locale)}>
         <div className="space-y-16">
-          <Prose className="max-w-none">{children}</Prose>
+          <Prose className="thally-docs-hero max-w-none">{children}</Prose>
           <div className="not-prose">
             <DocPagination prev={prev} next={next} />
           </div>
@@ -93,7 +93,7 @@ export async function DocLayout({
   if (mode === 'center') {
     return (
       <article
-        className="mx-auto w-full max-w-2xl"
+        className="thally-docs-article mx-auto w-full max-w-2xl"
         lang={locale}
         dir={localeDirection(locale)}
       >
@@ -116,7 +116,7 @@ export async function DocLayout({
   // wide mode: no TOC column, full-width content
   if (mode === 'wide') {
     return (
-      <article className="flex-1" lang={locale} dir={localeDirection(locale)}>
+      <article className="thally-docs-article flex-1" lang={locale} dir={localeDirection(locale)}>
         <ContentStack>
           <div className="not-prose space-y-4">
             <DocBreadcrumbs items={breadcrumbs} />
@@ -136,7 +136,7 @@ export async function DocLayout({
   // default: two-column with TOC
   return (
     <MainColumns>
-      <article className="flex-1" lang={locale} dir={localeDirection(locale)}>
+      <article className="thally-docs-article flex-1" lang={locale} dir={localeDirection(locale)}>
         <ContentStack>
           <div className="not-prose space-y-4">
             <DocBreadcrumbs items={breadcrumbs} />

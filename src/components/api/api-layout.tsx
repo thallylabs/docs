@@ -11,7 +11,7 @@ export async function ApiLayout({ children }: ApiLayoutProps) {
   const settings = cloud?.siteConfig.portable.feedback
   const showFeedback = cloud ? Boolean(settings?.thumbsRating) : true
   return (
-    <article className="flex-1">
+    <article className="thally-docs-api flex-1">
       <ContentStack>{children}</ContentStack>
       {showFeedback ? (
         <div className="mt-10">
