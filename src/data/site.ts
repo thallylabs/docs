@@ -171,6 +171,9 @@ export const siteConfig: SiteConfig = {
     { label: 'GitHub', href: 'https://github.com/thallylabs/thally-docs' },
     { label: 'Changelog', href: '/changelog' },
   ],
+  analytics: {
+    googleAnalyticsId: 'G-XJDP6PFQL3',
+  },
   brand: brandPresets[brandPreset],
   brandPreset,
   brandPresets,
