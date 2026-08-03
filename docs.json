@@ -131,44 +131,39 @@
       "tab": "Overview",
       "groups": [
         {
-          "group": "Getting Started",
+          "group": "Start here",
           "icon": "book-open",
           "pages": [
             "introduction",
-            "quickstart"
+            "quickstart",
+            "guides/getting-started",
+            "guides/cli-reference"
           ]
         },
         {
-          "group": "Concepts",
+          "group": "Create and organize",
+          "icon": "book-open",
+          "pages": [
+            "guides/writing-content",
+            "guides/configuring-navigation",
+            "guides/api-reference-setup"
+          ]
+        },
+        {
+          "group": "Customize your site",
           "icon": "grid-round",
           "pages": [
-            "product-change-pipeline",
-            "authentication",
-            "pagination"
+            "guides/branding-and-theming",
+            "guides/navbar-and-footer",
+            "guides/custom-fonts"
           ]
         },
         {
-          "group": "Architecture",
-          "icon": "diagram-project",
-          "pages": [
-            "architecture"
-          ]
-        },
-        {
-          "group": "Features",
-          "icon": "party-horn",
-          "pages": [
-            "webhooks",
-            "sdks"
-          ]
-        },
-        {
-          "group": "Project",
+          "group": "Publish confidently",
           "icon": "wrench",
           "pages": [
-            "errors",
-            "customization",
-            "showcase"
+            "guides/ci-checks",
+            "guides/deploying"
           ]
         }
       ]
@@ -177,34 +172,19 @@
       "tab": "Guides",
       "groups": [
         {
-          "group": "Setup",
-          "icon": "wrench",
-          "pages": [
-            "guides/getting-started",
-            "guides/configuring-navigation"
-          ]
-        },
-        {
-          "group": "Content",
+          "group": "Create and extend",
           "icon": "book-open",
           "pages": [
-            "guides/writing-content",
-            "guides/api-reference-setup"
+            "guides/extending",
+            "guides/page-modes",
+            "guides/multi-language"
           ]
         },
         {
-          "group": "Customize & Ship",
+          "group": "Shape the experience",
           "icon": "grid-round",
           "pages": [
-            "guides/extending",
-            "guides/branding-and-theming",
-            "guides/navbar-and-footer",
-            "guides/custom-fonts",
             "guides/og-images",
-            "guides/deploying",
-            "guides/admin-dashboard",
-            "guides/page-modes",
-            "guides/seo-and-visibility",
             "guides/site-banner",
             "guides/redirects",
             "guides/custom-404",
@@ -212,20 +192,40 @@
           ]
         },
         {
-          "group": "Tooling",
+          "group": "Automate updates",
           "icon": "code-simple",
           "pages": [
-            "guides/cli-reference",
-            "guides/ci-checks",
+            "product-change-pipeline",
+            "guides/docs-agent",
+            "guides/thally-track",
             "guides/provenance",
             "guides/mcp-server",
             "guides/remote-mcp",
-            "guides/docs-agent",
-            "guides/thally-track",
             "guides/agent-manifests",
+            "guides/ai-features"
+          ]
+        },
+        {
+          "group": "Operate and migrate",
+          "icon": "wrench",
+          "pages": [
+            "guides/admin-dashboard",
+            "guides/seo-and-visibility",
             "guides/migrating",
-            "guides/ai-features",
-            "guides/multi-language"
+            "architecture"
+          ]
+        },
+        {
+          "group": "Template reference",
+          "icon": "link-simple",
+          "pages": [
+            "authentication",
+            "pagination",
+            "webhooks",
+            "sdks",
+            "errors",
+            "customization",
+            "showcase"
           ]
         }
       ]
