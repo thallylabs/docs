@@ -2,9 +2,9 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { DocLayout } from '@/components/docs/doc-layout'
 import { getDocEntries, getNavContext } from '@/data/docs'
-import { getDocFromParams } from '@/data/get-doc'
+import { getDocFromParams, hasDocTranslation } from '@/data/get-doc'
 import { isRemoteContentSource } from '@/lib/content-source'
-import { getRequestOrigin } from '@/lib/cloud-link/request'
+import { getSiteUrl } from '@/lib/site-url'
 import { getApiOperationByKey } from '@/data/api-reference'
 import { DocHeader } from '@/components/docs/doc-header'
 import { ApiLayout } from '@/components/api/api-layout'
@@ -23,10 +23,10 @@ import {
 import { getContentI18nConfig } from '@/lib/i18n/content'
 import { buildLocaleAlternates } from '@/lib/i18n/metadata'
 import {
-  getEffectiveI18nConfig,
+  getBuildI18nConfig,
   getRepositoryI18nConfig,
 } from '@/lib/i18n/request'
-import { resolveSiteConfig } from '@/lib/site-config'
+import { resolveBuildSiteConfig } from '@/lib/site-config'
 
 interface PageProps {
   params: Promise<{ locale: string; slug?: Array<string> }>
@@ -47,11 +47,17 @@ export async function generateStaticParams() {
   const secondaryLocales = i18n.locales.filter(
     (l) => l.code !== i18n.defaultLocale,
   )
-  return secondaryLocales.flatMap(({ code }) =>
-    docs.map((doc) => ({
-      locale: code,
-      slug: doc.slug.length ? doc.slug : [],
-    })),
+  const params = await Promise.all(
+    secondaryLocales.flatMap(({ code }) =>
+      docs.map(async (doc) =>
+        (await hasDocTranslation(doc.slug, code))
+          ? { locale: code, slug: doc.slug.length ? doc.slug : [] }
+          : null,
+      ),
+    ),
+  )
+  return params.filter(
+    (entry): entry is { locale: string; slug: Array<string> } => entry !== null,
   )
 }
 
@@ -59,7 +65,7 @@ export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const resolved = await params
-  const i18n = await getEffectiveI18nConfig()
+  const i18n = getBuildI18nConfig()
   const isLocaleRoute = isValidSecondaryLocale(resolved.locale, i18n)
   const slug = isLocaleRoute
     ? resolved.slug
@@ -70,7 +76,7 @@ export async function generateMetadata({
   )
   if (!doc) return {}
 
-  const siteUrl = await getRequestOrigin()
+  const siteUrl = getSiteUrl()
   const primaryHref = doc.slug.length ? `/${doc.slug.join('/')}` : '/'
   const requestedHref = isLocaleRoute
     ? localizedPath(primaryHref, resolved.locale, i18n.defaultLocale)
@@ -113,11 +119,9 @@ export async function generateMetadata({
 
 export default async function LocaleDocsPage({ params }: PageProps) {
   const resolved = await params
-  const siteUrl = await getRequestOrigin()
-  const [i18n, effectiveSite] = await Promise.all([
-    getEffectiveI18nConfig(),
-    resolveSiteConfig(siteUrl),
-  ])
+  const siteUrl = getSiteUrl()
+  const i18n = getBuildI18nConfig()
+  const effectiveSite = resolveBuildSiteConfig()
   const isLocaleRoute = isValidSecondaryLocale(resolved.locale, i18n)
   const slug = isLocaleRoute
     ? resolved.slug
