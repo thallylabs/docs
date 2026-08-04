@@ -1,25 +1,40 @@
 ---
 title: Scripts Personalizados
-description: Inyecta scripts de terceros, widgets y herramientas de análisis a través de docs.json.
+description: Carga un script externo en cada página y elige cuándo puede ejecutarse.
 ---
 
-Agrega JavaScript de terceros a cada página declarando scripts en `docs.json`. Los scripts se inyectan a través del componente `<Script>` de Next.js con control total sobre la estrategia de carga.
+Agrega un array `customScripts` a `docs.json` cuando un widget o servicio te
+proporcione una URL de JavaScript externa. Thally lee ese array en el layout
+raíz y renderiza cada entrada con el componente `<Script>` de Next.js. Esta es
+una configuración explícita de Thally basada en Next.js; Next.js no descubre
+`docs.json` ni carga esas URL por sí solo.
 
 ## Configuración
 
 ```json
-"customScripts": [
-  { "src": "https://cdn.example.com/widget.js", "strategy": "afterInteractive" },
-  { "src": "https://cdn.analytics.com/tracker.min.js", "strategy": "lazyOnload" }
-]
+{
+  "customScripts": [
+    {
+      "src": "https://cdn.example.com/widget.js",
+      "strategy": "afterInteractive"
+    },
+    {
+      "src": "https://cdn.example.com/optional-widget.js",
+      "strategy": "lazyOnload"
+    }
+  ]
+}
 ```
+
+Thally carga cada URL configurada en todas las rutas. La configuración actual
+acepta un `src` externo; no admite JavaScript inline ni reglas por página.
 
 ## Campos
 
 | Campo | Tipo | Valor por defecto | Descripción |
 | --- | --- | --- | --- |
-| `src` | `string` | — | URL completa del script a cargar |
-| `strategy` | `string` | `"afterInteractive"` | Cuándo cargar el script (ver más abajo) |
+| `src` | `string` | — | URL externa del script. Usa HTTPS en producción. |
+| `strategy` | `string` | `"afterInteractive"` | Una de las estrategias de carga compatibles. |
 
 ## Estrategias de carga
 
@@ -29,11 +44,16 @@ Agrega JavaScript de terceros a cada página declarando scripts en `docs.json`. 
 | `afterInteractive` | Después de la hidratación | Análisis, widgets de chat, la mayoría de herramientas de terceros |
 | `lazyOnload` | Durante el tiempo de inactividad del navegador | Scripts no críticos o decorativos |
 
-Prefiere `afterInteractive` para la mayoría de las herramientas — mantiene el rendimiento de carga de página rápido al tiempo que garantiza que el script esté disponible en cuanto el usuario pueda interactuar.
+Prefiere `afterInteractive` para la mayoría de las herramientas. Usa
+`beforeInteractive` solo cuando el proveedor deba ejecutarse antes de la
+hidratación y mide su efecto antes de publicarlo. Usa `lazyOnload` para trabajo
+que pueda esperar hasta que el navegador esté inactivo.
 
-## Análisis integrado
+## Atajos para proveedores de analítica
 
-Para proveedores de análisis comunes (Google Analytics, Plausible, PostHog), utiliza el campo dedicado `siteConfig.analytics` en `src/data/site.ts` en su lugar. Esos proveedores están configurados con seguimiento de eventos adecuado y configuración con tipado seguro:
+Para Google Analytics, Plausible o PostHog, puedes usar el campo tipado
+`siteConfig.analytics` de `src/data/site.ts`. El `AnalyticsProvider` de Thally
+carga e inicializa los scripts del proveedor seleccionado:
 
 ```ts
 analytics: {
@@ -45,6 +65,14 @@ analytics: {
 
 Usa `customScripts` para cualquier proveedor que no sea compatible de forma nativa.
 
-<Note type="warning">
-Los scripts agregados mediante `customScripts` se ejecutan en cada página. Asegúrate de que cualquier script de terceros que incluyas tenga una política de privacidad compatible con las expectativas de tus usuarios.
-</Note>
+Este atajo inicializa los proveedores. No es una API de eventos compartida de
+Thally y el runtime de código abierto no agrega eventos personalizados para tu
+producto. Comprueba el comportamiento de aplicación de página única y la
+configuración de consentimiento del proveedor antes de confiar en sus informes.
+
+<Warning title="El código de terceros se ejecuta en cada página">
+Carga solo scripts de confianza. Un script de terceros puede leer el contenido,
+hacer solicitudes de red, afectar el rendimiento y establecer cookies o
+identificadores similares. Si necesitas consentimiento, bloquea el script hasta
+registrarlo; no basta con mostrar un banner después de cargar el script.
+</Warning>

@@ -13,14 +13,21 @@ This guide takes you from an existing documentation source to a managed Thally d
 </Note>
 
 <AgentPrompt
-  title="Ask an agent to run and review a migration"
+  title="Copy a complete prompt to run and review a migration"
+  copyOnly
 >
 
-Migrate SOURCE_URL into a new Thally project at TARGET_DIRECTORY.
+Migrate SOURCE_URL into a new Thally project at TARGET_DIRECTORY. You are done when the source has been imported into a fresh Thally project, important navigation and assets survive the move, validation and the production build pass, and I have an evidence-backed review of anything that still needs human work.
 
-Prefer the source GitHub repository over a live crawl when it is available. Use the Thally MCP migrate_docs tool if connected; otherwise run npx create-thally-docs@latest migrate SOURCE_URL TARGET_DIRECTORY. Never use import_docs or --into unless I explicitly request an in-place merge.
+Before writing files, read repository instructions in the current workspace and inspect TARGET_DIRECTORY. Stop if the target exists and is not empty. Determine whether SOURCE_URL is a source repository, a public site, or both. Prefer the source GitHub repository when it is available because it preserves authored MDX, configuration, redirects, and assets. Confirm ambiguous sources or destinations with me rather than substituting one.
 
-After migration, install dependencies, run npx thally check and npm run build, and inspect the homepage, navigation, representative content pages, code blocks, images, and API reference. Report warnings and anything that needs human review. Do not overwrite a non-empty directory, deploy, commit, or push without asking.
+Use the local Thally MCP migrate_docs tool if connected; otherwise run npx create-thally-docs@latest migrate SOURCE_URL TARGET_DIRECTORY. Never use import_docs or --into unless I explicitly request an in-place merge and approve the destination. Preserve the importer output and warnings.
+
+After migration, compare source and destination page counts, top-level navigation, redirects, important assets and downloads, code languages, custom components, and API references. Install dependencies with the generated project's existing package manager and lockfile. Run npx thally check and npm run build.
+
+Start the local site and inspect the homepage, every primary navigation tab, representative shallow and deep pages, links, headings, code blocks, images, tables, callouts, and any API reference. Check light and dark mode plus a narrow viewport. Look for missing assets, raw unsupported MDX, broken anchors, horizontal overflow, duplicate headings, placeholder copy, and content that became generic during conversion.
+
+Fix safe mechanical issues that do not change product meaning. Flag unsupported components, ambiguous navigation, stale or duplicate content, and claims that need a product owner instead of inventing replacements. Report exact commands, files changed, checks, visual coverage, warnings, and next actions. Do not overwrite a non-empty directory, delete source content, deploy, commit, push, or change public URLs without asking.
 
 </AgentPrompt>
 
