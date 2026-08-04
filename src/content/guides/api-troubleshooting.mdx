@@ -1,0 +1,80 @@
+---
+title: Troubleshoot an API reference
+navTitle: API troubleshooting
+description: Diagnose missing operations, incorrect groups, unresolved schemas, and failed Try It requests in generated Thally API documentation.
+---
+
+Start with the OpenAPI document, then check `docs.json`, the generated page,
+and the target API in that order.
+
+## Run the local checks
+
+```bash
+npx thally check
+npm run build
+```
+
+Fix syntax and configuration errors before debugging the browser.
+
+## An operation is missing
+
+- Confirm the operation has an HTTP method under a valid `paths` entry.
+- Confirm `docs.json` points to the intended local or remote specification.
+- If `api.navigation` is `false`, add an authored MDX page with an `openapi`
+  frontmatter value for the operation.
+- Check whether an operation override sets `hidden: true`.
+
+## An operation is in the wrong group
+
+Generated pages use the first matching OpenAPI tag. Control the order with
+`api.tagsOrder`, set `api.defaultGroup` for untagged operations, or apply a
+per-operation `group` override.
+
+Override keys must use the exact uppercase method and path:
+
+```json
+{
+  "overrides": {
+    "GET /users/{id}": {
+      "group": "Users"
+    }
+  }
+}
+```
+
+## A schema or example is incomplete
+
+Confirm the `$ref` resolves inside the loaded specification and that request
+and response media types include a schema. Add OpenAPI `example` values when a
+realistic generated sample would help the reader.
+
+If the spec uses a feature the parser cannot represent, write an authored MDX
+page and use the API reference components for the missing explanation.
+
+## Try It says no server URL is available
+
+Add a root-level or operation-level `servers` array to the OpenAPI document:
+
+```yaml
+servers:
+  - url: https://api.example.com/v1
+```
+
+## Try It returns an error
+
+Check the generated cURL command independently. Common causes are:
+
+- an unreachable or incorrect server URL;
+- a required path, query, or header value is empty;
+- expired or placeholder credentials;
+- the API rejects the request body or media type;
+- the documentation host cannot reach a private API network;
+- a static export has no `/api/try-it` server route.
+
+Do not put a production secret in `docs.json` to make an example pass.
+
+## Next steps
+
+- [Configure the API playground](/guides/api-playground)
+- [OpenAPI setup](/guides/api-reference-setup)
+- [General troubleshooting](/guides/troubleshooting)

@@ -1,6 +1,7 @@
 ---
-title: Remote MCP server
-description: Every deployed Thally site is a Model Context Protocol server — attach it to any agent and your docs become native tools.
+title: Connect to the remote MCP server
+navTitle: Remote MCP
+description: Connect an MCP-compatible agent to a deployed Thally site so it can search and read your documentation.
 keywords:
   - MCP
   - Model Context Protocol
@@ -9,7 +10,10 @@ keywords:
   - agent-native
 ---
 
-Every deployed Thally site exposes a **remote [Model Context Protocol](https://modelcontextprotocol.io) server** at `/api/mcp`. Any MCP-capable agent — Claude Code, Claude Desktop, Cursor, or your own — attaches over HTTP and gets your documentation as **native tools**: it can search, read pages, list the site, and check the Agent Readiness Score without you writing a line of integration code.
+A deployed Thally site exposes a remote [Model Context Protocol](https://modelcontextprotocol.io)
+server at `/api/mcp` when MCP is enabled. An MCP-compatible client can connect
+over HTTP to search the docs, read pages, list the site, and check the Agent
+Readiness Score.
 
 This is different from the [local MCP server](/guides/mcp-server) (`@thallylabs/mcp`), which operates on a project directory on your machine. The remote server runs **inside your deployed site** and serves exactly what the site serves.
 
@@ -51,7 +55,7 @@ The tools are **read-only**. Editing docs through an agent is handled by the [do
 
 ## Configuration
 
-The endpoint works with zero configuration. Two optional environment variables tune it:
+The endpoint is enabled by default. Two optional environment variables adjust it:
 
 | Variable | Default | Purpose |
 | --- | --- | --- |

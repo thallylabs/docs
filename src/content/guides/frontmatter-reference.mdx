@@ -1,0 +1,81 @@
+---
+title: Frontmatter reference
+navTitle: Frontmatter
+description: Configure page titles, descriptions, search metadata, provenance, API operations, visibility, and layouts in MDX frontmatter.
+---
+
+Frontmatter is YAML between `---` markers at the top of an MDX page. It
+controls how Thally labels, describes, indexes, verifies, and renders the page.
+
+```yaml
+---
+title: Configure single sign-on
+navTitle: Single sign-on
+description: Connect your identity provider and verify team sign-in.
+keywords:
+  - SSO
+  - authentication
+timeEstimate: 10 min
+lastVerified: 2026-08-03
+verifiedVersion: 2.4.0
+---
+```
+
+## Fields
+
+| Field | Type | Default | Purpose |
+| --- | --- | --- | --- |
+| `title` | string | File name converted to words | Page heading, browser title, and search result. |
+| `navTitle` | string | `title` | Optional compact label for the sidebar and previous/next navigation. |
+| `description` | string | Empty | Search and social summary shown below the title. |
+| `badge` | string | None | Short status label shown with the page in navigation. |
+| `keywords` | string array | Derived from the page | Additional terms used by documentation search. |
+| `timeEstimate` | string | `5 min` | Reading or task estimate displayed with page metadata. |
+| `lastUpdated` | date string | None | Last content update date shown in metadata and structured output. |
+| `lastVerified` | date string | None | Date a person last confirmed the instructions against the product. |
+| `verifiedVersion` | string | None | Product version used during that verification. |
+| `openapi` | string | None | OpenAPI operation key, such as `GET /users/{id}`. |
+| `hidden` | boolean | `false` | Hides the page from generated navigation while keeping its route available. |
+| `noindex` | boolean | `false` | Excludes the page from public indexing surfaces. |
+| `mode` | string | `default` | Page layout: `default`, `wide`, `custom`, `center`, or `home`. |
+
+## Required authoring fields
+
+Always set `title` and `description`, even though Thally can derive a title.
+Explicit metadata gives readers, search engines, and agents a useful summary.
+
+Do not add an `# H1` in the body. Thally renders the frontmatter title as the
+page heading.
+
+## Visibility fields
+
+`hidden` and `noindex` solve different problems:
+
+- Use `hidden: true` for a page that should be reachable by direct link but not
+  listed in navigation.
+- Use `noindex: true` when the page should not appear in public indexing
+  surfaces.
+
+For site-wide hidden-page indexing behavior, see
+[SEO and visibility](/guides/seo-and-visibility).
+
+## OpenAPI operation pages
+
+Set `openapi` when an authored MDX page should render the parameters, schemas,
+samples, and playground for one operation:
+
+```yaml
+---
+title: Get a user
+description: Retrieve one user by ID.
+openapi: GET /users/{id}
+---
+```
+
+The method and path must match the configured specification exactly.
+
+## Next steps
+
+- [Choose a page mode](/guides/page-modes)
+- [Configure SEO and visibility](/guides/seo-and-visibility)
+- [Set up an API reference](/guides/api-reference-setup)

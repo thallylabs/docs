@@ -1,0 +1,81 @@
+---
+title: Configure the API playground
+navTitle: API playground
+description: Add OpenAPI servers and authentication placeholders, test generated requests, and understand how Thally sends Try It requests.
+---
+
+Every generated operation page includes a **Try It** panel. It reads servers,
+parameters, request bodies, and security schemes from your OpenAPI document.
+
+## Before you begin
+
+Complete [Generate an API reference](/guides/api-reference-setup) and confirm an
+operation page appears in your local preview.
+
+## Add an API server
+
+The playground needs at least one URL in the OpenAPI `servers` array:
+
+```yaml
+servers:
+  - url: https://api.example.com/v1
+    description: Production
+```
+
+The first server is selected initially. Readers can change it in the panel
+before sending a request.
+
+## Describe authentication
+
+Define a security scheme and apply it to the API or operation:
+
+```yaml
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+security:
+  - bearerAuth: []
+```
+
+Thally supports playground prefills for HTTP bearer, HTTP basic, and header API
+key schemes. Without a configured value, the field uses a visible placeholder
+such as `YOUR_API_KEY`.
+
+To change that placeholder, use the exact security-scheme name in `docs.json`:
+
+```json
+{
+  "apiPlayground": {
+    "credentials": {
+      "bearerAuth": "YOUR_API_KEY"
+    }
+  }
+}
+```
+
+<Note type="warning" title="Do not put secrets in docs.json">
+  This configuration is part of the deployed documentation site. Use sample or
+  public sandbox credentials only. Readers should enter their own secret in the
+  playground when they make a request.
+</Note>
+
+## Send and verify a request
+
+1. Open a generated operation page.
+2. Select **Try It**.
+3. Fill every required path, query, header, and body field.
+4. Review the generated URL and cURL command.
+5. Send the request and confirm the status, headers, and response body.
+
+Thally sends the request through `/api/try-it` on the documentation server to
+avoid browser CORS restrictions. The site must run on a server-capable host;
+the playground cannot execute requests from a fully static export.
+
+## Next steps
+
+- [Troubleshoot an API reference](/guides/api-troubleshooting)
+- [Deploy your documentation](/guides/deploying)
+- [API reference configuration](/guides/docs-json-reference#api-reference)

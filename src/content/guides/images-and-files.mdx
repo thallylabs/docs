@@ -1,0 +1,74 @@
+---
+title: Add images and downloadable files
+navTitle: Images and files
+description: Store, reference, frame, and review images and public files in Thally documentation.
+---
+
+Place images and downloads in `public/`. Reference them from MDX with a path
+that begins at the site root.
+
+## Add an image
+
+Create a descriptive folder such as `public/images/setup/`, then reference the
+asset:
+
+```mdx
+![Repository settings with the Pages tab selected](/images/setup/pages-settings.png)
+```
+
+The alt text should communicate the useful information in the image. Avoid
+labels such as “screenshot” that do not help someone who cannot see it.
+
+## Add a framed image
+
+Use `<Frame>` when a screenshot benefits from a border, caption, and click to
+zoom:
+
+```mdx
+<Frame caption="Select the repository and production branch">
+  ![Repository and branch selectors](/images/setup/repository-picker.png)
+</Frame>
+```
+
+Disable zoom when enlarging the asset would not help:
+
+```mdx
+<Frame zoom={false}>
+  ![Small product mark](/images/product-mark.svg)
+</Frame>
+```
+
+## Link a downloadable file
+
+Add the file to `public/downloads/` and use a normal Markdown link:
+
+```mdx
+[Download the example configuration](/downloads/docs.example.json)
+```
+
+Files in `public/` are served without the `public` segment in their URL.
+
+## Keep media useful
+
+- Use stable, descriptive file names rather than `image1.png`.
+- Crop screenshots to the interface needed for the step.
+- Prefer text and code for information readers may need to copy.
+- Update screenshots when labels or flows change.
+- Compress large raster images and use SVG for suitable diagrams or marks.
+- Check light and dark mode when an asset has transparency.
+
+## Verify the result
+
+Run the local preview, open every image and download link, and narrow the
+browser to confirm media does not create horizontal page overflow. Then run:
+
+```bash
+npx thally check
+npm run build
+```
+
+## Next steps
+
+- [Create and edit pages](/guides/writing-content)
+- [Frame component](/components/frame)
+- [Customize branding](/guides/branding-and-theming)

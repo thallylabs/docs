@@ -1,0 +1,75 @@
+---
+title: Reuse content with snippets
+navTitle: Snippets
+description: Share maintained MDX fragments across Thally pages without copying instructions or callouts.
+---
+
+Use a snippet when the same maintained instruction, warning, or definition must
+appear on multiple pages. Snippets live in the project-level `snippets/`
+directory.
+
+## Create a snippet
+
+Create `snippets/support-note.mdx`:
+
+```mdx
+<Note type="info" title="Need help?">
+  Include the output of `npx thally check` when you contact support.
+</Note>
+```
+
+Keep the snippet focused. A reader should not need context from one specific
+page to understand it.
+
+## Import it into a page
+
+Add the import after the page frontmatter, then render the component name
+derived from the file name:
+
+```mdx
+---
+title: Troubleshoot a build
+description: Resolve common documentation build failures.
+---
+
+import { SupportNote } from '/snippets/support-note.mdx'
+
+## Collect the failure details
+
+Run the check locally and copy the complete error.
+
+<SupportNote />
+```
+
+Use an absolute `/snippets/...` import so the same snippet works from pages at
+different directory depths.
+
+## Decide when to reuse content
+
+Use a snippet when one source must remain identical everywhere. Link to a
+canonical page when the shared material is long or when readers need the full
+context. Avoid assembling every page from many tiny snippets; the page should
+still be understandable in its source file.
+
+## Update and verify
+
+After editing a snippet, search for its imports and review every affected page:
+
+```bash
+rg "support-note" src/content
+npx thally check
+npm run build
+```
+
+## Common problems
+
+| Problem | Fix |
+| --- | --- |
+| Import not found | Confirm the file is under `snippets/` and the import starts with `/snippets/`. |
+| Component is undefined | Use the PascalCase component name derived from the file name. |
+| Content only works on one page | Remove page-specific assumptions or replace the snippet with a link. |
+
+## Next steps
+
+- [Create and edit pages](/guides/writing-content)
+- [Extend Thally with custom components](/guides/extending)

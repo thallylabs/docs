@@ -1,0 +1,109 @@
+---
+title: Measure usage and collect feedback
+navTitle: Analytics and feedback
+description: Enable Thally analytics and page ratings, persist events, and use the results to improve documentation.
+---
+
+Thally can record page views, searches, agent traffic, and page feedback. The
+analytics service and dashboard are Thally Cloud capabilities; the open-source
+runtime keeps the integration points but safely no-ops when no service is
+connected.
+
+## Enable the site controls
+
+Set the file defaults in `docs.json`:
+
+```json
+{
+  "analytics": {
+    "enabled": true
+  },
+  "feedback": {
+    "thumbsRating": true,
+    "endpoint": "/api/feedback"
+  }
+}
+```
+
+| Field | Default | Purpose |
+| --- | --- | --- |
+| `analytics.enabled` | `true` | Allows collection when a connected analytics service provides it. Set `false` to opt out. |
+| `feedback.thumbsRating` | `true` | Shows or hides the helpful/not-helpful control. |
+| `feedback.endpoint` | `/api/feedback` | Receives page ratings and optional written follow-ups. |
+
+The built-in endpoint accepts a rating without allowing an analytics failure to
+break the reader's request. On an unconnected open-source site, it does not
+create a durable feedback store. Replace the route with your own integration if
+you want self-managed storage or forwarding.
+
+## Connect analytics
+
+Connect the deployment to Thally Cloud, then open **Admin → Analytics**. When
+the service is unavailable, the panel remains locked instead of presenting
+empty data as a successful setup.
+
+For serverless deployments, set remote libSQL variables when the connected
+service or other runtime state needs durable storage:
+
+```bash
+THALLY_ANALYTICS_DB_URL=libsql://your-database.turso.io
+THALLY_ANALYTICS_DB_TOKEN=your-token
+```
+
+Local development and persistent-disk hosts can use the `.data/analytics/`
+database created by the runtime.
+
+## Cookies and consent
+
+Thally's native traffic collection runs on the server. It records the requested
+path, content slug, request format, referrer, and whether the request appears to
+come from a human or an agent. It does **not** create a persistent visitor ID or
+analytics cookie, so a public site using only native Thally analytics does not
+need a cookie banner for that feature.
+
+Thally does use strictly necessary, `HttpOnly` cookies when you enable features
+that require a session:
+
+- admin password or OIDC sign-in;
+- password-protected documentation;
+- the short-lived OIDC login flow.
+
+Those cookies use `SameSite=Lax`, are marked `Secure` in production, and are not
+used for advertising or cross-site tracking. A dismissible site banner stores
+its dismissed state in `localStorage`, not a cookie.
+
+<Warning title="Third-party scripts can change the requirement">
+Google Analytics, PostHog, advertising pixels, embedded media, or custom scripts
+may set cookies or similar identifiers. If you enable them, add consent controls
+that match the providers, your configuration, and the regions you serve. Do not
+show a generic consent banner that cannot actually prevent those scripts from
+loading.
+</Warning>
+
+## Review useful signals
+
+Use the dashboard to look for:
+
+- high-traffic pages with negative ratings;
+- repeated searches that return weak results;
+- important tasks with little traffic because readers cannot find them;
+- differences between human and agent access;
+- content gaps that should become a focused guide or reference page.
+
+Treat a rating as a prompt to investigate, not proof that one paragraph caused
+the problem. Read the page, reproduce the task, and update the permanent docs.
+
+## Verify collection
+
+1. Open a page on the deployed site.
+2. Run a search.
+3. Submit a positive and a negative rating on test pages.
+4. Confirm the events appear in the connected analytics dashboard.
+5. If they do not, inspect the browser requests to `/api/analytics/collect` and
+   `/api/feedback`, then check server logs and storage variables.
+
+## Next steps
+
+- [Manage the live site](/guides/admin-dashboard)
+- [Environment variables](/guides/environment-variables)
+- [Troubleshoot a deployment](/guides/troubleshooting)

@@ -1,9 +1,5 @@
 {
   "theme": "default",
-  "banner": {
-    "content": "Thally v2 is coming — faster builds, more themes, and a brand-new component library. [See what's coming →](/changelog)",
-    "dismissible": true
-  },
   "ai": {
     "chat": true,
     "label": "ThallyAI",
@@ -82,16 +78,16 @@
         "heading": "Tooling",
         "items": [
           {
-            "label": "CLI Reference",
-            "href": "/guides/cli-reference"
+            "label": "AI coding agents",
+            "href": "/guides/ai-coding-agents"
           },
           {
-            "label": "MCP Server",
-            "href": "/guides/mcp-server"
+            "label": "CLI overview",
+            "href": "/guides/cli-overview"
           },
           {
-            "label": "Migrate documentation",
-            "href": "/guides/migrating"
+            "label": "MCP overview",
+            "href": "/guides/mcp-overview"
           }
         ]
       }
@@ -128,47 +124,68 @@
   },
   "tabs": [
     {
-      "tab": "Overview",
+      "tab": "Get started",
       "groups": [
         {
-          "group": "Getting Started",
+          "group": "Start here",
           "icon": "book-open",
           "pages": [
             "introduction",
-            "quickstart"
+            "quickstart",
+            "guides/getting-started",
+            "guides/preview-locally",
+            "guides/project-structure"
           ]
         },
         {
-          "group": "Concepts",
+          "group": "Create content",
+          "icon": "book-open",
+          "pages": [
+            "guides/writing-content",
+            "guides/content-types",
+            "guides/frontmatter-reference",
+            "guides/images-and-files",
+            "guides/reusable-snippets",
+            "guides/page-modes",
+            "guides/multi-language"
+          ]
+        },
+        {
+          "group": "Developer tools",
+          "icon": "code-simple",
+          "pages": [
+            "guides/ai-coding-agents",
+            "guides/cli-overview",
+            "guides/mcp-overview"
+          ]
+        },
+        {
+          "group": "Organize your docs",
           "icon": "grid-round",
           "pages": [
-            "product-change-pipeline",
-            "authentication",
-            "pagination"
+            "guides/configuring-navigation",
+            "guides/seo-and-visibility",
+            "guides/redirects"
           ]
         },
         {
-          "group": "Architecture",
-          "icon": "diagram-project",
+          "group": "Customize your site",
+          "icon": "grid-round",
           "pages": [
-            "architecture"
+            "guides/branding-and-theming",
+            "guides/navbar-and-footer",
+            "guides/custom-fonts",
+            "guides/site-banner",
+            "guides/og-images",
+            "guides/custom-404",
+            "guides/custom-scripts"
           ]
         },
         {
-          "group": "Features",
-          "icon": "party-horn",
-          "pages": [
-            "webhooks",
-            "sdks"
-          ]
-        },
-        {
-          "group": "Project",
+          "group": "Validate and publish",
           "icon": "wrench",
           "pages": [
-            "errors",
-            "customization",
-            "showcase"
+            "guides/ci-checks"
           ]
         }
       ]
@@ -177,70 +194,80 @@
       "tab": "Guides",
       "groups": [
         {
-          "group": "Setup",
+          "group": "Document your API",
+          "icon": "link-simple",
+          "pages": [
+            "guides/api-reference-setup",
+            "guides/api-playground",
+            "guides/api-troubleshooting",
+            "api/overview",
+            "api/reference"
+          ]
+        },
+        {
+          "group": "Deploy",
           "icon": "wrench",
           "pages": [
-            "guides/getting-started",
-            "guides/configuring-navigation"
+            "guides/deploying",
+            "guides/deploy-vercel",
+            "guides/deploy-cloudflare",
+            "guides/deploy-docker",
+            "guides/private-docs",
+            "guides/environment-variables"
           ]
         },
         {
-          "group": "Content",
-          "icon": "book-open",
-          "pages": [
-            "guides/writing-content",
-            "guides/api-reference-setup"
-          ]
-        },
-        {
-          "group": "Customize & Ship",
+          "group": "Operate and improve",
           "icon": "grid-round",
           "pages": [
-            "guides/extending",
-            "guides/branding-and-theming",
-            "guides/navbar-and-footer",
-            "guides/custom-fonts",
-            "guides/og-images",
-            "guides/deploying",
             "guides/admin-dashboard",
-            "guides/page-modes",
-            "guides/seo-and-visibility",
-            "guides/site-banner",
-            "guides/redirects",
-            "guides/custom-404",
-            "guides/custom-scripts"
+            "guides/analytics-and-feedback",
+            "guides/troubleshooting",
+            "guides/migrating"
           ]
         },
         {
-          "group": "Tooling",
+          "group": "Automate updates",
           "icon": "code-simple",
           "pages": [
-            "guides/cli-reference",
-            "guides/ci-checks",
+            "product-change-pipeline",
+            "guides/docs-agent",
+            "guides/thally-track",
             "guides/provenance",
             "guides/mcp-server",
             "guides/remote-mcp",
-            "guides/docs-agent",
-            "guides/thally-track",
             "guides/agent-manifests",
-            "guides/migrating",
-            "guides/ai-features",
-            "guides/multi-language"
+            "guides/ai-features"
+          ]
+        },
+        {
+          "group": "Reference",
+          "icon": "link-simple",
+          "pages": [
+            "guides/docs-json-reference",
+            "guides/cli-reference",
+            "architecture",
+            "guides/extending"
+          ]
+        },
+        {
+          "group": "Example content",
+          "icon": "book-open",
+          "hidden": true,
+          "pages": [
+            "authentication",
+            "pagination",
+            "webhooks",
+            "sdks",
+            "errors",
+            "customization",
+            "showcase"
           ]
         }
       ]
     },
     {
       "tab": "API Reference",
-      "groups": [
-        {
-          "group": "Overview",
-          "pages": [
-            "api/overview",
-            "api/reference"
-          ]
-        }
-      ],
       "api": {
         "source": "openapi.yaml",
         "tagsOrder": [
@@ -277,6 +304,7 @@
           "group": "Content",
           "pages": [
             "components/badge",
+            "components/agent-prompt",
             "components/callouts",
             "components/code-blocks",
             "components/panel",

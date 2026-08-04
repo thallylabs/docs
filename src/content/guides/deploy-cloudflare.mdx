@@ -1,0 +1,66 @@
+---
+title: Deploy to Cloudflare Workers
+navTitle: Cloudflare Workers
+description: Build, smoke-test, and publish a Thally site as an OpenNext Cloudflare Worker.
+---
+
+The Thally project includes an OpenNext adapter and `wrangler.jsonc` for a
+server-capable Cloudflare Workers deployment.
+
+## Before you begin
+
+Install dependencies and authenticate Wrangler with the Cloudflare account
+that owns the target Worker.
+
+Set `THALLY_SITE_URL` and any optional secrets in the Worker environment. Do
+not commit production secrets to `wrangler.jsonc`.
+
+## Build the Worker
+
+```bash
+npm run build:cloudflare
+```
+
+The command creates the Worker entry point and static assets under
+`.open-next/`.
+
+## Smoke-test the artifact
+
+```bash
+npm run smoke:cloudflare
+```
+
+This exercises the adapted artifact under the Cloudflare runtime before you
+publish it.
+
+## Deploy
+
+Use the project script:
+
+```bash
+npm run deploy:cloudflare
+```
+
+Or use the unified CLI:
+
+```bash
+npx thally deploy --cloudflare
+```
+
+The CLI builds the OpenNext artifact, runs the Agent Readiness check when the
+project provides it, and publishes through the Cloudflare adapter.
+
+## Verify the Worker
+
+Open the deployed URL and test a normal page, a search, and each enabled server
+feature. Confirm `/llms.txt` and `/api/docs-index` use the expected origin.
+
+If the custom domain differs from the initial Worker URL, update
+`THALLY_SITE_URL` and redeploy so canonical and agent-facing links use the
+custom domain.
+
+## Next steps
+
+- [Environment variables](/guides/environment-variables)
+- [Troubleshoot a deployment](/guides/troubleshooting)
+- [Protect private documentation](/guides/private-docs)
