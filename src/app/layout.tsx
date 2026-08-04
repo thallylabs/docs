@@ -16,14 +16,14 @@ import { toHslValue } from '@/lib/colors'
 import { THEME_VARS } from '@/lib/theme-vars'
 import { buildOgImageUrl } from '@/lib/og'
 import { buildSiteJsonLd } from '@/lib/json-ld'
-import { getRequestOrigin } from '@/lib/cloud-link/request'
+import { getSiteUrl } from '@/lib/site-url'
 import { JsonLdScript } from '@/components/seo/json-ld-script'
 import { AnalyticsProvider } from '@/components/analytics/analytics-provider'
 import { SiteBanner } from '@/components/layout/site-banner'
 import { WebMcpTools } from '@/components/agent/web-mcp-tools'
 import { localeDirection } from '@/lib/i18n/config'
-import { getEffectiveI18nConfig } from '@/lib/i18n/request'
-import { resolveRequestSiteConfig } from '@/lib/site-config'
+import { getBuildI18nConfig } from '@/lib/i18n/request'
+import { resolveBuildSiteConfig } from '@/lib/site-config'
 
 // Default fonts via next/font (optimal performance — preloaded, no FOUC).
 // The Thally brand pairs Inter (body) with Plus Jakarta Sans (display —
@@ -44,6 +44,7 @@ const fontMono = JetBrains_Mono({
   subsets: ['latin'],
   variable: '--font-mono',
   display: 'swap',
+  preload: false,
 })
 
 // ---------------------------------------------------------------------------
@@ -111,10 +112,8 @@ const themeVars = THEME_VARS[structuralTheme] ?? ''
 // ---------------------------------------------------------------------------
 
 export async function generateMetadata(): Promise<Metadata> {
-  const [effectiveSite, siteUrl] = await Promise.all([
-    resolveRequestSiteConfig(),
-    getRequestOrigin(),
-  ])
+  const effectiveSite = resolveBuildSiteConfig()
+  const siteUrl = getSiteUrl()
   const defaultOgImage = buildOgImageUrl({})
   return {
     metadataBase: new URL(siteUrl),
@@ -259,11 +258,9 @@ const runtimeNameShim =
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const [i18n, effectiveSite, siteUrl] = await Promise.all([
-    getEffectiveI18nConfig(),
-    resolveRequestSiteConfig(),
-    getRequestOrigin(),
-  ])
+  const i18n = getBuildI18nConfig()
+  const effectiveSite = resolveBuildSiteConfig()
+  const siteUrl = getSiteUrl()
   const defaultLang = i18n.defaultLocale
   const siteJsonLd = buildSiteJsonLd({
     siteUrl,
