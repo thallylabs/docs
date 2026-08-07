@@ -1,0 +1,233 @@
+---
+title: docs.json reference
+navTitle: docs.json
+description: Look up every author-facing Thally navigation, API, appearance, SEO, feedback, team, and tracking setting.
+---
+
+`docs.json` is the source-controlled site configuration. It controls structure
+and portable features; product identity and brand defaults live in
+`src/data/site.ts`, while deployment secrets belong in environment variables.
+
+## Minimal configuration
+
+```json
+{
+  "tabs": [
+    {
+      "tab": "Get started",
+      "groups": [
+        {
+          "group": "Start here",
+          "pages": ["introduction", "quickstart"]
+        }
+      ]
+    }
+  ]
+}
+```
+
+`tabs` is the only required root field.
+
+## Navigation
+
+| Field | Type | Purpose |
+| --- | --- | --- |
+| `tabs[].tab` | string | Top-navigation label. |
+| `tabs[].href` | string | Direct link for a tab that does not own sidebar groups. |
+| `tabs[].hidden` | boolean | Hides the tab. |
+| `tabs[].groups` | array | Sidebar groups owned by the tab. |
+| `groups[].group` | string | Sidebar section label. |
+| `groups[].icon` | string | Named Thally icon. |
+| `groups[].hidden` | boolean | Hides the group. |
+| `groups[].pages` | array | Page IDs or nested group objects. |
+
+A page ID is its path under `src/content/` without `.mdx`. Groups can be nested
+inside another group's `pages` array.
+
+See [Configure navigation](/guides/configuring-navigation) for task-oriented
+examples.
+
+## API reference
+
+Add `api` to the tab that should generate endpoint navigation:
+
+```json
+{
+  "tab": "API Reference",
+  "groups": [],
+  "api": {
+    "source": "openapi.yaml",
+    "navigation": true,
+    "tagsOrder": ["Authentication", "Users"],
+    "defaultGroup": "General",
+    "webhookGroup": "Webhooks",
+    "overrides": {
+      "GET /users/{id}": {
+        "title": "Get a user",
+        "description": "Retrieve one user by ID.",
+        "badge": "Stable",
+        "group": "Users",
+        "slug": ["api", "users", "get-user"],
+        "hidden": false
+      }
+    }
+  }
+}
+```
+
+| Field | Default | Purpose |
+| --- | --- | --- |
+| `source` | Required | Local OpenAPI YAML/JSON path or supported remote source. |
+| `navigation` | `true` | Set `false` when authored MDX pages provide the operation navigation. |
+| `tagsOrder` | Spec order | Preferred order for tag groups. |
+| `defaultGroup` | `Endpoints` | Group for untagged operations. |
+| `webhookGroup` | `Webhooks` | Group for OpenAPI webhook operations. |
+| `overrides` | `{}` | Per-operation title, description, badge, group, slug, or visibility. |
+
+Operation keys use `METHOD /path` exactly as written in the specification.
+
+## Appearance and site chrome
+
+| Root field | Purpose |
+| --- | --- |
+| `theme` | Structural theme: `default`, `maple`, `sharp`, or `minimal`. |
+| `banner` | `content` plus optional `dismissible`. Markdown links are supported. |
+| `navbar` | Secondary `links` and an optional primary action. |
+| `footer` | Social URLs and columns of links. |
+| `fonts` | Google Font `family` and optional `weight` arrays for `body` and `heading`. |
+| `customScripts` | External script `src` plus optional loading `strategy`. |
+
+Navbar links contain `label`, `href`, and optional `type: "github"`. A primary
+action contains `label` and `href`. Footer columns contain a `heading` and an
+`items` array of `{ "label", "href" }` objects.
+
+## Redirects and indexing
+
+```json
+{
+  "redirects": [
+    {
+      "source": "/old-path",
+      "destination": "/new-path",
+      "permanent": true
+    }
+  ],
+  "seo": {
+    "indexing": "navigable"
+  }
+}
+```
+
+`seo.indexing` accepts `navigable` or `all`. The default excludes hidden pages
+from indexing surfaces. Page-level `noindex` frontmatter always excludes that
+page.
+
+## AI, analytics, feedback, and admin
+
+```json
+{
+  "ai": {
+    "chat": true,
+    "label": "Ask the docs",
+    "icon": "sparkles",
+    "systemPrompt": "Prefer concise answers with guide links."
+  },
+  "admin": { "enabled": true },
+  "analytics": { "enabled": true },
+  "feedback": {
+    "thumbsRating": true,
+    "endpoint": "/api/feedback"
+  }
+}
+```
+
+AI icons accept a named icon or an image URL/path. Enabling a portable control
+does not create a paid service connection; unavailable Cloud capabilities stay
+locked or no-op.
+
+## API playground credentials
+
+```json
+{
+  "apiPlayground": {
+    "credentials": {
+      "bearerAuth": "YOUR_API_KEY"
+    }
+  }
+}
+```
+
+Keys must match OpenAPI security-scheme names. Values are deployed to the
+reader-facing site, so use placeholders or public sandbox credentials only.
+
+## Languages
+
+```json
+{
+  "i18n": {
+    "defaultLocale": "en",
+    "locales": [
+      { "code": "en", "label": "English" },
+      { "code": "es", "label": "Español" }
+    ]
+  }
+}
+```
+
+See [Publish multiple languages](/guides/multi-language) for content paths and
+fallback behavior.
+
+## Admin team
+
+```json
+{
+  "team": {
+    "members": [
+      { "email": "owner@example.com", "role": "owner" }
+    ],
+    "domains": [
+      { "domain": "example.com", "role": "viewer" }
+    ]
+  }
+}
+```
+
+Roles are `owner`, `editor`, or `viewer`. An explicit member entry takes
+precedence over a domain rule.
+
+## Thally Track
+
+```json
+{
+  "tracking": {
+    "repos": [
+      {
+        "owner": "example",
+        "repo": "product",
+        "branch": "main",
+        "paths": ["src/**", "openapi.yaml"],
+        "outputTab": "Guides",
+        "outputGroup": "Product updates"
+      }
+    ]
+  }
+}
+```
+
+`owner` and `repo` are required. `branch` defaults to `main`; omit `paths` to
+consider all changed files. See [Configure Thally Track](/guides/thally-track)
+before adding repositories.
+
+## Validate changes
+
+```bash
+jq empty docs.json
+npx thally check
+npm run build
+```
+
+## Related references
+
+- [Frontmatter reference](/guides/frontmatter-reference)
+- [Environment variables](/guides/environment-variables)
+- [CLI reference](/guides/cli-reference)

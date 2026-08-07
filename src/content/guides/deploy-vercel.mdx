@@ -1,0 +1,65 @@
+---
+title: Deploy to Vercel
+navTitle: Vercel
+description: Import a Thally repository into Vercel, configure production variables, and verify the deployed site.
+---
+
+Vercel detects the Next.js runtime and can deploy directly from your Git
+repository or through the Thally CLI.
+
+## Deploy from a repository
+
+1. Push the documentation project to GitHub, GitLab, or Bitbucket.
+2. In Vercel, create a new project and import the repository.
+3. Keep the detected framework and build settings.
+4. Add `THALLY_SITE_URL` with the final documentation origin.
+5. Add only the optional secrets required by enabled features.
+6. Deploy the project.
+
+Vercel creates preview deployments for branches and pull requests connected to
+the project. Keep `THALLY_SITE_URL` set to the production domain unless you
+have a deliberate per-environment URL strategy.
+
+## Deploy with the CLI
+
+From the project root, run:
+
+```bash
+npx thally deploy
+```
+
+Use `--prod` for a production deployment:
+
+```bash
+npx thally deploy --prod
+```
+
+The command builds the site, runs the Agent Readiness check when the project
+provides it, and invokes Vercel deployment.
+
+## Persist runtime data
+
+Vercel filesystems are ephemeral. Configure remote libSQL storage if you need
+analytics, admin settings, task state, or rate-limit counters to persist:
+
+```bash
+THALLY_ANALYTICS_DB_URL=libsql://your-database.turso.io
+THALLY_ANALYTICS_DB_TOKEN=your-token
+THALLY_DATABASE_URL=libsql://your-database.turso.io
+THALLY_DATABASE_TOKEN=your-token
+```
+
+The same database can back both pairs. Thally creates the required tables on
+first use.
+
+## Verify the deployment
+
+Open the production domain and test the routes and enabled features listed in
+[Deploy your documentation site](/guides/deploying#verify-the-live-site).
+Confirm the Vercel build log contains no `thally check` or MDX errors.
+
+## Next steps
+
+- [Environment variables](/guides/environment-variables)
+- [Analytics and feedback](/guides/analytics-and-feedback)
+- [Protect private documentation](/guides/private-docs)

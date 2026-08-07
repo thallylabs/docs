@@ -1,8 +1,8 @@
 import type { ComponentType } from 'react'
-import fs from 'node:fs'
-import path from 'node:path'
-import matter from 'gray-matter'
-import docsNavigationConfig from '../../docs.json' assert { type: 'json' }
+import { parseFrontmatter } from '@/lib/frontmatter'
+import { getContentIndex } from '@/lib/content-index'
+import { getDocsJsonConfig } from '@/lib/docs-config'
+import { listRuntimeSources, readRuntimeSource, runtimeSourceExists } from '@/lib/runtime-sources'
 
 // ---------------------------------------------------------------------------
 // Public interfaces (consumed by components, pages, and stores)
@@ -81,6 +81,8 @@ interface DocsJsonNavigationGroup {
 
 export interface DocsJsonApiConfig {
   source: string
+  /** Set false when authored MDX groups already provide API navigation. */
+  navigation?: boolean
   tagsOrder?: Array<string>
   defaultGroup?: string
   webhookGroup?: string
@@ -167,7 +169,7 @@ export interface DocsJsonFeedback {
 
 export type StructuralTheme = 'default' | 'maple' | 'sharp' | 'minimal'
 
-interface DocsJsonConfig {
+export interface DocsJsonConfig {
   tabs: Array<DocsJsonTab>
   redirects?: Array<DocsJsonRedirect>
   banner?: DocsJsonBanner
@@ -255,11 +257,13 @@ export interface TrackingConfig {
 // Content root & frontmatter cache
 // ---------------------------------------------------------------------------
 
-const CONTENT_ROOT = path.join(process.cwd(), 'src/content')
-const docsConfig = docsNavigationConfig as unknown as DocsJsonConfig
+const CONTENT_ROOT = 'src/content'
+const docsConfig = getDocsJsonConfig() as DocsJsonConfig
 
 interface FrontmatterData {
   title?: string
+  /** Optional compact label used only in sidebar and previous/next navigation. */
+  navTitle?: string
   description?: string
   badge?: string
   keywords?: Array<string>
@@ -286,21 +290,41 @@ function readFrontmatter(pageId: string, locale?: string): FrontmatterData {
   // Try locale-specific file first
   if (locale) {
     candidates.push(
-      path.join(CONTENT_ROOT, locale, `${pageId}.mdx`),
-      path.join(CONTENT_ROOT, locale, `${pageId}/index.mdx`),
+      `${CONTENT_ROOT}/${locale}/${pageId}.mdx`,
+      `${CONTENT_ROOT}/${locale}/${pageId}/index.mdx`,
     )
   }
 
   // Fall back to primary
   candidates.push(
-    path.join(CONTENT_ROOT, `${pageId}.mdx`),
-    path.join(CONTENT_ROOT, `${pageId}/index.mdx`),
+    `${CONTENT_ROOT}/${pageId}.mdx`,
+    `${CONTENT_ROOT}/${pageId}/index.mdx`,
   )
 
+  // A runtime content index answers frontmatter directly and is authoritative
+  // when present: the index describes the content this release actually
+  // serves, while the compiled sources describe whatever this bundle was
+  // built from. The two diverge after every content publish that skipped a
+  // build, and falling through to the compiled copy here would pin nav
+  // titles and descriptions to the stale build (or, under a shared bundle,
+  // to another site's content entirely).
+  const index = getContentIndex()
+  if (index) {
+    for (const filePath of candidates) {
+      const entry = index.pages[filePath]
+      if (entry) {
+        frontmatterCache.set(cacheKey, entry.data as FrontmatterData)
+        return entry.data as FrontmatterData
+      }
+    }
+    frontmatterCache.set(cacheKey, {})
+    return {}
+  }
+
   for (const filePath of candidates) {
-    if (fs.existsSync(filePath)) {
-      const raw = fs.readFileSync(filePath, 'utf8')
-      const { data } = matter(raw)
+    if (runtimeSourceExists(filePath)) {
+      const raw = readRuntimeSource(filePath)
+      const { data } = parseFrontmatter(raw)
       frontmatterCache.set(cacheKey, data as FrontmatterData)
       return data as FrontmatterData
     }
@@ -408,27 +432,14 @@ let _allEntries: Array<DocEntry> | null = null
 /** Every page that has an .mdx file under src/content (default locale only). */
 function getAllContentPageIds(): Array<string> {
   const localeCodes = new Set((getI18nConfig()?.locales ?? []).map((l) => l.code))
-  const ids: Array<string> = []
-  const walk = (dir: string, prefix: string) => {
-    let entries: Array<fs.Dirent>
-    try {
-      entries = fs.readdirSync(dir, { withFileTypes: true })
-    } catch {
-      return
-    }
-    for (const entry of entries) {
-      if (entry.isDirectory()) {
-        if (prefix === '' && localeCodes.has(entry.name)) continue // skip translation dirs
-        walk(path.join(dir, entry.name), prefix ? `${prefix}/${entry.name}` : entry.name)
-      } else if (entry.name.endsWith('.mdx')) {
-        const base = entry.name.slice(0, -4)
-        const id = base === 'index' ? prefix : prefix ? `${prefix}/${base}` : base
-        if (id) ids.push(id)
-      }
-    }
-  }
-  walk(CONTENT_ROOT, '')
-  return ids
+  return listRuntimeSources(CONTENT_ROOT)
+    .filter((filePath) => filePath.endsWith('.mdx'))
+    .map((filePath) => filePath.slice(`${CONTENT_ROOT}/`.length, -'.mdx'.length))
+    .filter((relativePath) => !localeCodes.has(relativePath.split('/')[0] ?? ''))
+    .map((relativePath) =>
+      relativePath.endsWith('/index') ? relativePath.slice(0, -'/index'.length) : relativePath,
+    )
+    .filter(Boolean)
 }
 
 function getAllDocEntries(): Array<DocEntry> {
@@ -514,7 +525,7 @@ function resolveNavItem(pageId: string, locale?: string): NavigationItem {
     : baseHref
   return {
     id: slugifyId(pageId) || 'introduction',
-    title: fm.title ?? deriveTitleFromSlug(pageId),
+    title: fm.navTitle ?? fm.title ?? deriveTitleFromSlug(pageId),
     href,
     badge: fm.badge,
     description: fm.description,
@@ -771,4 +782,3 @@ export function getStructuralTheme(): StructuralTheme {
 
 export const sidebarCollections = getSidebarCollections()
 export const searchableDocs = getSearchableDocs()
-

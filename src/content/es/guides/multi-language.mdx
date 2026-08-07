@@ -137,13 +137,14 @@ Una vez que tienes 2 o más locales configurados, aparece un **ícono de globo**
 Thally agrega automáticamente etiquetas `hreflang` y `canonical` para todos los locales configurados:
 
 ```html
-<link rel="canonical" href="https://example.com/introduction" />
-<link rel="alternate" hreflang="en" href="https://example.com/introduction" />
-<link rel="alternate" hreflang="es" href="https://example.com/es/introduction" />
-<link rel="alternate" hreflang="fr" href="https://example.com/fr/introduction" />
+<link rel="canonical" href="https://docs.example.com/es/introduction" />
+<link rel="alternate" hreflang="en" href="https://docs.example.com/introduction" />
+<link rel="alternate" hreflang="es" href="https://docs.example.com/es/introduction" />
+<link rel="alternate" hreflang="fr" href="https://docs.example.com/fr/introduction" />
+<link rel="alternate" hreflang="x-default" href="https://docs.example.com/introduction" />
 ```
 
-La URL principal siempre es la canónica, incluso para páginas de locales secundarios.
+Cada página traducida tiene su propia URL canónica. Los enlaces `hreflang` recíprocos conectan todos los idiomas y `x-default` apunta a la página en el idioma predeterminado.
 
 ---
 

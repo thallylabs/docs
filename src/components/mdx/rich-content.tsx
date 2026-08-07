@@ -1,10 +1,10 @@
 import Image from 'next/image'
-import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { ZoomableContent } from '@/components/mdx/zoomable-content'
 import { ArrowRight } from 'lucide-react'
 import { ContentIcon, type ContentIconName } from '@/components/ui/content-icon'
 import { cn } from '@/lib/utils'
+import { IntentPrefetchLink } from '@/components/navigation/intent-prefetch-link'
 
 export interface IconProps {
   icon: ContentIconName | string
@@ -45,30 +45,28 @@ export function Hero({
           {title}
         </h1>
         {subtitle ? (
-          <p className="mt-4 max-w-[56ch] text-[1.08rem] leading-[1.65] text-pretty text-foreground/75">
+          <p className="thally-docs-hero-copy max-w-[56ch] text-[1.08rem] leading-[1.65] text-pretty text-foreground/75">
             {subtitle}
           </p>
         ) : null}
         {hasActions ? (
-          <div className="mt-7 flex flex-wrap items-center gap-3">
+          <div className="mt-8 flex flex-wrap items-center gap-3">
             {primaryHref ? (
-              <Link
+              <IntentPrefetchLink
                 href={primaryHref}
-                prefetch={false}
                 className="inline-flex items-center gap-2 rounded-[9px] bg-primary px-4 py-2 text-[0.84rem] font-semibold text-primary-foreground transition hover:brightness-125 active:scale-[0.98]"
               >
                 {primaryLabel ?? 'Get started'}
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </Link>
+              </IntentPrefetchLink>
             ) : null}
             {secondaryHref ? (
-              <Link
+              <IntentPrefetchLink
                 href={secondaryHref}
-                prefetch={false}
                 className="inline-flex items-center gap-2 rounded-[9px] border border-border bg-background px-4 py-2 text-[0.84rem] font-semibold text-foreground transition hover:border-accent hover:text-foreground active:scale-[0.98]"
               >
                 {secondaryLabel ?? 'Learn more'}
-              </Link>
+              </IntentPrefetchLink>
             ) : null}
           </div>
         ) : null}
@@ -105,9 +103,13 @@ export function Card({ title, href, icon, iconType, img, children }: CardProps) 
           />
         </div>
       ) : null}
-      <div className="flex items-center gap-2">
-        {icon ? <Icon icon={icon} iconType={iconType} /> : null}
-        {title ? <p className="text-base font-semibold text-foreground">{title}</p> : null}
+      <div className="flex min-h-6 items-center gap-2.5">
+        {icon ? (
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center text-accent">
+            <Icon icon={icon} iconType={iconType} className="h-[18px] w-[18px]" />
+          </span>
+        ) : null}
+        {title ? <span className="flex min-h-6 items-center text-base font-semibold leading-5 text-foreground">{title}</span> : null}
       </div>
       {children ? <div className="prose prose-sm text-foreground/80 dark:prose-invert">{children}</div> : null}
     </article>
@@ -116,15 +118,14 @@ export function Card({ title, href, icon, iconType, img, children }: CardProps) 
   if (href) {
     const external = isExternalLink(href)
     return (
-      <Link
+      <IntentPrefetchLink
         href={href}
-        prefetch={false}
         className="block h-full"
         target={external ? '_blank' : undefined}
         rel={external ? 'noreferrer' : undefined}
       >
         {content}
-      </Link>
+      </IntentPrefetchLink>
     )
   }
 
@@ -328,9 +329,13 @@ export function Tile({ title, href, icon, iconType, img, children }: TileProps &
           />
         </div>
       ) : null}
-      <div className="flex items-center gap-3">
-        {icon ? <Icon icon={icon} iconType={iconType} className="h-6 w-6" /> : null}
-        {title ? <p className="text-lg font-semibold text-foreground">{title}</p> : null}
+      <div className="flex min-h-7 items-center gap-3">
+        {icon ? (
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center text-accent">
+            <Icon icon={icon} iconType={iconType} className="h-5 w-5" />
+          </span>
+        ) : null}
+        {title ? <span className="flex min-h-7 items-center text-lg font-semibold leading-6 text-foreground">{title}</span> : null}
       </div>
       {children ? <div className="prose prose-sm text-foreground/70 dark:prose-invert">{children}</div> : null}
     </article>
@@ -339,9 +344,9 @@ export function Tile({ title, href, icon, iconType, img, children }: TileProps &
   if (href) {
     const external = isExternalLink(href)
     return (
-      <Link href={href} prefetch={false} className="block h-full" target={external ? '_blank' : undefined} rel={external ? 'noreferrer' : undefined}>
+      <IntentPrefetchLink href={href} className="block h-full" target={external ? '_blank' : undefined} rel={external ? 'noreferrer' : undefined}>
         {content}
-      </Link>
+      </IntentPrefetchLink>
     )
   }
   return content

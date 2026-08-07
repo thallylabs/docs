@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { DocLayout } from '@/components/docs/doc-layout'
-import { getDocEntries, getI18nConfig, getNavContext } from '@/data/docs'
-import { getDocFromParams } from '@/data/get-doc'
+import { getDocEntries, getNavContext } from '@/data/docs'
+import { getDocFromParams, hasDocTranslation } from '@/data/get-doc'
+import { isRemoteContentSource } from '@/lib/content-source'
 import { getSiteUrl } from '@/lib/site-url'
 import { getApiOperationByKey } from '@/data/api-reference'
 import { DocHeader } from '@/components/docs/doc-header'
@@ -14,109 +15,98 @@ import { JsonLdScript } from '@/components/seo/json-ld-script'
 import { buildAgentAlternateLinks } from '@/lib/agent-discovery'
 import { buildDocPageJsonLd } from '@/lib/json-ld'
 import { buildOgImageUrl } from '@/lib/og'
+import {
+  localeDirection,
+  localizedPath,
+  type I18nConfig,
+} from '@/lib/i18n/config'
+import { getContentI18nConfig } from '@/lib/i18n/content'
+import { buildLocaleAlternates } from '@/lib/i18n/metadata'
+import {
+  getBuildI18nConfig,
+  getRepositoryI18nConfig,
+} from '@/lib/i18n/request'
+import { resolveBuildSiteConfig } from '@/lib/site-config'
 
 interface PageProps {
   params: Promise<{ locale: string; slug?: Array<string> }>
 }
 
-function localizedHref(href: string, code: string, defaultLocale: string) {
-  return code === defaultLocale ? href : `/${code}${href}`
-}
-
-function isValidSecondaryLocale(locale: string): boolean {
-  const i18n = getI18nConfig()
-  if (!i18n) return false
-  return i18n.locales.some((l) => l.code === locale && l.code !== i18n.defaultLocale)
-}
-
-export async function generateStaticParams() {
-  const i18n = getI18nConfig()
-  if (!i18n) return []
-  const docs = getDocEntries()
-  const secondaryLocales = i18n.locales.filter((l) => l.code !== i18n.defaultLocale)
-  return secondaryLocales.flatMap(({ code }) =>
-    docs.map((doc) => ({
-      locale: code,
-      slug: doc.slug.length ? doc.slug : [],
-    })),
+function isValidSecondaryLocale(locale: string, i18n: I18nConfig): boolean {
+  return i18n.locales.some(
+    (candidate) =>
+      candidate.code === locale && candidate.code !== i18n.defaultLocale,
   )
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateStaticParams() {
+  // Remote content sources resolve pages at request time (see [[...slug]]).
+  if (isRemoteContentSource()) return []
+  const i18n = getRepositoryI18nConfig()
+  const docs = getDocEntries()
+  const secondaryLocales = i18n.locales.filter(
+    (l) => l.code !== i18n.defaultLocale,
+  )
+  const params = await Promise.all(
+    secondaryLocales.flatMap(({ code }) =>
+      docs.map(async (doc) =>
+        (await hasDocTranslation(doc.slug, code))
+          ? { locale: code, slug: doc.slug.length ? doc.slug : [] }
+          : null,
+      ),
+    ),
+  )
+  return params.filter(
+    (entry): entry is { locale: string; slug: Array<string> } => entry !== null,
+  )
+}
+
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
   const resolved = await params
-  const i18n = getI18nConfig()
-
-  if (!isValidSecondaryLocale(resolved.locale)) {
-    // Intercepted from [[...slug]] — treat locale segment as part of the doc slug
-    const allSlug = [resolved.locale, ...(resolved.slug ?? [])]
-    const doc = await getDocFromParams(allSlug)
-    if (!doc) return {}
-
-    const siteUrl = getSiteUrl()
-    const primaryHref = doc.slug.length ? `/${doc.slug.join('/')}` : '/'
-    const ogImageUrl = buildOgImageUrl({
-      title: doc.title,
-      description: doc.description,
-      group: doc.group,
-    })
-    const alternateLanguages = i18n
-      ? Object.fromEntries(
-          i18n.locales.map((l) => [l.code, `${siteUrl}${localizedHref(primaryHref, l.code, i18n.defaultLocale)}`]),
-        )
-      : {}
-
-    return {
-      title: doc.title,
-      description: doc.description,
-      alternates: {
-        canonical: `${siteUrl}${primaryHref}`,
-        ...(i18n ? { languages: alternateLanguages } : {}),
-        types: buildAgentAlternateLinks(primaryHref),
-      },
-      openGraph: {
-        title: doc.title,
-        description: doc.description,
-        images: [{ url: ogImageUrl, width: 1200, height: 630 }],
-      },
-      twitter: {
-        card: 'summary_large_image',
-        title: doc.title,
-        description: doc.description,
-        images: [ogImageUrl],
-      },
-    }
-  }
-
-  const doc = await getDocFromParams(resolved.slug, resolved.locale)
+  const i18n = getBuildI18nConfig()
+  const isLocaleRoute = isValidSecondaryLocale(resolved.locale, i18n)
+  const slug = isLocaleRoute
+    ? resolved.slug
+    : [resolved.locale, ...(resolved.slug ?? [])]
+  const doc = await getDocFromParams(
+    slug,
+    isLocaleRoute ? resolved.locale : undefined,
+  )
   if (!doc) return {}
 
   const siteUrl = getSiteUrl()
   const primaryHref = doc.slug.length ? `/${doc.slug.join('/')}` : '/'
-
+  const requestedHref = isLocaleRoute
+    ? localizedPath(primaryHref, resolved.locale, i18n.defaultLocale)
+    : primaryHref
+  const hasTranslation = !isLocaleRoute || !doc.isFallback
+  const canonicalHref = hasTranslation ? requestedHref : primaryHref
+  const availableI18n = await getContentI18nConfig(slug, i18n)
   const ogImageUrl = buildOgImageUrl({
     title: doc.title,
     description: doc.description,
     group: doc.group,
   })
-
-  const alternateLanguages = i18n
-    ? Object.fromEntries(
-        i18n.locales.map((l) => [l.code, `${siteUrl}${localizedHref(primaryHref, l.code, i18n.defaultLocale)}`]),
-      )
-    : {}
+  const isNoindex = doc.noindex || doc.hidden || !hasTranslation
 
   return {
     title: doc.title,
     description: doc.description,
+    ...(isNoindex
+      ? { robots: { index: false, follow: !doc.noindex && !doc.hidden } }
+      : {}),
     alternates: {
-      canonical: `${siteUrl}${primaryHref}`,
-      languages: alternateLanguages,
-      types: buildAgentAlternateLinks(primaryHref),
+      canonical: `${siteUrl}${canonicalHref}`,
+      languages: buildLocaleAlternates(siteUrl, primaryHref, availableI18n),
+      types: buildAgentAlternateLinks(canonicalHref, siteUrl),
     },
     openGraph: {
       title: doc.title,
       description: doc.description,
       images: [{ url: ogImageUrl, width: 1200, height: 630 }],
+      url: `${siteUrl}${canonicalHref}`,
     },
     twitter: {
       card: 'summary_large_image',
@@ -130,83 +120,65 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function LocaleDocsPage({ params }: PageProps) {
   const resolved = await params
   const siteUrl = getSiteUrl()
-
-  if (!isValidSecondaryLocale(resolved.locale)) {
-    // This path was intercepted from [[...slug]] — treat locale segment as part of the slug
-    const allSlug = [resolved.locale, ...(resolved.slug ?? [])]
-    const doc = await getDocFromParams(allSlug)
-    if (!doc) notFound()
-
-    const primaryHref = doc.slug.length ? `/${doc.slug.join('/')}` : '/'
-    const pageUrl = `${siteUrl}${primaryHref}`
-    const jsonLd = buildDocPageJsonLd({
-      siteUrl,
-      pageUrl,
-      id: doc.id,
-      title: doc.title,
-      description: doc.description,
-      keywords: doc.keywords,
-      lastUpdated: doc.lastUpdated,
-      locale: getI18nConfig()?.defaultLocale ?? 'en',
-      breadcrumb: getNavContext(doc.id).breadcrumb,
-    })
-
-    if (doc.openapi) {
-      const operationNode = await getApiOperationByKey(doc.openapi.method, doc.openapi.path, doc.openapi.specId)
-      if (!operationNode) notFound()
-
-      return (
-        <div className="space-y-10">
-          <JsonLdScript data={jsonLd} />
-          <div className="not-prose">
-            <DocHeader doc={doc} />
-          </div>
-          <ApiLayout>
-            <OperationPanel operation={operationNode.operation} />
-          </ApiLayout>
-        </div>
-      )
-    }
-
-    const Content = doc.component
-    return (
-      <DocLayout doc={doc}>
-        <JsonLdScript data={jsonLd} />
-        <Content />
-      </DocLayout>
-    )
-  }
-
-  const i18n = getI18nConfig()
-  const doc = await getDocFromParams(resolved.slug, resolved.locale)
-
-  if (!doc) {
-    notFound()
-  }
-
+  const i18n = getBuildI18nConfig()
+  const effectiveSite = resolveBuildSiteConfig()
+  const isLocaleRoute = isValidSecondaryLocale(resolved.locale, i18n)
+  const slug = isLocaleRoute
+    ? resolved.slug
+    : [resolved.locale, ...(resolved.slug ?? [])]
+  const doc = await getDocFromParams(
+    slug,
+    isLocaleRoute ? resolved.locale : undefined,
+  )
+  if (!doc) notFound()
   const primaryHref = doc.slug.length ? `/${doc.slug.join('/')}` : '/'
-  const pageUrl = `${siteUrl}/${resolved.locale}${primaryHref}`
+  const contentLocale =
+    isLocaleRoute && !doc.isFallback ? resolved.locale : i18n.defaultLocale
+  const canonicalHref =
+    isLocaleRoute && !doc.isFallback
+      ? localizedPath(primaryHref, resolved.locale, i18n.defaultLocale)
+      : primaryHref
+  const pageUrl = `${siteUrl}${canonicalHref}`
   const jsonLd = buildDocPageJsonLd({
     siteUrl,
+    siteName: effectiveSite.name,
     pageUrl,
     id: doc.id,
     title: doc.title,
     description: doc.description,
     keywords: doc.keywords,
     lastUpdated: doc.lastUpdated,
-    locale: resolved.locale,
+    locale: contentLocale,
     breadcrumb: getNavContext(doc.id).breadcrumb,
   })
+  const localeNotice =
+    isLocaleRoute && doc.isFallback ? (
+      <LocaleFallbackBanner
+        locale={resolved.locale}
+        defaultLocale={i18n.defaultLocale}
+      />
+    ) : isLocaleRoute && doc.isStale ? (
+      <LocaleStaleBanner primaryHref={primaryHref} />
+    ) : null
 
   if (doc.openapi) {
-    const operationNode = await getApiOperationByKey(doc.openapi.method, doc.openapi.path, doc.openapi.specId)
+    const operationNode = await getApiOperationByKey(
+      doc.openapi.method,
+      doc.openapi.path,
+      doc.openapi.specId,
+    )
     if (!operationNode) {
       notFound()
     }
 
     return (
-      <div className="space-y-10">
+      <div
+        className="space-y-10"
+        lang={contentLocale}
+        dir={localeDirection(contentLocale)}
+      >
         <JsonLdScript data={jsonLd} />
+        {localeNotice}
         <div className="not-prose">
           <DocHeader doc={doc} />
         </div>
@@ -220,13 +192,9 @@ export default async function LocaleDocsPage({ params }: PageProps) {
   const Content = doc.component
 
   return (
-    <DocLayout doc={doc}>
+    <DocLayout doc={doc} locale={contentLocale}>
       <JsonLdScript data={jsonLd} />
-      {doc.isFallback ? (
-        <LocaleFallbackBanner locale={resolved.locale} defaultLocale={i18n?.defaultLocale ?? 'en'} />
-      ) : doc.isStale ? (
-        <LocaleStaleBanner primaryHref={primaryHref} />
-      ) : null}
+      {localeNotice}
       <Content />
     </DocLayout>
   )

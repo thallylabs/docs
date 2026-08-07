@@ -1,11 +1,9 @@
 import { type NextRequest } from 'next/server'
 import { getAllApiOperationNodes } from '@/data/api-reference'
 import { getDocEntries, getSidebarCollections } from '@/data/docs'
-import { getSiteUrl } from '@/lib/site-url'
 
-const baseUrl = getSiteUrl()
-
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
+  const baseUrl = request.nextUrl.origin
   const entries = getDocEntries()
   const collections = getSidebarCollections()
   const apiNodes = await getAllApiOperationNodes()
@@ -68,8 +66,14 @@ export async function GET(_request: NextRequest) {
         llms_txt: `${baseUrl}/llms.txt`,
         llms_full_txt: `${baseUrl}/llms-full.txt`,
         ai_txt: `${baseUrl}/ai.txt`,
+        skill: `${baseUrl}/skill.md`,
+        agents: `${baseUrl}/AGENTS.md`,
+        search: `${baseUrl}/api/search`,
+        agent_readiness: `${baseUrl}/api/agent-readiness`,
         mcp: `${baseUrl}/api/mcp`,
         openapi: `${baseUrl}/openapi.yaml`,
+        robots: `${baseUrl}/robots.txt`,
+        sitemap: `${baseUrl}/sitemap.xml`,
       },
       pages,
     },

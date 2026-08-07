@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextFetchEvent, NextRequest } from 'next/server'
+import { getDocsJsonConfig } from '@/lib/docs-config'
 import {
   ADMIN_SESSION_COOKIE,
   DOCS_ACCESS_COOKIE,
@@ -12,6 +13,22 @@ import {
 import { classifyRequest, isAgentRequest } from '@/lib/traffic-classifier'
 import { isMachineEndpoint, isPublicAgentEndpoint } from '@/lib/agent-endpoints'
 import { verifySession, SESSION_COOKIE } from '@/lib/auth/session'
+import { getCloudAccessConfigEdge, getManagedSiteIdEdge } from '@/lib/cloud-link/edge'
+import type { DocsJsonConfig } from '@/data/docs'
+
+const docsJsonConfig = getDocsJsonConfig()
+
+// JSON imports infer only properties present in the current site. Widen the
+// author-owned config before reading optional fields so monolingual migrated
+// sites remain type-safe when they omit `i18n` entirely.
+const configuredI18n = (docsJsonConfig as DocsJsonConfig).i18n
+const defaultLocale = configuredI18n?.defaultLocale ?? 'en'
+const localeCodes = new Set(configuredI18n?.locales.map(({ code }) => code) ?? [defaultLocale])
+
+function localeForPath(pathname: string): string {
+  const firstSegment = pathname.split('/').filter(Boolean)[0]
+  return firstSegment && localeCodes.has(firstSegment) ? firstSegment : defaultLocale
+}
 
 function shouldTrackPath(pathname: string): boolean {
   // Admin console (pages + its own asset/nav requests) and Next internals are
@@ -45,11 +62,10 @@ function shouldTrackPath(pathname: string): boolean {
 
 // A prefetch/prerender is speculative — the browser fetches a link the user may
 // never visit, so counting it as a view inflates traffic. We match the standard
-// `Sec-Purpose`/`Purpose` request headers. (Next.js <Link> prefetches send
-// `Next-Router-Prefetch`, but the framework strips that header before middleware
-// can read it — verified — so those can't be caught here. Admin-page prefetches
-// are instead excluded by isFromAdmin via the referer.)
+// `Sec-Purpose`/`Purpose` request headers plus Next.js's router-prefetch signal.
+// Admin-page prefetches are also excluded by isFromAdmin via the referer.
 function isPrefetchRequest(request: NextRequest): boolean {
+  if (request.headers.get('next-router-prefetch') === '1') return true
   const secPurpose = request.headers.get('sec-purpose') ?? ''
   if (secPurpose.includes('prefetch') || secPurpose.includes('prerender')) return true
   const purpose = (request.headers.get('purpose') ?? request.headers.get('x-purpose') ?? '').toLowerCase()
@@ -74,11 +90,21 @@ function shouldTrackRequest(request: NextRequest, pathname: string): boolean {
   return shouldTrackPath(pathname) && !isPrefetchRequest(request) && !isFromAdmin(request)
 }
 
-function isCacheableDocsPage(request: NextRequest, pathname: string): boolean {
+/**
+ * Public browser documents are immutable within an atomic deployment. Dynamic
+ * RSC responses are intentionally excluded: Next.js finalizes those responses
+ * as private/no-store after middleware, so navigation speed comes from full
+ * intent prefetching rather than an unreliable CDN header.
+ */
+function isCacheableDocsPage(
+  request: NextRequest,
+  pathname: string,
+  docsAccessEnabled: boolean,
+): boolean {
   return (
     request.method === 'GET' &&
     request.headers.get('accept')?.includes('text/html') === true &&
-    !isDocsAccessEnabledEdge() &&
+    !docsAccessEnabled &&
     !pathname.startsWith('/api') &&
     !pathname.startsWith('/admin') &&
     !pathname.startsWith('/_next')
@@ -126,8 +152,77 @@ async function sendAnalyticsEvent(request: NextRequest, pathname: string) {
   })
 }
 
+// API routes whose responses are pure projections of published content, so a
+// content publish (which purges by tag) must be able to evict them.
+const CONTENT_PROJECTION_API_PREFIXES = ['/api/docs/', '/api/markdown/']
+const CONTENT_PROJECTION_API_PATHS = ['/api/docs-index', '/api/og']
+
+function isManagedContentCachePath(pathname: string): boolean {
+  if (pathname.startsWith('/api/')) {
+    return (
+      CONTENT_PROJECTION_API_PATHS.includes(pathname) ||
+      CONTENT_PROJECTION_API_PREFIXES.some((prefix) => pathname.startsWith(prefix))
+    )
+  }
+  // Everything else that reaches this check is a content surface: doc pages,
+  // their .md mirrors, llms.txt / llms-full.txt, sitemap, robots.
+  return !pathname.startsWith('/admin') && !pathname.startsWith('/_next') && pathname !== '/access'
+}
+
+/**
+ * Under the assets ContentSource, doc responses are served from the CDN and
+ * invalidated by tag when a content publish lands: `Cache-Tag: site:{siteId}`
+ * is the purge handle, and the long CDN TTL makes the tag the only eviction
+ * path. Applied in middleware because App Router pages cannot set response
+ * headers themselves.
+ *
+ * The env var is read inline (not via @/lib/content-source) because that
+ * module's filesystem provider imports node:fs, which cannot be bundled into
+ * edge middleware.
+ *
+ * `isAffirmativelyPublic` must fail CLOSED: headers are applied only when the
+ * managed access config was actually read and says the site is public. When
+ * the config is unavailable (control-plane outage), request gating above
+ * fails open for availability, but a possibly-password-gated page must never
+ * be frozen into a shared cache for a year.
+ *
+ * `cdnCacheable: false` sets the purge tag without a TTL. Used for the
+ * agent content-negotiation rewrite: it varies on User-Agent/Accept while
+ * sharing the browser URL's cache key (CDNs do not honor Vary on those), so
+ * a cached agent response would poison the URL for human visitors. Agents
+ * that want cached responses have URL-distinct forms (`.md`, `?format=`).
+ */
+function applyManagedContentCacheHeaders(
+  response: NextResponse,
+  pathname: string,
+  isAffirmativelyPublic: boolean,
+  options: { cdnCacheable: boolean } = { cdnCacheable: true },
+): NextResponse {
+  if (process.env.THALLY_CONTENT_SOURCE?.trim().toLowerCase() !== 'assets') return response
+  if (!isAffirmativelyPublic) return response
+  if (!isManagedContentCachePath(pathname)) return response
+  const siteId = getManagedSiteIdEdge()
+  if (!siteId) return response
+  response.headers.set('Cache-Tag', `site:${siteId}`)
+  if (options.cdnCacheable) {
+    response.headers.set('CDN-Cache-Control', 'public, s-maxage=31536000')
+  }
+  return response
+}
+
 export async function middleware(request: NextRequest, event: NextFetchEvent) {
   const { pathname } = request.nextUrl
+  const requestLocale = localeForPath(pathname)
+  const forwardedHeaders = new Headers(request.headers)
+  forwardedHeaders.set('x-thally-locale', requestLocale)
+  const cloudAccess = await getCloudAccessConfigEdge(request.nextUrl.origin)
+  const docsAccessEnabled =
+    isDocsAccessEnabledEdge() || cloudAccess?.access?.mode === 'password'
+
+  // Affirmative check for CDN cacheability: the access config must be present
+  // AND public. `cloudAccess == null` (self-host, or a failed/timed-out grant
+  // exchange) means "unknown", and unknown never enters a shared cache.
+  const contentCachePublic = !isDocsAccessEnabledEdge() && cloudAccess?.access?.mode === 'public'
 
   // Gate admin PAGES and admin APIs at the edge — except the public auth routes
   // (login/OIDC start/callback), which must be reachable pre-auth. This is
@@ -150,15 +245,15 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
   }
 
   if (
-    isDocsAccessEnabledEdge() &&
+    docsAccessEnabled &&
     !pathname.startsWith('/admin') &&
     !pathname.startsWith('/api/admin') &&
     !pathname.startsWith('/api/analytics') &&
     !pathname.startsWith('/api/access') &&
     !pathname.startsWith('/api/chat') &&
-    // Uses the server-only site credential; it must remain reachable so a
-    // password-protected deployment can connect itself to Thally Cloud.
-    !pathname.startsWith('/api/cloud/handshake') &&
+    // The same-origin Thally Cloud handshake authenticates server-to-server with the
+    // site token. It must remain reachable when the docs themselves are gated.
+    pathname !== '/api/cloud/handshake' &&
     // The Thally Track webhook is called by GitHub, which can't hold a docs-access
     // cookie — it authenticates itself via HMAC signature instead.
     !pathname.startsWith('/api/track') &&
@@ -170,7 +265,7 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
     // the HTML /access page instead of the JSON/markdown it asked for, and the
     // anonymous-access promises in auth.md / oauth-protected-resource go false.
     !isPublicAgentEndpoint(pathname) &&
-    !(await isDocsAccessGrantedEdge(request.cookies.get(DOCS_ACCESS_COOKIE)?.value))
+    !(await isDocsAccessGrantedEdge(request.cookies.get(DOCS_ACCESS_COOKIE)?.value, docsAccessEnabled))
   ) {
     const accessUrl = request.nextUrl.clone()
     accessUrl.pathname = '/access'
@@ -209,7 +304,8 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
     if (slugPath) {
       const url = request.nextUrl.clone()
       url.pathname = `/api/markdown/${slugPath}`
-      return NextResponse.rewrite(url)
+      // URL-distinct (.md) — safe to fully CDN-cache.
+      return applyManagedContentCacheHeaders(NextResponse.rewrite(url), pathname, contentCachePublic)
     }
   }
 
@@ -220,12 +316,18 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
     url.pathname = `/api/docs/${slugPath}`
     url.searchParams.delete('format')
 
-    const requestHeaders = new Headers(request.headers)
     if (format === 'json' || format === 'ldjson' || format === 'md') {
-      requestHeaders.set('x-thally-format', format)
+      forwardedHeaders.set('x-thally-format', format)
     }
 
-    return NextResponse.rewrite(url, { request: { headers: requestHeaders } })
+    // Tag-only: this response varies on User-Agent/Accept under the browser
+    // URL's cache key, so it must never be CDN-cached (see helper docs).
+    return applyManagedContentCacheHeaders(
+      NextResponse.rewrite(url, { request: { headers: forwardedHeaders } }),
+      pathname,
+      contentCachePublic,
+      { cdnCacheable: false },
+    )
   }
 
   // Advertise the llms.txt discovery endpoint on HTML doc-page responses, so
@@ -233,7 +335,7 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
   // relative (resolved against the request URL per RFC 8288); `X-Llms-Txt` is a
   // custom header agents read directly, so it carries an absolute URL. Only
   // content pages get the headers (not API/admin/_next).
-  const response = NextResponse.next()
+  const response = NextResponse.next({ request: { headers: forwardedHeaders } })
   if (!pathname.startsWith('/api') && !pathname.startsWith('/admin') && !pathname.startsWith('/_next')) {
     response.headers.append('Link', '</llms.txt>; rel="llms-txt"')
     // Standard relation types agents actually dereference (RFC 8288): the
@@ -243,12 +345,13 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
     response.headers.append('Link', '</openapi.yaml>; rel="service-desc"; type="application/yaml"')
     response.headers.append('Link', '</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"')
     response.headers.set('X-Llms-Txt', `${request.nextUrl.origin}/llms.txt`)
+    response.headers.set('Content-Language', requestLocale)
   }
-  if (isCacheableDocsPage(request, pathname)) {
+  if (isCacheableDocsPage(request, pathname, docsAccessEnabled)) {
     // Netlify treats responses that pass through middleware as dynamic. The
-    // document itself is prerendered, and atomic deploys invalidate this cache,
-    // so let CDNs serve it without a function round trip while browsers retain
-    // Next.js's normal revalidation behavior.
+    // document is immutable within an atomic deploy, so let CDNs serve it
+    // without a function round trip while browsers retain Next.js's normal
+    // revalidation behavior.
     const cdnCache = 'public, s-maxage=31536000, stale-while-revalidate=86400'
     response.headers.set(
       'Cache-Control',
@@ -257,7 +360,10 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
     response.headers.set('CDN-Cache-Control', cdnCache)
     response.headers.set('Netlify-CDN-Cache-Control', cdnCache)
   }
-  return response
+  // Full caching is safe here: RSC payload requests share doc-page pathnames
+  // but stay cache-distinct via their `_rsc` query param, and every other
+  // variant agents use is URL-distinct (`.md`, `?format=`).
+  return applyManagedContentCacheHeaders(response, pathname, contentCachePublic)
 }
 
 export const config = {

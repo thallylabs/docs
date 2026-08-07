@@ -1,35 +1,38 @@
 import type { Metadata } from 'next'
-import dynamic from 'next/dynamic'
 import { notFound } from 'next/navigation'
+import { OpenApiDocPage } from '@/components/api/openapi-doc-page'
 import { DocLayout } from '@/components/docs/doc-layout'
-import { getDocEntries, getI18nConfig, getNavContext } from '@/data/docs'
+import { getDocEntries, getNavContext } from '@/data/docs'
 import { getDocFromParams } from '@/data/get-doc'
+import { isRemoteContentSource } from '@/lib/content-source'
 import { getSiteUrl } from '@/lib/site-url'
 import { JsonLdScript } from '@/components/seo/json-ld-script'
 import { buildAgentAlternateLinks } from '@/lib/agent-discovery'
 import { buildDocPageJsonLd } from '@/lib/json-ld'
 import { buildOgImageUrl } from '@/lib/og'
-
-const OpenApiDocPage = dynamic(
-  () => import('@/components/api/openapi-doc-page').then((module) => module.OpenApiDocPage),
-)
-
-function localizedHref(href: string, code: string, defaultLocale: string) {
-  return code === defaultLocale ? href : `/${code}${href}`
-}
+import { getContentI18nConfig } from '@/lib/i18n/content'
+import { buildLocaleAlternates } from '@/lib/i18n/metadata'
+import { getBuildI18nConfig } from '@/lib/i18n/request'
+import { resolveBuildSiteConfig } from '@/lib/site-config'
 
 interface PageProps {
   params: Promise<{ slug?: Array<string> }>
 }
 
 export async function generateStaticParams() {
+  // Remote content sources resolve pages at request time: baking today's page
+  // list into static HTML would freeze content (and 404s) at build time.
+  // Unknown slugs still 404 through the same notFound() path below.
+  if (isRemoteContentSource()) return []
   const docs = getDocEntries()
   return docs.map((doc) =>
     doc.slug.length ? { slug: doc.slug } : { slug: [] },
   )
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
   const resolved = await params
   const doc = await getDocFromParams(resolved.slug)
   if (!doc) {
@@ -38,7 +41,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const siteUrl = getSiteUrl()
   const primaryHref = doc.slug.length ? `/${doc.slug.join('/')}` : '/'
-  const i18n = getI18nConfig()
+  const i18n = await getContentI18nConfig(
+    resolved.slug,
+    getBuildI18nConfig(),
+  )
 
   const ogImageUrl = buildOgImageUrl({
     title: doc.title,
@@ -46,11 +52,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     group: doc.group,
   })
 
-  const alternateLanguages = i18n
-    ? Object.fromEntries(
-        i18n.locales.map((l) => [l.code, `${siteUrl}${localizedHref(primaryHref, l.code, i18n.defaultLocale)}`]),
-      )
-    : {}
+  const alternateLanguages = buildLocaleAlternates(siteUrl, primaryHref, i18n)
 
   const isNoindex = doc.noindex || doc.hidden
 
@@ -60,13 +62,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     ...(isNoindex ? { robots: { index: false, follow: false } } : {}),
     alternates: {
       canonical: `${siteUrl}${primaryHref}`,
-      ...(i18n ? { languages: alternateLanguages } : {}),
-      types: buildAgentAlternateLinks(primaryHref),
+      ...(alternateLanguages ? { languages: alternateLanguages } : {}),
+      types: buildAgentAlternateLinks(primaryHref, siteUrl),
     },
     openGraph: {
       title: doc.title,
       description: doc.description,
       images: [{ url: ogImageUrl, width: 1200, height: 630 }],
+      url: `${siteUrl}${primaryHref}`,
     },
     twitter: {
       card: 'summary_large_image',
@@ -86,12 +89,14 @@ export default async function DocsPage({ params }: PageProps) {
   }
 
   const siteUrl = getSiteUrl()
+  const effectiveSite = resolveBuildSiteConfig()
   const primaryHref = doc.slug.length ? `/${doc.slug.join('/')}` : '/'
   const pageUrl = `${siteUrl}${primaryHref}`
-  const locale = getI18nConfig()?.defaultLocale ?? 'en'
+  const locale = getBuildI18nConfig().defaultLocale
   const nav = getNavContext(doc.id)
   const jsonLd = buildDocPageJsonLd({
     siteUrl,
+    siteName: effectiveSite.name,
     pageUrl,
     id: doc.id,
     title: doc.title,
@@ -109,7 +114,7 @@ export default async function DocsPage({ params }: PageProps) {
   const Content = doc.component
 
   return (
-    <DocLayout doc={doc}>
+    <DocLayout doc={doc} locale={locale}>
       <JsonLdScript data={jsonLd} />
       <Content />
     </DocLayout>

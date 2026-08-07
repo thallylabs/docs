@@ -1,0 +1,73 @@
+---
+title: Understand the project structure
+navTitle: Project structure
+description: Learn which files you own in a Thally project and where content, navigation, identity, assets, and API specifications belong.
+---
+
+A Thally project separates the files you author from the framework that renders
+them. Most documentation work happens in four places.
+
+```text
+my-docs/
+├── docs.json
+├── openapi.yaml
+├── public/
+├── snippets/
+└── src/
+    ├── content/
+    ├── data/site.ts
+    └── mdx/custom-components.tsx
+```
+
+## Files you edit regularly
+
+| Path | Purpose |
+| --- | --- |
+| `src/content/` | MDX pages. The file path becomes the page URL. |
+| `docs.json` | Navigation, theme, API source, redirects, and optional site features. |
+| `src/data/site.ts` | Product identity, description, links, versions, and brand defaults. |
+| `public/` | Images, logos, favicons, downloadable files, and other public assets. |
+| `snippets/` | Reusable MDX fragments shared by multiple pages. |
+| `openapi.yaml` | The starter API specification. You can point `docs.json` at another local or remote spec. |
+| `src/mdx/custom-components.tsx` | Your explicit extension point for custom MDX components. |
+
+## How paths become URLs
+
+The route matches the file path under `src/content/`, without `.mdx`:
+
+| Content file | URL |
+| --- | --- |
+| `src/content/quickstart.mdx` | `/quickstart` |
+| `src/content/guides/install.mdx` | `/guides/install` |
+| `src/content/api/authentication.mdx` | `/api/authentication` |
+
+The homepage is the page whose ID is `introduction`. A page can exist without
+appearing in the sidebar, but `thally check` reports orphaned content so you can
+make that choice intentionally.
+
+## Framework-owned files
+
+You may see Next.js routes, rendering components, generated content indexes,
+and build configuration elsewhere in the repository. They are part of the
+Thally runtime. Prefer documented settings in `docs.json`, `site.ts`, or
+`THALLY_*` environment variables over editing framework internals.
+
+Use `src/mdx/custom-components.tsx` when the built-in components do not cover a
+content need. See [Extend Thally](/guides/extending) before changing the runtime.
+
+## Verify your project
+
+Run:
+
+```bash
+npx thally check
+```
+
+The checker validates content, navigation, links, and related documentation
+contracts.
+
+## Next steps
+
+- [Create and edit pages](/guides/writing-content)
+- [Configure navigation](/guides/configuring-navigation)
+- [Customize branding and theme](/guides/branding-and-theming)

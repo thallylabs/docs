@@ -1,7 +1,8 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
+# Unanchored: the root pattern alone let packages/*/node_modules be committed.
+node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -16,6 +17,14 @@
 # next.js
 /.next/
 /out/
+
+# Cloudflare/OpenNext build and local runtime state
+/.open-next/
+/.thally-upload/
+/.wrangler/
+/src/generated/runtime-sources.ts
+/src/generated/runtime-docs.ts
+/src/generated/runtime-docs/
 
 # production
 /build

@@ -3,14 +3,14 @@ title: Migrando a Thally
 description: Mueve tu documentación existente de Mintlify, Docusaurus, GitBook o cualquier plataforma basada en Markdown a Thally con un solo comando.
 ---
 
-El comando `create-thally-docs migrate` importa un sitio público de documentación o un repositorio de GitHub y lo convierte en un proyecto Thally en funcionamiento — sin copiar manualmente ni reconstruir la navegación.
+El comando `create-thally-docs migrate` importa un repositorio de GitHub o un sitio público de documentación y lo convierte en un proyecto Thally en funcionamiento. Para la detección automática, usa el repositorio fuente siempre que esté disponible: conserva la navegación, los assets, los archivos OpenAPI, las redirecciones y la estructura MDX originales.
 
 ```bash
-npx create-thally-docs@latest migrate https://github.com/your-org/your-docs my-docs
+npx create-thally-docs@latest migrate https://github.com/example/docs my-docs
 ```
 
 <Note type="info" title="Se recomienda migrar desde el repositorio">
-Un repositorio de GitHub conserva la navegación original, los assets, los archivos OpenAPI, las redirecciones y la estructura MDX que podrían no recuperarse desde un sitio renderizado. Usa una URL pública solo cuando el repositorio fuente no esté disponible.
+  Un repositorio permite que Thally lea el contenido y la configuración originales en lugar de reconstruirlos desde el sitio desplegado.
 </Note>
 
 ---
@@ -21,17 +21,17 @@ Un repositorio de GitHub conserva la navegación original, los assets, los archi
 
 <Step title="Elegir la plataforma fuente">
 
-En una migración interactiva, Thally pregunta si Mintlify, Docusaurus u otra plataforma aloja la documentación.
+En una migración interactiva, Thally pregunta si Mintlify, Docusaurus u otra plataforma aloja la documentación. Para scripts y CI, usa `--platform mintlify`, `--platform docusaurus` o `--platform auto`.
 
-Si eliges **Other / detect automatically** con una URL pública, la CLI ofrece primero usar el repositorio fuente de GitHub. Continuar con el sitio requiere confirmar que el resultado puede necesitar ajustes manuales y recomienda el [MCP de Thally](/guides/mcp-server) para refinarlo.
+Si eliges la detección automática para una URL pública, la CLI recomienda primero el repositorio de GitHub y permite que lo introduzcas. Solo puedes continuar con la URL después de aceptar que el resultado puede requerir ajustes manuales. Para completar esos ajustes con un agente, usa el [servidor MCP de Thally](/guides/mcp-server) y solicita un PR.
 
-Para scripts y CI, usa `--platform mintlify`, `--platform docusaurus` o `--platform auto`. Los usos explícitos de `--platform auto` y `--yes` siguen siendo no interactivos, muestran la limitación de la URL pública y la consideran aceptada.
+`--platform auto` y `--yes` mantienen los scripts sin interacción. Con una URL pública, la CLI muestra la recomendación y la advertencia sin detenerse.
 
 </Step>
 
 <Step title="Descubrir páginas y navegación">
 
-Para una URL de GitHub, Thally hace un clon superficial y lee el contenido original y la configuración sin ejecutarla. Esta es la ruta recomendada para la detección automática. Para una URL pública, Thally reconstruye la documentación a partir del sitemap, las barras laterales renderizadas, las redirecciones y el contenido dentro de la ruta enviada.
+Para una URL pública, Thally lee el sitemap, las barras laterales renderizadas, las redirecciones y el contenido dentro de la ruta enviada. Para una URL de GitHub, hace un clon superficial y lee la configuración sin ejecutarla.
 
 Las importaciones de repositorios reconocen estos archivos:
 
@@ -93,7 +93,7 @@ npx create-thally-docs@latest migrate https://relay.dev/ relay-docs \
 ```
 
 <Warning>
-Para la detección automática, prefiere la URL del repositorio fuente. Una URL pública puede omitir archivos y estructura que no estén presentes en el sitio renderizado. Las ejecuciones interactivas requieren aceptar esta limitación; `--platform auto` y `--yes` la aceptan de forma no interactiva.
+Para una URL pública, `--platform auto` y `--yes` aceptan de forma no interactiva que la migración puede necesitar ajustes manuales. Usa una URL de repositorio en scripts siempre que esté disponible.
 </Warning>
 
 ### Mintlify
@@ -154,21 +154,21 @@ npx create-thally-docs migrate https://github.com/your-org/api-docs --into ./my-
 | `--platform <name>` | Adaptador fuente: `mintlify`, `docusaurus` o `auto` |
 | `--max-pages <count>` | Máximo de páginas de un sitio público que se importarán (`1`–`1000`) |
 | `--api-key <key>` | Clave API de Anthropic (o establecer `ANTHROPIC_API_KEY`) para conversión de archivos no Markdown |
-| `--yes`, `-y` | Aceptar valores predeterminados y omitir todos los prompts, incluida la selección de plataforma |
+| `--yes`, `-y` | Aceptar valores predeterminados y las limitaciones del sitio público, y omitir todos los prompts |
 
 ---
 
 ## A través del servidor MCP
 
-Si usas Claude Code o Claude Desktop, puedes iniciar una migración a través del chat:
+Si usas un cliente compatible con MCP, puedes iniciar una migración a través del chat:
 
 ```
 Migrate the Mintlify starter repo into a new Thally project at ~/dev/my-docs
 ```
 
-`migrate_docs` siempre crea primero una plantilla canónica nueva de Thally. El destino debe ser nuevo o estar vacío para que el resultado incluya el runtime, el diseño, la navegación y la configuración compatibles con Thally.
+La herramienta MCP `migrate_docs` siempre crea un proyecto nuevo desde la plantilla canónica actual de Thally y después importa el contenido, la navegación, la marca, los assets y la referencia de API. El directorio de destino debe ser nuevo o estar vacío.
 
-Usa `import_docs` solo cuando quieras importar contenido explícitamente a un proyecto Thally existente sin reemplazar su runtime. Consulta [Servidor MCP](/guides/mcp-server) para instrucciones de configuración.
+Usa `import_docs` solo cuando quieras fusionar contenido de forma explícita en un proyecto Thally existente. Consulta [Servidor MCP](/guides/mcp-server) para instrucciones de configuración.
 
 ---
 

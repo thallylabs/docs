@@ -30,9 +30,32 @@ THALLY_DATABASE_URL=libsql://tu-db.turso.io
 THALLY_DATABASE_TOKEN=…
 ```
 
-Pasos completos (incluido el CLI de Turso) en la guía en inglés: [Deploying → Analytics & durable storage](/guides/deploying#analytics--durable-storage). Agent Readiness no usa esta base de datos.
+Consulta la [referencia de variables de entorno](/guides/environment-variables#durable-storage-and-analytics) para la configuración completa. Agent Readiness no usa esta base de datos.
+
+## Cloudflare Workers
+
+Consulta [Desplegar en Cloudflare Workers](/guides/deploy-cloudflare) para el
+flujo completo de compilación, prueba y verificación.
+
+El repositorio incluye el adaptador OpenNext y un `wrangler.jsonc` listo para
+usar. Compila el Worker, ejecuta el mismo artefacto localmente con workerd y
+despliégalo:
+
+```bash
+npm run build:cloudflare
+npm run smoke:cloudflare
+npm run deploy:cloudflare
+```
+
+La compilación crea `.open-next/worker.js` y su directorio de activos estáticos.
+Configura `THALLY_SITE_URL` y los secretos opcionales en el entorno del Worker
+antes del despliegue de producción. Thally Cloud realiza estos pasos
+automáticamente para los sitios administrados.
 
 ## Vercel
+
+Consulta [Desplegar en Vercel](/guides/deploy-vercel) para la configuración de
+variables, almacenamiento persistente y verificación.
 
 La forma más rápida de desplegar — sube a GitHub e importa el repositorio:
 
@@ -44,55 +67,11 @@ La forma más rápida de desplegar — sube a GitHub e importa el repositorio:
 
 Vercel detecta automáticamente Next.js y configura todo.
 
-## Netlify
-
-```bash
-npm run build
-```
-
-Establece el comando de compilación como `npm run build` y el directorio de publicación como `.next`. Es posible que necesites el plugin `@netlify/plugin-nextjs` para soporte completo de Next.js.
-
 ## Docker
 
-Crea un `Dockerfile`:
-
-```dockerfile
-FROM node:18-alpine AS builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
-
-FROM node:18-alpine AS runner
-WORKDIR /app
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/src/content ./src/content
-COPY --from=builder /app/openapi.yaml ./
-COPY --from=builder /app/docs.json ./
-
-EXPOSE 3000
-CMD ["npm", "start"]
-```
-
-Compila y ejecuta:
-
-```bash
-docker build -t my-docs .
-docker run -p 3000:3000 my-docs
-```
-
-## Cloudflare Pages
-
-Usa el adaptador `@cloudflare/next-on-pages`:
-
-1. Instala: `npm install @cloudflare/next-on-pages`
-2. Establece el comando de compilación: `npx @cloudflare/next-on-pages`
-3. Establece el directorio de salida: `.vercel/output/static`
-4. Despliega a través del panel de Cloudflare o la CLI de Wrangler
+Consulta [Desplegar con Docker](/guides/deploy-docker) para crear un contexto de
+compilación que excluya secretos, ejecutar el proceso como usuario sin
+privilegios y conservar `.data/` en un volumen.
 
 ## Exportación estática
 
@@ -107,7 +86,9 @@ const nextConfig = {
 Luego ejecuta `npm run build` — la salida estará en el directorio `out/`, lista para cualquier servidor de archivos estáticos.
 
 <Note type="warning" title="Limitación de la exportación estática">
-  El panel "Pruébalo" de la API requiere una ruta proxy del lado del servidor y no funcionará con la exportación estática. Todas las demás funcionalidades funcionan correctamente.
+  La exportación estática no incluye rutas del servidor. No funcionan el panel
+  "Pruébalo", el chat de IA, MCP remoto, el panel de administración, las
+  analíticas, la protección por contraseña ni los webhooks de Thally Track.
 </Note>
 
 ## SEO y feeds

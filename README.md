@@ -1,8 +1,15 @@
 # Thally
 
-The first agent-native documentation platform — every page is served to humans as polished HTML and to AI agents as structured JSON, JSON-LD, and Markdown from the same URL. Built on Next.js: self-hosted, open, extensible, and free to commercialize.
+**Every product change. Every knowledge surface. Automatically in sync.**
 
-Thally is **agent-native**: every page is served to humans as pre-rendered HTML and to AI agents as structured JSON / JSON-LD / Markdown from the same URL.
+Thally is the product-knowledge pipeline for software teams. It starts with
+documentation: connect product repositories, identify the customer-facing
+knowledge a change affects, and turn that work into evidence-backed pull
+requests for people to review.
+
+This repository is the open documentation surface: self-hosted, extensible, and
+free to commercialize. Every page is served to humans as pre-rendered HTML and
+to agents as structured JSON, JSON-LD, and Markdown from the same URL.
 
 ## Features
 
@@ -39,7 +46,18 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3040](http://localhost:3040).
+Open [http://localhost:3040](http://localhost:3040). If port 3040 is already
+taken, the dev server falls back to the next free port and prints the URL it
+started on.
+
+## Canonical site source
+
+This repository is both the live Thally documentation site and the canonical
+standalone source used by `create-thally-docs` and Thally Cloud. New projects
+inherit the application/runtime from `main`; the creation flow removes this
+repository's documentation, screenshots, and issue templates before writing
+the new site's placeholder or migrated content. There is no separate template
+implementation to keep in sync.
 
 ## Project Structure
 
@@ -156,6 +174,10 @@ cp .env.example .env.local
 | Variable | Purpose |
 |---|---|
 | `THALLY_SITE_URL` | Production URL for OpenGraph metadata, canonical URLs, and agent endpoints (legacy `NEXT_PUBLIC_SITE_URL` still honored) |
+| `THALLY_CLOUD_SITE_TOKEN` | Optional server-only credential from Thally Cloud. The deployed site exchanges it automatically on its next visit; never prefix it with `NEXT_PUBLIC_` |
+| `THALLY_CLOUD_URL` | Optional Thally Cloud control-plane base URL. Defaults to `https://app.thally.io`; set this only for staging or a public development tunnel |
+| `THALLY_CLOUD_SITE_CONFIG` | Managed-hosting release snapshot injected by Thally Cloud. Self-hosted sites should leave this unset and use `THALLY_CLOUD_SITE_TOKEN` |
+| `THALLY_CONTENT_SOURCE` | Optional — where doc content is read from: `filesystem` (default; build-embedded, SSG) or `assets` (managed hosting; content served from the deployment's static assets and rendered per request). Self-hosted sites should leave this unset |
 | `ANTHROPIC_API_KEY` | Owner key for AI chat — lifts trial limits entirely |
 | `THALLY_TRIAL_ANTHROPIC_KEY` | Optional shared key powering the out-of-the-box trial chat (strict per-IP limits + a global daily cap) |
 | `THALLY_TRIAL_RATE_PER_MIN` / `THALLY_TRIAL_RATE_PER_DAY` / `THALLY_TRIAL_DAILY_LIMIT` / `THALLY_CHAT_RATE_PER_MIN` | Optional chat rate-limit overrides |
@@ -169,11 +191,13 @@ Legacy `DOX_*` names are still read as a fallback for every `THALLY_*` variable,
 ## Production
 
 ```bash
-npm run build
-npm start
+npm run build:cloudflare
+npm run smoke:cloudflare
+npm run deploy:cloudflare
 ```
 
-Deploy anywhere that supports Next.js — Vercel, Netlify, Cloudflare, Docker, etc.
+The canonical deployment target is Cloudflare Workers through OpenNext. For a
+traditional Node host, `npm run build && npm start` remains available.
 
 ## Stack
 

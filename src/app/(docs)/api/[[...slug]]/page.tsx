@@ -7,10 +7,12 @@ import { getSiteUrl } from '@/lib/site-url'
 import { JsonLdScript } from '@/components/seo/json-ld-script'
 import { apiReferenceConfig, getOpenApiSpecUrl } from '@/config/api-reference'
 import { getAllApiOperationNodes, getApiOperationBySlug, getApiOperationNodes } from '@/data/api-reference'
-import { getBreadcrumbs, getDocEntries } from '@/data/docs'
+import { getBreadcrumbs, getDocEntries, getI18nConfig } from '@/data/docs'
 import { getDocFromParams } from '@/data/get-doc'
 import { buildAgentAlternateLinks } from '@/lib/agent-discovery'
+import { buildLanguageAlternates } from '@/lib/i18n-seo'
 import { buildApiOperationJsonLd, buildDocPageJsonLd } from '@/lib/json-ld'
+import { resolveBuildSiteConfig } from '@/lib/site-config'
 
 interface PageProps {
   params: Promise<{ slug?: Array<string> }>
@@ -35,12 +37,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const node = await getApiOperationBySlug(resolved.slug)
   if (node) {
+    const languages = buildLanguageAlternates(siteUrl, node.href, getI18nConfig())
     return {
       title: node.operation.title,
       description: node.operation.description ?? `${node.operation.method} ${node.operation.path}`,
       alternates: {
+        canonical: `${siteUrl}${node.href}`,
+        ...(languages ? { languages } : {}),
         types: {
-          ...buildAgentAlternateLinks(node.href),
+          ...buildAgentAlternateLinks(node.href, siteUrl),
           ...(specUrl ? { 'application/vnd.oai.openapi': specUrl } : {}),
         },
       },
@@ -50,11 +55,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const doc = await getDocFromParams(['api', ...(resolved.slug ?? [])])
   if (doc) {
     const primaryHref = doc.href
+    const languages = buildLanguageAlternates(siteUrl, primaryHref, getI18nConfig())
     return {
       title: doc.title,
       description: doc.description,
       alternates: {
-        types: buildAgentAlternateLinks(primaryHref),
+        canonical: `${siteUrl}${primaryHref}`,
+        ...(languages ? { languages } : {}),
+        types: buildAgentAlternateLinks(primaryHref, siteUrl),
       },
     }
   }
@@ -65,6 +73,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function ApiReferencePage({ params }: PageProps) {
   const resolved = await params
   const siteUrl = getSiteUrl()
+  const effectiveSite = resolveBuildSiteConfig()
   const specUrl = getOpenApiSpecUrl(siteUrl)
 
   // No slug — redirect to the first MDX page in the API group if one exists,
@@ -87,6 +96,7 @@ export default async function ApiReferencePage({ params }: PageProps) {
     const pageUrl = `${siteUrl}${node.href}`
     const jsonLd = buildApiOperationJsonLd({
       siteUrl,
+      siteName: effectiveSite.name,
       pageUrl,
       title: node.operation.title,
       description: node.operation.description ?? `${node.operation.method} ${node.operation.path}`,
@@ -121,6 +131,7 @@ export default async function ApiReferencePage({ params }: PageProps) {
   const pageUrl = `${siteUrl}${doc.href}`
   const jsonLd = buildDocPageJsonLd({
     siteUrl,
+    siteName: effectiveSite.name,
     pageUrl,
     id: doc.id,
     title: doc.title,

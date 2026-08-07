@@ -22,14 +22,18 @@ export function buildOgImageUrl(params: {
  * Resolve the full set of OG image colors by merging user overrides with brand defaults.
  * Used by the /api/og route handler.
  */
-export function resolveOgConfig(accentOverride?: string) {
+export function resolveOgConfig(
+  accentOverride?: string,
+  identity: { name: string } = siteConfig,
+  requestOrigin?: string,
+) {
   const og = siteConfig.ogImage ?? {}
   const dark = siteConfig.brand.dark
 
   // accentOverride powers the branding-page preview (a chosen-but-not-yet-applied
   // accent); otherwise the OG derives entirely from the site brand.
   const accent = (accentOverride && /^#[0-9a-fA-F]{3,8}$/.test(accentOverride) ? accentOverride : undefined) ?? og.accent ?? dark.accent
-  const siteUrl = (process.env.THALLY_SITE_URL ?? process.env.DOX_SITE_URL) ?? process.env.NEXT_PUBLIC_SITE_URL ?? ''
+  const siteUrl = requestOrigin ?? (process.env.THALLY_SITE_URL ?? process.env.DOX_SITE_URL) ?? process.env.NEXT_PUBLIC_SITE_URL ?? ''
   let domain = og.domain ?? ''
   if (!domain && siteUrl) {
     try {
@@ -46,8 +50,8 @@ export function resolveOgConfig(accentOverride?: string) {
     titleColor: og.titleColor ?? dark.foreground,
     descriptionColor: og.descriptionColor ?? `${dark.foreground}99`,
     groupColor: og.groupColor ?? accent,
-    domain: domain || siteConfig.name.toLowerCase(),
-    logoText: og.logoText ?? siteConfig.name,
+    domain: domain || identity.name.toLowerCase(),
+    logoText: og.logoText ?? identity.name,
     // Brand display face — OG titles render in Plus Jakarta Sans semibold
     fontFamily: og.fontFamily ?? 'Plus Jakarta Sans',
     fontWeight: og.fontWeight ?? '600',

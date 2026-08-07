@@ -26,7 +26,7 @@ La pestaña de Referencia de API generará automáticamente una página para cad
 | --- | --- | --- |
 | `source` | Sí | Ruta a tu archivo de especificación OpenAPI, relativa a la raíz del proyecto. |
 | `tagsOrder` | No | Controla el orden en que aparecen las etiquetas en la barra lateral. Las etiquetas no listadas aparecen después. |
-| `defaultGroup` | No | Nombre del grupo para operaciones sin etiquetas. Por defecto es `"General"`. |
+| `defaultGroup` | No | Nombre del grupo para operaciones sin etiquetas. Por defecto es `"Endpoints"`. |
 | `overrides` | No | Personalizaciones por operación (ver más abajo). |
 
 ## Sobreescritura de operaciones
@@ -84,7 +84,7 @@ No se necesita configuración — funciona automáticamente desde tu especificac
 
 ## Reemplazar la especificación de ejemplo
 
-La plantilla viene con un ejemplo de Pet Store. Para usar tu propia API:
+La plantilla incluye un ejemplo de JSONPlaceholder. Para usar tu propia API:
 
 1. Reemplaza `openapi.yaml` con tu especificación
 2. Actualiza el `tagsOrder` en `docs.json` para que coincida con tus etiquetas

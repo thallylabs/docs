@@ -1,0 +1,87 @@
+---
+title: Troubleshoot your documentation site
+navTitle: Troubleshooting
+description: Diagnose content, navigation, build, deployment, search, and runtime-feature failures in a Thally project.
+---
+
+Reproduce the failure locally, run the checks, and isolate whether the problem
+comes from content, configuration, the production build, or the deployed
+runtime.
+
+## Collect the baseline
+
+From the project root, run:
+
+```bash
+node --version
+npx thally check
+npm run build
+```
+
+Record the failing URL, exact command, complete error, host, and whether the
+same behavior occurs in `npm run dev`.
+
+## A page is missing or returns 404
+
+- Confirm the file exists under `src/content/` and ends in `.mdx`.
+- Derive the URL from the file path without `src/content/` or `.mdx`.
+- Add the page ID to a group in `docs.json` if it should appear in navigation.
+- Check the page and group for `hidden: true`.
+- Run `npx thally check` for orphaned or missing page IDs.
+
+## The build fails on MDX
+
+Check frontmatter delimiters, unclosed JSX tags, and nested code fences. When a
+code sample contains a fenced block, wrap the outer example in a longer fence.
+Temporarily reduce the page to the smallest failing section to identify the
+invalid component or syntax.
+
+## Navigation is incorrect
+
+Validate `docs.json` with:
+
+```bash
+jq empty docs.json
+```
+
+Page IDs use forward slashes and omit the extension. A nested group belongs
+inside another group's `pages` array. See
+[Configure navigation](/guides/configuring-navigation).
+
+## Production links use localhost or the wrong domain
+
+Set `THALLY_SITE_URL` to the public origin in the hosting provider and
+redeploy. Check canonical tags, `/sitemap.xml`, and `/llms.txt` after the new
+build.
+
+## A server feature works locally but not after deployment
+
+- Confirm the host runs the server runtime rather than a static export.
+- Add the feature's required environment variables to the correct environment.
+- On serverless hosts, configure remote storage when state must persist.
+- Check function logs for the failing `/api/...` request.
+- Redeploy after changing environment variables.
+
+## Search does not find a page
+
+Confirm the page is navigable or allowed by the configured SEO indexing mode.
+Add a clear description and useful frontmatter keywords, then rebuild so the
+content index includes the change.
+
+## Get a useful report
+
+When asking for help, include:
+
+- the Thally and Node versions;
+- the output of `npx thally check`;
+- the smallest page or `docs.json` fragment that reproduces the problem;
+- whether development and production differ;
+- relevant host logs with credentials removed.
+
+Never paste access passwords, API keys, tokens, cookies, or private-key values.
+
+## Related troubleshooting
+
+- [API reference troubleshooting](/guides/api-troubleshooting)
+- [Preview locally](/guides/preview-locally)
+- [Deploy your documentation](/guides/deploying)

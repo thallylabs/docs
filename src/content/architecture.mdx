@@ -1,0 +1,601 @@
+---
+title: Thally architecture
+description: A plain-language guide to how Thally creates sites, learns from product repositories, finds affected docs, prepares updates, and publishes them safely.
+keywords:
+  - Thally architecture
+  - site creation
+  - product knowledge graph
+  - impact analysis
+  - Track
+  - managed deployments
+---
+
+This guide explains Thally as one connected system. It starts when someone
+creates a documentation site and ends when an approved change is live. It also
+shows how product repositories become a searchable map, how Thally finds docs
+that may be out of date, and how Track prepares a reviewable update.
+
+The most important rule is:
+
+> GitHub owns the product code and documentation. Thally reads exact commits,
+> keeps an evidence-backed map of what they mean, and proposes changes through
+> normal pull requests.
+
+Thally never turns its database into a second copy of the docs. A team can
+leave Thally and still has its repositories, content, and history.
+
+## The whole system at a glance
+
+<Mermaid>{`
+flowchart LR
+    Person["Team member"] --> App["Thally Cloud app"]
+    App --> GitHub["GitHub repositories"]
+
+    GitHub --> Events["Verified GitHub events"]
+    Events --> SiteJobs["Site publish jobs"]
+    Events --> GraphJobs["Product reading jobs"]
+
+    GraphJobs --> Reader["Product reader"]
+    Reader --> Evidence["Evidence files"]
+    Reader --> Graph["Product facts and links"]
+
+    Graph --> Impact["Affected-docs check"]
+    Impact --> Track["Track update job"]
+    Track --> DocsPR["Documentation pull request"]
+    DocsPR --> GitHub
+
+    GitHub --> SiteJobs
+    SiteJobs --> Release["Checked, fixed release"]
+    Release --> Live["Live documentation site"]
+`}</Mermaid>
+
+There are two main parts:
+
+| Part | What it does | Where it runs |
+| --- | --- | --- |
+| Thally Cloud | Accounts, workspaces, sites, repository connections, product knowledge, impact checks, Track, and publish history | The Thally app and its private workers |
+| Thally site | Renders the documentation and serves HTML, Markdown, machine-readable data, search, and agent context | Thally-managed Cloudflare hosting or the team's own host |
+
+The open-source Thally engine renders the site. Paid services attach to it;
+they do not take ownership of it.
+
+## What lives where
+
+| Place | What it stores or runs |
+| --- | --- |
+| GitHub | Product code, documentation MDX, configuration, branches, pull requests, and commit history |
+| Neon Postgres | Workspaces, sites, jobs, facts, links, graph versions, impact results, Track runs, and deployment records |
+| Cloudflare R2 | Size-limited evidence bundles and unchangeable release files |
+| Cloudflare Vectorize | Search vectors used to find possible matching docs; a vector alone can never prove impact |
+| Cloudflare Queues | Small job messages for product reading, Track, and managed publishing |
+| Cloudflare Workers and Sandboxes | Isolated product reading, Track runs, site builds, routing, and delivery |
+| The live site | The last release that passed validation and smoke checks |
+
+Passwords, reusable GitHub tokens, and customer source code are not placed in
+queue messages. Workers claim short-lived access only when a job starts.
+
+### Managed and self-hosted sites
+
+Thally-managed sites run on Cloudflare and use the publish flow in this guide.
+A team can instead run the open-source engine on its own host and link it to
+Thally Cloud with a site token. Product knowledge, impact analysis, and Track
+still run as Thally services; only the final site host changes. The site token
+can be rotated or revoked and is not placed inside customer site code during a
+managed build.
+
+## 1. Creating a site
+
+The site wizard keeps the choices in a short, visible sequence.
+
+```text
+┌──────────────────────────────────────────────────────────────────────┐
+│ Create a documentation site                                         │
+│                                                                      │
+│  1 Site details  ──  2 Docs source  ──  3 Product sources  ──  4 Review │
+│                                                                      │
+│  Name                 Dundee                                        │
+│  Description          Optional                                      │
+│  Thally address       dundee.thally.app                             │
+│                                                                      │
+│                                      [Continue]                      │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+<Steps>
+  <Step title="Enter site details">
+    The user chooses a name, an optional description, and a Thally address.
+    The address is reserved before slow GitHub or hosting work starts.
+  </Step>
+  <Step title="Choose the docs repository">
+    Thally can create a customer-owned repository from the maintained template
+    or connect a compatible existing repository.
+  </Step>
+  <Step title="Connect product repositories">
+    The user can connect up to five repositories that contain the product's
+    API definitions, guides, and TypeScript code. This step can be skipped.
+  </Step>
+  <Step title="Review and publish">
+    Thally shows the final choices, creates the durable site record, connects
+    the repositories, and starts the first release.
+  </Step>
+</Steps>
+
+### Why the site is saved first
+
+The browser creates one stable creation key. Thally writes a pending site row
+and a durable provisioning job before asking GitHub to create a repository or
+before starting a release. The request may try the job immediately, but a
+recovery worker can reclaim it if the web process stops. Retrying setup resumes
+that row instead of creating another site.
+
+```text
+pending  →  repository ready  →  deploying  →  ready
+   │               │                 │
+   └───────────────┴─────────────────┴──→ failed, with a safe retry
+```
+
+Only workspace owners and editors can create a site. Every repository is
+checked again at the time it is connected, including its owner, default
+branch, and the GitHub App's access.
+
+If setup fails, Home shows the safe failure reason and the action that matches
+the saved phase: retry setup, publish the repository that is already ready, or
+reconnect GitHub. The browser draft is removed only after the site is ready.
+
+### New repository or existing repository
+
+For a new repository, Thally:
+
+1. Creates it from the public `thallylabs/docs` template.
+2. Waits until GitHub makes the first commit readable.
+3. Writes fresh site details, navigation, starter pages, and maintainer notes.
+4. Records the exact commit used for the first release.
+
+An occupied repository name is never enough proof that Thally owns an earlier
+attempt. Thally resumes only when the saved site, template history, or managed
+site marker proves that it is the same repository.
+
+For an existing repository, Thally checks the docs configuration, package
+files, lockfile, production branch, and Cloudflare build settings before it
+starts an asynchronous release. This makes an incompatible repository fail at
+the connection screen, where the user can act on it.
+
+The docs repository cannot also be connected as its own product source. That
+would make a docs update look like a new product change and could create a
+loop.
+
+### The first release
+
+Fresh sites use a safe shortcut. The starter commit came from Thally and does
+not contain customer code, so the publisher can reuse a checked baseline site
+and replace its content and identity.
+
+<Mermaid>{`
+flowchart TD
+    Start["First site release"] --> Known{"Known Thally starter commit?"}
+    Known -- Yes --> Identity["Check site name, repository, and optional description"]
+    Identity --> Baseline{"Safe baseline available?"}
+    Baseline -- Yes --> Fork["Reuse checked site code and replace content"]
+    Known -- No --> Full["Run a full isolated build"]
+    Baseline -- No --> Full
+    Fork --> Smoke["Smoke-check the new release"]
+    Full --> Smoke
+    Smoke -- Pass --> Promote["Make the release live"]
+    Smoke -- Fail --> Keep["Keep the previous live release"]
+`}</Mermaid>
+
+The description is optional all the way through this boundary. A missing
+description becomes an empty string before the baseline is reused. A missing
+or unsafe site name or repository still stops the release.
+
+If the shortcut cannot prove that it is safe, Thally automatically runs the
+full isolated build. The shortcut changes speed, not correctness. Recent
+fresh-site tests completed the first content release in about 20 seconds, but
+build time varies.
+
+## 2. Turning repositories into product knowledge
+
+After a product repository is connected, Thally listens for verified GitHub
+events. Each job is tied to one repository, one branch or pull request, and one
+exact commit. A later commit cannot silently replace the source while the job
+is running.
+
+Thally's product knowledge graph is a map made from five simple building
+blocks:
+
+| Building block | Plain meaning | Example |
+| --- | --- | --- |
+| Source | A connected product repository | `payments-api` |
+| Evidence | The exact file and lines that support a fact | `openapi.yaml` at commit `a84…` |
+| Fact | One thing Thally learned from the evidence | `POST /refunds` accepts `reason` |
+| Link | A supported relationship between two facts | The refund endpoint returns a `Refund` object |
+| Graph version | The complete map after one source update | Product map after commit `a84…` |
+
+Calling this a graph only means that facts can link to other facts. Every fact
+must still point back to evidence that a person can inspect.
+
+### How a product commit is read
+
+<Mermaid>{`
+sequenceDiagram
+    participant GH as GitHub
+    participant App as Thally Cloud
+    participant Q as Product queue
+    participant Reader as Isolated reader
+    participant Store as Evidence and graph store
+
+    GH->>App: Signed push or pull-request event
+    App->>App: Save the verified delivery before replying
+    App->>App: Save repository, branch, and exact commit
+    App->>Q: Queue a short-lived job claim
+    Q->>Reader: Start one size-limited reading job
+    Reader->>GH: Fetch the exact commit archive
+    Reader->>Reader: Read supported files without running code
+    Reader->>Store: Save evidence, facts, and links
+    Store->>Store: Build the next graph version out of view
+    Store->>Store: Make the full version current in one step
+`}</Mermaid>
+
+The reader supports:
+
+- OpenAPI in JSON or YAML, including files whose names contain `openapi` or
+  `swagger`.
+- MDX documentation.
+- TypeScript source files.
+
+It does not install dependencies, run project scripts, execute plugins, or run
+customer code. It skips dependency folders, build output, test fixtures,
+environment files, keys, and common secret paths. It also caps archive entries,
+selected files, and total bytes. Oversized work is rejected instead of being
+partly trusted.
+
+Unchanged files reuse their earlier evidence. Changed files create new
+evidence tied to the new commit.
+
+The verified delivery inbox is also the recovery boundary. If the first save
+fails, GitHub receives a retryable response. If later processing stops, a
+short-lived claim lets another worker safely resume the saved delivery.
+
+### Current branch and pull-request views
+
+The production branch and a pull request never share one mutable graph.
+
+<Mermaid>{`
+flowchart LR
+    Main["Current production graph"] --> MainA["Source A at commit 120"]
+    Main --> MainB["Source B at commit 88"]
+
+    PR["Pull-request view"] --> PRA["Source A at proposed commit 121"]
+    PR --> PRB["Source B at commit 88"]
+
+    PRA -. "temporary replacement for Source A" .-> MainA
+`}</Mermaid>
+
+A pull-request view replaces only the changed source. It cannot change the
+production view, and it expires when it is no longer needed. The previous
+production version remains available for comparison and repair.
+
+When two sources disagree, Thally keeps both statements and opens a review
+item. It does not silently choose the statement that sounds more likely, and
+an AI model cannot mark evidence as verified.
+
+## 3. Finding documentation affected by a change
+
+Once a graph version becomes current, Thally compares it with the previous
+version. It records meaningful changes rather than treating every line edit as
+product impact.
+
+Examples include:
+
+- an endpoint was added or removed;
+- a request field became required;
+- an allowed value changed;
+- a public TypeScript shape changed; or
+- an explanation in a product guide changed.
+
+For each change, Thally finds possible docs pages from explicit OpenAPI links,
+short graph paths, exact terms, text search, and vector search. A search match
+can suggest a page, but it cannot prove that the page is affected. A retained
+result needs both a supported graph path and evidence.
+
+<Mermaid>{`
+flowchart LR
+    Change["Meaningful product change"] --> Direct["Direct docs link"]
+    Change --> Paths["Short fact-and-link paths"]
+    Change --> Search["Exact, text, and vector search"]
+
+    Direct --> Check["Require path and evidence"]
+    Paths --> Check
+    Search --> Check
+
+    Check --> Rank["Rank likely pages"]
+    Rank --> Explain["Save why each page was selected"]
+    Explain --> Bundle["Bounded impact result"]
+`}</Mermaid>
+
+The rank considers:
+
+- how directly the product fact links to the page;
+- how serious the change is;
+- how trusted and recent the evidence is;
+- whether the product and page versions match;
+- how closely the page text matches the change;
+- page ownership and review rules; and
+- earlier reviewer feedback when enough examples exist.
+
+Contradictory or stale evidence lowers confidence. Sparse feedback is never
+allowed to overrule current evidence.
+
+The work is deliberately limited: one run accepts at most 500 possible pages,
+keeps graph paths no deeper than five links, and saves at most 50 affected
+pages. A typical run asks for only the top ten. These limits keep one noisy
+repository from creating unlimited work.
+
+Impact work uses a renewable, time-limited claim and three attempts. A stopped
+worker cannot leave a run permanently stuck as `running`. Results are filtered
+through the destination site's documentation-source connection before the UI,
+MCP endpoint, or Track can read them.
+
+### What the Product knowledge screen communicates
+
+```text
+┌────────────────────────────────────────────────────────────────────────────┐
+│ Product knowledge                                       3 sources current │
+├────────────────────────────────────────────────────────────────────────────┤
+│ Sources  3   Current entities  248   Recent changes  7                    │
+│ Pages to review  1                                                        │
+├────────────────────────────────────────────────────────────────────────────┤
+│ Source freshness                    │ Change → impact → update             │
+│ payments-api  current  a84c21       │ field became required               │
+│ web-app       current  91d3aa       │ 4 affected pages                    │
+│ sdk           reading  b601ff       │ Track pull request ready            │
+├────────────────────────────────────────────────────────────────────────────┤
+│ Review queue                                                              │
+│ 1  Refund API          /api/refunds          strong match                  │
+│ 2  Refund guide        /guides/refunds       likely match                  │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+Opening a result shows the product value before and after the change, the
+strongest supported relationship path, expandable file-and-commit evidence,
+and a plain-language score explanation. Owners and editors can save or change
+an Affected, Not affected, False positive, or Review later decision. The saved
+choice is visible and completed reviews leave the pending count. Viewers can
+inspect the explanation without changing it.
+
+Agents can inspect the same knowledge through a site-scoped, read-only token.
+The token is shown once, can be revoked, and offers four size-limited operations:
+search facts, get one fact, get nearby facts, and explain one impact result.
+It does not accept database queries or an arbitrary workspace ID.
+
+## 4. Turning impact into a documentation update
+
+Track begins only after the impact result for the exact merged product commit
+is ready. This prevents an earlier or later graph version from being used by
+mistake.
+
+<Mermaid>{`
+sequenceDiagram
+    participant Product as Product repository
+    participant Graph as Product knowledge
+    participant Impact as Affected-docs check
+    participant Track as Track runner
+    participant Docs as Docs repository
+    participant Person as Reviewer
+    participant Publish as Managed publisher
+
+    Product->>Graph: Product pull request merges
+    Graph->>Graph: Read the exact merged commit
+    Graph->>Impact: Save supported product changes
+    Impact->>Impact: Find and rank affected pages
+    alt No affected docs
+        Impact-->>Product: Complete without AI work or a pull request
+    else Docs need work
+        Impact->>Track: Send a limited set of pages, paths, and evidence
+        Track->>Docs: Check out docs in a disposable sandbox
+        Track->>Track: Edit MDX and run validation
+        Track->>Docs: Open a Track pull request
+        Person->>Docs: Review and merge
+        Docs->>Publish: Verified merge event
+        Publish->>Publish: Build and smoke-check a fixed release
+        Publish-->>Person: Updated docs are live
+    end
+`}</Mermaid>
+
+The input to Track contains the exact source commit, ranked target pages,
+supporting paths, evidence IDs, and the site's review rules. It is size-limited
+and versioned so a retry receives the same task.
+
+Track runs in a disposable, network-restricted sandbox. It checks out the docs
+repository, edits MDX, and runs the project's validation. Before Thally accepts
+the result, a separate check proves that every important factual statement:
+
+1. appears as exact text in a changed MDX file; and
+2. cites an evidence ID included in the signed job input.
+
+If that check fails, no pull request is opened. The private evidence checklist
+is removed before commit, while its result and evidence references stay in the
+Thally activity record.
+
+Track never merges its own pull request by default. Reviewers can change or
+reject the draft. Their decisions improve later ranking only after enough
+examples exist.
+
+If a GitHub delivery is missed, a recovery check finds completed Track
+pull requests and reconnects the merge to its deployment. Replaying an event
+is safe because jobs and releases have stable keys.
+
+## 5. Publishing the approved docs
+
+A merged documentation pull request reaches the same managed publisher used
+by manual changes. The publisher first asks whether the commit changed only
+safe content or also changed executable site code.
+
+<Mermaid>{`
+flowchart TD
+    Push["Verified push at an exact commit"] --> Diff{"What changed?"}
+    Diff -- "Docs pages, snippets, or docs.json only" --> Content["Fast content release"]
+    Diff -- "Site code, packages, or build settings" --> Build["Full isolated build"]
+    Diff -- "Cannot prove the difference" --> Build
+
+    Content --> Assemble["Create a fixed release"]
+    Build --> Assemble
+    Assemble --> Check["Check pages, agent files, index, and a static asset"]
+    Check -- Pass --> Route["Point the site's address to the new release"]
+    Check -- Fail --> Old["Leave the current release live"]
+`}</Mermaid>
+
+### Fast content release
+
+For a content-only change, Thally reuses the checked site code from the active
+build and replaces the content assets. It still creates a new fixed release,
+uploads it under a new identity, and smoke-checks it before promotion. Existing
+pages can be edited, added, deleted, or renamed. Deleting or renaming
+`docs.json`, changing a public asset, or changing executable code safely falls
+back to a full build.
+
+### Full build
+
+For code or build-setting changes, an isolated builder fetches the exact commit
+and runs four platform-owned stages:
+
+| Stage | What happens |
+| --- | --- |
+| Install | Install the locked package versions |
+| Validate | Run `thally check` |
+| Build | Build the Next.js site for Cloudflare |
+| Package | Prepare the Worker and static files for upload |
+
+The sandbox receives no reusable GitHub, Cloudflare, R2, or site credential.
+The trusted worker performs source fetching, uploads, smoke checks, and final
+promotion.
+
+### Releases and rollback
+
+Every release is fixed to one Git commit and cannot be rewritten. The live
+address is only a pointer to the last release that passed its checks. A failed
+release never replaces it.
+
+```text
+┌──────────────────────────────────────────────────────────────────────┐
+│ Deployments                                           [Publish again] │
+├──────────────────────────────────────────────────────────────────────┤
+│ Production · LIVE NOW       dundee.thally.app                        │
+│                                                                      │
+│ ✓ docs: update refund guide    main · 84ac91   Live                  │
+│ ✓ docs: initialize site        main · a097c5   Previous  [Roll back] │
+│ ✕ docs: broken example         main · f66311   Failed                │
+│   Validation stopped this release. The live site was not changed.    │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+Rollback changes the pointer to an earlier checked release. It does not
+rebuild the site, change DNS, or rewrite the repository. Both rollback entry
+points ask for confirmation. The history row names the release, commit, and
+domain; the live summary names the previous commit and production domain.
+
+### How a live request reaches the right site
+
+<Mermaid>{`
+flowchart LR
+    Visitor["Reader or agent"] --> Host["Thally address or verified custom domain"]
+    Host --> Router["Thally site router"]
+    Router --> Exact{"Exact site match?"}
+    Exact -- No --> Stop["Safe not-found response"]
+    Exact -- Yes --> Pointer["Current checked release"]
+    Pointer --> Worker["That site's Worker and static files"]
+    Worker --> Response["Docs response"]
+`}</Mermaid>
+
+The router has no default customer. An unknown address cannot fall through to
+another workspace's site. Creating a `*.thally.app` site needs no DNS or
+certificate job; custom domains are routed only after ownership checks pass.
+
+The approved structured content powers every output: the web page, Markdown,
+JSON, JSON-LD, search, embeddings, `llms.txt`, and agent context. Thally does
+not parse separate copies for different readers.
+
+## 6. Security and workspace separation
+
+These rules hold across the full flow:
+
+- Every site, source, graph query, impact result, and job is checked against
+  the active workspace and an active site on the server.
+- GitHub webhooks are signature-checked and durably saved before work is
+  accepted.
+- Repository access uses short-lived GitHub App tokens tied to an installation.
+- Queue messages carry claims for one job, not reusable credentials or source
+  archives.
+- Product reading never runs customer code.
+- Full site builds run in disposable sandboxes with restricted network access.
+- Customer build logs stay outside application logs; only fixed failure codes
+  cross the boundary.
+- Preview graphs cannot change the production graph.
+- Preview releases cannot promote themselves to production.
+- A failed build, smoke test, or evidence check leaves the current live site
+  unchanged.
+- Deleting a site immediately revokes its site and Product Knowledge tokens and
+  prevents queued or running Track capabilities from obtaining repository
+  access.
+- Deleting knowledge first marks the source as unavailable, stops and waits for
+  active readers, then removes evidence files, search vectors, cached results,
+  model output, and relational records. Completion is recorded only after the
+  external stores have been checked.
+
+## 7. Failure and recovery
+
+| Failure | What Thally does |
+| --- | --- |
+| The create-site request is retried | Resumes the row with the same creation key |
+| The site-creation web process stops | Another worker resumes the saved provisioning job after its time-limited claim expires |
+| A verified GitHub delivery fails after capture | The inbox retries it after the earlier worker's claim expires |
+| GitHub takes time to expose a generated repo | Polls for a limited time before declaring it incompatible |
+| The fresh-site shortcut is unavailable or unsafe | Runs a full build |
+| A product archive is too large or contains unsupported paths | Rejects the reading job rather than trusting partial output |
+| Product reading fails | Keeps the earlier current graph and retries the job |
+| Two product sources disagree | Keeps both statements and opens a review item |
+| No docs are affected | Completes without AI use or a pull request |
+| An impact worker stops | A later worker resumes the job; three failed attempts become a visible failure |
+| Track cannot support a statement with allowed evidence | Opens no pull request |
+| A Track merge webhook is missed | Reconciliation reconnects the merged pull request and deployment |
+| A release fails validation or smoke checks | Keeps the previous release live |
+| A user rolls back | Points the site to an earlier checked release without rebuilding |
+
+## 8. One change from start to finish
+
+Imagine that `payments-api` changes the `reason` field on
+`POST /refunds` from optional to required.
+
+1. The product pull request merges at commit `a84c21`.
+2. The verified GitHub event creates a reading job for exactly `a84c21`.
+3. The isolated reader finds the OpenAPI change and saves both the old and new
+   evidence.
+4. A complete new graph version becomes current in one step.
+5. The affected-docs check finds `/api/refunds` through its direct OpenAPI link
+   and `/guides/refunds` through a short supported path and matching example.
+6. The impact screen shows both pages, their paths, and evidence.
+7. Track receives only those pages and the limited evidence needed to update
+   them.
+8. Track edits the MDX, runs validation, proves its factual statements, and
+   opens a documentation pull request.
+9. A person reviews and merges the pull request.
+10. The publisher sees a content-only diff, creates a fast fixed release,
+    smoke-checks it, and points the site to it.
+11. The same approved source now powers the human page, machine-readable
+    formats, search, and agent context.
+
+That is the complete loop: product change, supported understanding, explained
+impact, reviewable update, and safe publication.
+
+## Related guides
+
+- [The product-change pipeline](/product-change-pipeline) explains the product
+  promise and review contract.
+- [Set up Thally Track](/guides/thally-track) covers repository setup and
+  day-to-day use.
+- [Deploy your documentation](/guides/deploying) covers self-hosted deployment
+  choices.
+- [Use the MCP server](/guides/mcp-server) connects coding agents to the docs
+  engine.
+- [`thally check`](/guides/cli-reference) validates content and configuration
+  before a release.

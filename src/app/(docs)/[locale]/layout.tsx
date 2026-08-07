@@ -1,20 +1,27 @@
 import { SidebarCollectionsHydrator } from '@/components/layout/sidebar-hydrator'
-import { getSidebarCollections, getI18nConfig } from '@/data/docs'
+import { getSidebarCollections } from '@/data/docs'
 import type { NavigationSection } from '@/data/docs'
 import { buildApiNavigation } from '@/data/api-reference'
+import { getBuildI18nConfig } from '@/lib/i18n/request'
 
 interface LocaleLayoutProps {
   children: React.ReactNode
   params: Promise<{ locale: string }>
 }
 
-export default async function LocaleLayout({ children, params }: LocaleLayoutProps) {
+export default async function LocaleLayout({
+  children,
+  params,
+}: LocaleLayoutProps) {
   const { locale } = await params
 
   // Guard: if this is not a valid secondary locale (e.g. /quickstart was intercepted as
   // locale="quickstart"), skip locale-aware sidebar hydration to avoid invalid hrefs.
-  const i18n = getI18nConfig()
-  const isValid = i18n?.locales.some((l) => l.code === locale && l.code !== i18n.defaultLocale) ?? false
+  const i18n = getBuildI18nConfig()
+  const isValid = i18n.locales.some(
+    (candidate) =>
+      candidate.code === locale && candidate.code !== i18n.defaultLocale,
+  )
   if (!isValid) return <>{children}</>
 
   const navigation = await buildApiNavigation()
@@ -31,14 +38,20 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
 
   const sidebarCollections = getSidebarCollections(locale)
   const collections = sidebarCollections.map((collection) => {
-    if (collection.api) {
+    if (collection.api && collection.api.navigation !== false) {
       const mdxSections = collection.sections ?? []
       // Prefix API operation hrefs so navigation stays within the locale
       const localizedApiSections = apiSections.map((section) => ({
         ...section,
-        items: section.items.map((item) => ({ ...item, href: `/${locale}${item.href}` })),
+        items: section.items.map((item) => ({
+          ...item,
+          href: `/${locale}${item.href}`,
+        })),
       }))
-      return { ...collection, sections: [...mdxSections, ...localizedApiSections] }
+      return {
+        ...collection,
+        sections: [...mdxSections, ...localizedApiSections],
+      }
     }
     if (!collection.href && collection.id === 'overview') {
       return { ...collection, href: `/${locale}` }

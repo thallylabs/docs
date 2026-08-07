@@ -66,8 +66,6 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
   useEffect(() => {
     const normalized = query.trim()
     if (normalized.length < 2) {
-      setResults([])
-      setLoading(false)
       return
     }
 
@@ -97,12 +95,14 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
     }
   }, [query])
 
+  const visibleResults = query.trim().length >= 2 ? results : []
+
   function handleOpenChange(nextOpen: boolean) {
     if (!nextOpen) {
       const normalized = query.trim()
       if (normalized.length >= 2 && normalized !== lastTrackedRef.current) {
         lastTrackedRef.current = normalized
-        trackSearch({ query: normalized, resultCount: results.length })
+        trackSearch({ query: normalized, resultCount: visibleResults.length })
       }
     }
     onOpenChange(nextOpen)
@@ -135,9 +135,9 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
         />
         <CommandList>
           <CommandEmpty>{emptyMessage}</CommandEmpty>
-          {results.length > 0 ? (
+          {visibleResults.length > 0 ? (
             <CommandGroup heading="Documents">
-              {results.map((result) => (
+              {visibleResults.map((result) => (
                 <CommandItem
                   key={result.page_id}
                   value={result.page_id}

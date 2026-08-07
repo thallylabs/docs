@@ -1,26 +1,25 @@
-import fs from 'node:fs'
 import path from 'node:path'
-import matter from 'gray-matter'
-import { siteConfig } from '@/data/site'
 import { getDocEntries, getSidebarCollections } from '@/data/docs'
-import { getSiteUrl } from '@/lib/site-url'
+import { getContentSource } from '@/lib/content-source'
+import { parseFrontmatter } from '@/lib/frontmatter'
+import { resolveRequestSiteConfig } from '@/lib/site-config'
 
-const baseUrl = getSiteUrl()
-const CONTENT_ROOT = path.join(process.cwd(), 'src/content')
+const CONTENT_ROOT = 'src/content'
 
-function readRawContent(pageId: string): string | null {
+async function readRawContent(pageId: string): Promise<string | null> {
+  const source = getContentSource()
   const candidates = [
     path.join(CONTENT_ROOT, `${pageId}.mdx`),
     path.join(CONTENT_ROOT, `${pageId}/index.mdx`),
   ]
 
   for (const filePath of candidates) {
-    if (fs.existsSync(filePath)) {
-      const raw = fs.readFileSync(filePath, 'utf8')
-      const { content } = matter(raw)
+    const file = await source.read(filePath)
+    if (file) {
+      const { content } = parseFrontmatter(file.content)
       // Strip JSX component tags but keep their text content
       return content
-        .replace(/<\/?(?:Steps|Step|Tabs|Tab|Note|Callout|CodeGroup|CardGroup|Card|Frame|Accordion|Columns|Tooltip)[^>]*>/g, '')
+        .replace(/<\/?(?:Steps|Step|Tabs|Tab|Note|Callout|CodeGroup|CardGroup|Card|Frame|Accordion|Columns|Tooltip|AgentPrompt)[^>]*>/g, '')
         .replace(/\n{3,}/g, '\n\n')
         .trim()
     }
@@ -29,18 +28,30 @@ function readRawContent(pageId: string): string | null {
   return null
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  // Under the assets ContentSource this route must render per request — the
+  // corpus below reflects published content, not the build. No-op by default.
+  const effectiveSite = await resolveRequestSiteConfig()
+  const baseUrl = new URL(request.url).origin
+
   const entries = getDocEntries()
   const collections = getSidebarCollections()
 
   const lines: Array<string> = []
 
   // Header
-  lines.push(`# ${siteConfig.name} — Complete Documentation`)
+  lines.push(`# ${effectiveSite.name} — Complete Documentation`)
   lines.push('')
-  lines.push(`> ${siteConfig.description}`)
+  lines.push(`> ${effectiveSite.description}`)
   lines.push('')
   lines.push(`Source: ${baseUrl}`)
+  lines.push('')
+  lines.push('## Instructions for agents')
+  lines.push('')
+  lines.push(`- Use ${baseUrl}/llms.txt to inspect the page index before scanning this full corpus.`)
+  lines.push(`- Use ${baseUrl}/skill.md for retrieval rules and ${baseUrl}/AGENTS.md before editing.`)
+  lines.push(`- Use ${baseUrl}/api/mcp for read-only search and page tools.`)
+  lines.push('- Cite canonical page URLs, distinguish documented facts from inference, and state when the documentation does not support a claim.')
   lines.push('')
   lines.push('---')
   lines.push('')
@@ -54,7 +65,7 @@ export async function GET() {
         const entry = entries.find((e) => e.href === item.href)
         if (!entry) continue
 
-        const content = readRawContent(entry.id)
+        const content = await readRawContent(entry.id)
         if (!content) continue
 
         lines.push(`# ${entry.title}`)

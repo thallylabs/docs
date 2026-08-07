@@ -7,11 +7,17 @@ export type BrandPresetKey = 'primary' | 'secondary'
 
 export interface BrandPalette {
   background: string
+  card?: string
   foreground: string
   muted: string
+  mutedForeground?: string
   border: string
   accent: string
   accentForeground: string
+  accent2?: string
+  accent2Foreground?: string
+  input?: string
+  sidebar?: string
   ring: string
   sidebarActiveBg: string
   sidebarActiveText: string
@@ -84,19 +90,26 @@ export interface SiteConfig {
 }
 
 const brandPresets: Record<BrandPresetKey, BrandConfig> = {
-  // Thally's canonical brand (see Thally-Design-System / thally-website).
-  // Warm off-white surfaces with a near-black green-tinted ink foreground;
-  // the personality comes from the green palette — teal green as the light
-  // accent (links, active states, CTAs), flipping to bright lime on the deep
-  // teal-green dark mode, exactly like the marketing site.
+  // Thally's canonical Ink + Iris brand (see Thally-Design-System).
+  // Warm off-white surfaces in light mode become near-black ink surfaces in
+  // dark mode. Lime remains the primary action color; iris is a restrained
+  // secondary accent for visual distinction and chart series.
   primary: {
     light: {
       background: '#FCFCF7',
+      // The docs handoff uses the page surface for cards; hierarchy comes from
+      // hairline borders rather than white tiles or elevation.
+      card: '#FCFCF7',
       foreground: '#1A2018',
       muted: '#EFEFE9',
+      mutedForeground: '#747B72',
       border: '#E5E6E1',
       accent: '#007852',
       accentForeground: '#FFFFFF',
+      accent2: '#755FBB',
+      accent2Foreground: '#0B0A13',
+      input: '#E5E6E1',
+      sidebar: '#F7F7F2',
       ring: '#397059',
       // Olive-family tint (the leaf's own green) for the active sidebar item
       sidebarActiveBg: '68 40% 88% / 0.65',
@@ -104,11 +117,17 @@ const brandPresets: Record<BrandPresetKey, BrandConfig> = {
     },
     dark: {
       background: '#040704',
+      card: '#060906',
       foreground: '#EFEFE7',
       muted: '#0E130F',
+      mutedForeground: '#929C90',
       border: '#1B1E1A',
       accent: '#BAE43E',
       accentForeground: '#101911',
+      accent2: '#AC9CF0',
+      accent2Foreground: '#0B0A13',
+      input: '#29302A',
+      sidebar: '#060906',
       ring: '#BAE43E',
       sidebarActiveBg: '132 15% 6%',
       sidebarActiveText: '#BAE43E',
@@ -146,7 +165,7 @@ const brandPreset: BrandPresetKey = 'primary'
 export const siteConfig: SiteConfig = {
   name: 'Thally',
   description:
-    'Thally is the first agent-native documentation platform. Every page is served to humans as polished HTML and to AI agents as structured JSON, JSON-LD, and Markdown from the same URL — self-hosted, open, and fully extensible.',
+    'Thally connects product changes to customer-facing knowledge, preparing evidence-backed documentation updates for human review on an open, agent-readable stack.',
   repoUrl: 'https://github.com/thallylabs/thally-docs',
   links: [
     { label: 'Get started', href: '/quickstart' },
@@ -154,6 +173,9 @@ export const siteConfig: SiteConfig = {
     { label: 'GitHub', href: 'https://github.com/thallylabs/thally-docs' },
     { label: 'Changelog', href: '/changelog' },
   ],
+  analytics: {
+    googleAnalyticsId: 'G-XJDP6PFQL3',
+  },
   brand: brandPresets[brandPreset],
   brandPreset,
   brandPresets,

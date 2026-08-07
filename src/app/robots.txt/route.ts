@@ -1,5 +1,3 @@
-import { getSiteUrl } from '@/lib/site-url'
-
 /**
  * robots.txt as a plain route handler (replaces the typed `app/robots.ts`).
  *
@@ -26,10 +24,16 @@ const AGENT_ALLOW = [
   '/',
   '/llms.txt',
   '/llms-full.txt',
+  '/.well-known/llms.txt',
   '/ai.txt',
+  '/skill.md',
+  '/AGENTS.md',
   '/api/docs',
   '/api/docs/',
   '/api/docs-index',
+  '/api/search',
+  '/api/agent-readiness',
+  '/api/mcp',
   '/openapi.yaml',
   '/openapi.json',
 ] as const
@@ -47,20 +51,27 @@ const DISALLOW = [
 
 const CONTENT_SIGNALS = 'Content-Signal: search=yes, ai-input=yes, ai-train=yes'
 
-export const dynamic = 'force-static'
-
-export function GET(): Response {
-  const baseUrl = getSiteUrl()
+export function GET(request: Request): Response {
+  const baseUrl = new URL(request.url).origin
 
   const lines: Array<string> = [
     'User-Agent: *',
     CONTENT_SIGNALS,
+    '# Agent index: /llms.txt',
+    '# Agent capability and retrieval instructions: /skill.md',
+    '# Repository editing instructions: /AGENTS.md',
     'Allow: /',
     'Allow: /llms.txt',
     'Allow: /llms-full.txt',
+    'Allow: /.well-known/llms.txt',
     'Allow: /ai.txt',
+    'Allow: /skill.md',
+    'Allow: /AGENTS.md',
     'Allow: /api/docs/',
     'Allow: /api/docs-index',
+    'Allow: /api/search',
+    'Allow: /api/agent-readiness',
+    'Allow: /api/mcp',
     'Allow: /openapi.yaml',
     ...DISALLOW.map((path) => `Disallow: ${path}`),
     '',

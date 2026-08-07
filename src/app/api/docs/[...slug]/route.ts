@@ -1,11 +1,12 @@
 import { type NextRequest } from 'next/server'
 import { getDocEntries, getI18nConfig, getNavContext } from '@/data/docs'
-import { getContentDocument } from '@/lib/content'
+// Vendored module instead of the @thallylabs/core barrel — a value import
+// of core bloats the Worker bundle past the managed size budget (see
+// src/lib/content/document.ts).
 import { mdxToMarkdown } from '@/lib/content/to-markdown'
+import { loadContentDocument } from '@/lib/content'
 import { buildDocPageJsonLd } from '@/lib/json-ld'
-import { getSiteUrl } from '@/lib/site-url'
-
-const baseUrl = getSiteUrl()
+import { resolveSiteConfig } from '@/lib/site-config'
 
 /** Nearest valid pages for a missing slug, so a 404'd agent can self-correct. */
 function suggestSlugs(
@@ -55,6 +56,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ slug: Array<string> }> },
 ) {
+  const baseUrl = request.nextUrl.origin
   const { slug } = await params
   const slugPath = slug.join('/')
   const format = resolveRequestedFormat(request)
@@ -87,8 +89,10 @@ export async function GET(
     )
   }
 
-  // Single source of truth — parse the content graph once via the content engine.
-  const document = getContentDocument(entry.id)
+  // Single source of truth — parse the content graph once via the content
+  // engine, reading through the active ContentSource so managed content
+  // publishes are reflected without a rebuild.
+  const document = await loadContentDocument(entry.id)
   if (!document) {
     if (wantsJson || wantsLdJson) {
       return Response.json(
@@ -107,11 +111,13 @@ export async function GET(
   }
 
   const { content, frontmatter } = document
+  const effectiveSite = await resolveSiteConfig(request.nextUrl.origin)
   const canonicalUrl = `${baseUrl}${entry.href}`
   const locale = getI18nConfig()?.defaultLocale ?? 'en'
   const nav = getNavContext(entry.id)
   const jsonLd = buildDocPageJsonLd({
     siteUrl: baseUrl,
+    siteName: effectiveSite.name,
     pageUrl: canonicalUrl,
     id: entry.id,
     title: entry.title,

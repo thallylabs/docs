@@ -1,0 +1,68 @@
+---
+title: Preview your documentation locally
+navTitle: Local preview
+description: Run the development server, review changes as you write, and validate a Thally site before publishing.
+---
+
+Use the local preview for every content and configuration change. It reloads
+when you save a page, `docs.json`, or `src/data/site.ts`.
+
+## Before you begin
+
+Install the project dependencies with `npm install`. If you have not created a
+site yet, complete the [Quickstart](/quickstart) first.
+
+## Start the preview
+
+From the project root, run:
+
+```bash
+npm run dev
+```
+
+Open the URL printed in the terminal. Thally starts at
+[http://localhost:3040](http://localhost:3040) and uses the next available port
+when 3040 is busy.
+
+## Review a change
+
+1. Edit a page under `src/content/` and save it.
+2. Confirm the page body and table of contents update in the browser.
+3. If you changed `docs.json`, confirm the tab, group, order, and page title in
+   the sidebar.
+4. Test internal links and interactive components.
+5. Check both light and dark mode and narrow the browser to review the mobile
+   navigation.
+
+## Validate before you publish
+
+Run the content checker in a second terminal:
+
+```bash
+npx thally check
+```
+
+Then create the same optimized build your host will run:
+
+```bash
+npm run build
+```
+
+A page that looks correct in development can still fail a production build
+because of invalid MDX, a missing import, or a configuration error. Treat both
+commands as part of the review.
+
+## Common problems
+
+| Problem | What to check |
+| --- | --- |
+| The server starts on another port | Another process is using 3040; open the URL printed by the command. |
+| A page returns 404 | Add its page ID to `docs.json`, or open the URL that matches its path under `src/content/`. |
+| The sidebar did not change | Confirm the JSON is valid and the page ID omits `src/content/` and `.mdx`. |
+| MDX compilation fails | Check unclosed JSX tags, malformed frontmatter, and fences nested inside component examples. |
+
+## Next steps
+
+- [Create and edit pages](/guides/writing-content)
+- [Organize your navigation](/guides/configuring-navigation)
+- [Validate documentation in CI](/guides/ci-checks)

@@ -7,7 +7,7 @@ description: Configura Thally y crea tu primera página de documentación en men
 
 - **Node.js 18+** y npm (o pnpm/yarn)
 - Una terminal y un editor de código
-- Una especificación OpenAPI (opcional — se incluye un ejemplo de Pet Store)
+- Una especificación OpenAPI (opcional — se incluye un ejemplo de JSONPlaceholder)
 
 <Frame caption="Desde la configuración hasta el despliegue en minutos" zoom={false}>
 
@@ -99,10 +99,12 @@ Guarda el archivo y la barra lateral se actualiza automáticamente — no se req
 <Step title="Despliega">
 
 ```bash
-npm run build
+npm run build:cloudflare
+npm run smoke:cloudflare
 ```
 
-Despliega la salida en cualquier plataforma que soporte Next.js — Vercel, Netlify, Cloudflare o un contenedor Docker.
+Despliega el Worker verificado con `npm run deploy:cloudflare`. Para un
+despliegue Node tradicional, usa `npm run build && npm start`.
 
 </Step>
 

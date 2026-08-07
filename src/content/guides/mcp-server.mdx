@@ -1,15 +1,24 @@
 ---
-title: MCP Server
-description: Use @thallylabs/mcp to manage Thally projects with Claude, Cursor, or any MCP-compatible AI tool.
+title: Connect an MCP client
+navTitle: MCP client
+description: Give Claude, Cursor, or another MCP-compatible tool structured access to search, read, and manage your docs.
 ---
 
 `@thallylabs/mcp` is a [Model Context Protocol](https://modelcontextprotocol.io) server that lets AI tools — Claude Code, Claude Desktop, Cursor, Windsurf — create, read, update, and migrate Thally documentation projects through natural language.
 
 ## Setup
 
-Add `@thallylabs/mcp` to your Claude Code or Claude Desktop configuration:
+Add `@thallylabs/mcp` to your coding agent or desktop client:
 
 <Tabs>
+
+<Tab title="Codex">
+
+```bash
+codex mcp add thally -- npx -y @thallylabs/mcp
+```
+
+</Tab>
 
 <Tab title="Claude Code">
 
@@ -153,33 +162,31 @@ Show me all the pages in my docs project
 
 #### `migrate_docs`
 
-Creates a fresh canonical Thally template, then imports a public docs site or GitHub docs repository. The target must be new or empty. This guarantees that the migrated project uses Thally's supported runtime, layout, navigation, and configuration instead of retaining the source application's shell.
+Creates a new Thally project from the current canonical template, then imports a public docs site or GitHub docs repository into it. The target directory must be new or empty; the tool never reuses an existing site's runtime.
 
 ```
-Migrate https://github.com/acme/docs into a new Thally project at /tmp/acme-docs
+Migrate https://github.com/example/docs into a new Thally project at /tmp/example-docs
 ```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `sourceUrl` | Yes | Public docs URL or GitHub repository URL |
-| `projectDir` | Yes | Target path for the new canonical Thally project |
+| `projectDir` | Yes | New or empty target directory |
 | `branch` | No | Git branch to clone (auto-detected by default) |
 | `docsDir` | No | Docs subdirectory in the repo (auto-detected) |
 | `platform` | No | `mintlify` or `docusaurus`; omit for auto-detection |
 | `maxPages` | No | Maximum number of live-site pages to import (`1`–`1000`) |
 | `apiKey` | No | Anthropic API key for non-Markdown conversion |
 
----
-
 #### `import_docs`
 
-Imports content into an existing Thally project without scaffolding or replacing its runtime. Use this only when an in-place import is explicitly requested.
+Imports documentation into an existing Thally project without replacing its runtime. Use this tool only when you intentionally want an in-place content and navigation merge.
 
 ```
-Import https://github.com/acme/api-docs into the existing Thally project at /workspace/docs
+Import https://github.com/example/api-docs into the existing Thally project at /workspace/docs
 ```
 
-`import_docs` accepts the same source options as `migrate_docs`, but `projectDir` must point to an existing Thally project. It does not upgrade a legacy or third-party application to the current Thally template.
+The source options match `migrate_docs`; `projectDir` must point to an existing Thally project.
 
 ---
 
@@ -291,7 +298,7 @@ Check my docs project for any issues
 
 #### `translate_docs`
 
-Translates documentation pages to a secondary locale using Claude AI. Requires an `i18n` block in the project's `docs.json`. Translated MDX files are written to `src/content/{locale}/` and committed to your repo.
+Translates documentation pages to a secondary locale using Claude AI. Requires an `i18n` block in the project's `docs.json`. Translated MDX files are written to `src/content/{locale}/` for you to review and commit.
 
 ```
 Translate my docs to Spanish
@@ -311,3 +318,29 @@ Translate only the introduction and quickstart pages to French
 | `model` | No | Claude model to use (default: `claude-sonnet-4-6`) |
 
 See [Multi-Language Support](/guides/multi-language) for full setup instructions.
+
+---
+
+### Product changes
+
+#### `sync_from_repo`
+
+Analyzes a merged pull request in a tracked product repository. It previews the
+documentation task by default, or dispatches the task to the docs repository so
+the review-gated docs agent can draft a pull request.
+
+```
+Preview the docs task for pull request 482 in acme/widget
+```
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `projectDir` | Yes | Thally project containing the tracking configuration. |
+| `repo` | Sometimes | Product repository as `owner/repo`; optional when exactly one repo is tracked. |
+| `pr` | No | Merged pull request number; defaults to the latest merge on the tracked branch. |
+| `dryRun` | No | Preview without dispatching. Defaults to `true`. |
+| `docsRepo` | For dispatch | Documentation repository as `owner/repo`; required when `dryRun` is `false`. |
+
+Dispatch requires `THALLY_GITHUB_TOKEN` or a connected GitHub App with access
+to the docs repository. The tool never merges the generated documentation pull
+request.

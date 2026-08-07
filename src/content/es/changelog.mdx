@@ -3,14 +3,14 @@ title: Registro de cambios
 description: Seguimiento de mejoras notables en la plantilla Thally.
 ---
 
-<Update label="Migraciones desde repositorio y plantilla" date="2026-07-28">
+<Update label="Migraciones desde el repositorio" date="2026-07-28">
 
-- La detección automática interactiva de la CLI ahora recomienda el repositorio fuente de GitHub antes de rastrear un sitio público.
-- Continuar con una URL pública requiere aceptar que pueden ser necesarios ajustes manuales; `--platform auto` y `--yes` muestran la misma advertencia sin bloquear la automatización.
-- `migrate_docs` en el MCP ahora siempre crea la plantilla canónica de Thally en un destino nuevo o vacío.
-- Las importaciones MCP en un proyecto existente solo están disponibles mediante la herramienta explícita `import_docs`.
+- Las migraciones con detección automática ahora recomiendan un repositorio de GitHub porque conserva más información original que el sitio desplegado.
+- Las migraciones interactivas desde una URL pública ofrecen cambiar al repositorio antes de solicitar la aceptación de posibles ajustes manuales. `--platform auto` y `--yes` continúan sin interacción y muestran la misma advertencia.
+- `migrate_docs` del MCP siempre crea primero la plantilla canónica actual de Thally en un directorio nuevo o vacío.
+- `import_docs` del MCP es la herramienta explícita para fusionar documentación en un proyecto Thally existente.
 
-Consulta [Migrando a Thally](/guides/migrating), la [Referencia CLI](/guides/cli-reference) y la [Referencia del servidor MCP](/guides/mcp-server).
+Consulta [Migrando a Thally](/guides/migrating), la [Referencia CLI](/guides/cli-reference) y la guía del [Servidor MCP](/guides/mcp-server).
 
 </Update>
 

@@ -1,25 +1,41 @@
 ---
-title: Custom Scripts
-description: Inject third-party scripts, widgets, and analytics tools via docs.json.
+title: Add custom scripts
+navTitle: Custom scripts
+description: Load an external script on every documentation page and choose when it becomes interactive.
 ---
 
-Add third-party JavaScript to every page by declaring scripts in `docs.json`. Scripts are injected via Next.js's `<Script>` component with full loading strategy control.
+Add a `customScripts` array to `docs.json` when a widget or service provides an
+external JavaScript URL. Thally reads that array in its root layout and renders
+each entry with Next.js's `<Script>` component. This is an explicit Thally
+configuration path built on Next.js; Next.js does not discover `docs.json` or
+load these URLs on its own.
 
 ## Configuration
 
 ```json
-"customScripts": [
-  { "src": "https://cdn.example.com/widget.js", "strategy": "afterInteractive" },
-  { "src": "https://cdn.analytics.com/tracker.min.js", "strategy": "lazyOnload" }
-]
+{
+  "customScripts": [
+    {
+      "src": "https://cdn.example.com/widget.js",
+      "strategy": "afterInteractive"
+    },
+    {
+      "src": "https://cdn.example.com/optional-widget.js",
+      "strategy": "lazyOnload"
+    }
+  ]
+}
 ```
+
+Thally loads each configured URL on every route. The current setting accepts an
+external `src`; it does not accept inline JavaScript or per-page targeting.
 
 ## Fields
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `src` | `string` | — | Full URL of the script to load |
-| `strategy` | `string` | `"afterInteractive"` | When to load the script (see below) |
+| `src` | `string` | — | External script URL. Use HTTPS in production. |
+| `strategy` | `string` | `"afterInteractive"` | One of the supported loading strategies below. |
 
 ## Loading strategies
 
@@ -29,11 +45,15 @@ Add third-party JavaScript to every page by declaring scripts in `docs.json`. Sc
 | `afterInteractive` | After hydration | Analytics, chat widgets, most third-party tools |
 | `lazyOnload` | During browser idle time | Non-critical, decorative scripts |
 
-Prefer `afterInteractive` for most tools — it keeps page load performance fast while ensuring the script is available as soon as the user can interact.
+Prefer `afterInteractive` for most tools. Use `beforeInteractive` only when the
+provider must run before hydration, and measure the effect before shipping it.
+Use `lazyOnload` for work that can wait until the browser is idle.
 
-## Built-in analytics
+## Provider shortcuts for analytics
 
-For common analytics providers (Google Analytics, Plausible, PostHog), use the dedicated `siteConfig.analytics` field in `src/data/site.ts` instead. Those providers are wired up with proper event tracking and type-safe configuration:
+For Google Analytics, Plausible, or PostHog, you can use the typed
+`siteConfig.analytics` field in `src/data/site.ts` instead. Thally's
+`AnalyticsProvider` loads and initializes the selected provider scripts:
 
 ```ts
 analytics: {
@@ -45,6 +65,17 @@ analytics: {
 
 Use `customScripts` for any provider not natively supported.
 
-<Note type="warning">
-Scripts added via `customScripts` run on every page. Make sure any third-party script you include has a privacy policy compatible with your users' expectations.
-</Note>
+This shortcut initializes the providers. It is not a shared Thally event API,
+and the open-source runtime does not add custom events for your product. Check
+the selected provider's single-page application behavior and consent settings
+before relying on its reports.
+
+<Warning title="Third-party code runs on every page">
+Only load scripts you trust. A third-party script can read page content, make
+network requests, affect performance, and set cookies or similar identifiers.
+If consent is required, block the script until consent is recorded; a banner
+that appears after the script loads is not sufficient.
+</Warning>
+
+For Thally's server-side, cookie-free traffic collection, continue to
+[Analytics and feedback](/guides/analytics-and-feedback).

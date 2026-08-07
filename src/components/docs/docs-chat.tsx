@@ -24,6 +24,7 @@ const ICON_MAP: Record<IconName, React.ComponentType<LucideProps>> = {
 function FabIcon({ icon, className }: { icon?: string; className?: string }) {
   // URL or path → render as image
   if (icon && (icon.startsWith('/') || icon.startsWith('http'))) {
+    // eslint-disable-next-line @next/next/no-img-element -- remote admin-provided icons have no known dimensions.
     return <img src={icon} alt="" className={className} style={{ objectFit: 'contain' }} />
   }
   // Named icon → look up in map, fall back to Sparkles
@@ -106,6 +107,8 @@ export function DocsChat({
     if (open) setTimeout(() => textareaRef.current?.focus(), 60)
   }, [open])
 
+  // Code-block actions use one document-level contract so every renderer can
+  // open the configured assistant without coupling MDX to this panel.
   useEffect(() => {
     function handleAskAssistant(event: Event) {
       const prompt = (event as CustomEvent<{ prompt?: string }>).detail?.prompt

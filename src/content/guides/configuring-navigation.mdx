@@ -1,7 +1,12 @@
 ---
-title: Configuring Navigation
-description: How to structure tabs, sidebar groups, and page ordering using docs.json.
+title: Organize your navigation
+navTitle: Navigation
+description: Structure tabs and sidebar groups around the tasks your readers need to complete.
 ---
+
+Use navigation to reflect reader goals and the order in which they complete
+them. Start with a small set of task-based groups; add a tab only when a section
+has a distinct audience or purpose.
 
 ## The docs.json file
 
@@ -150,4 +155,43 @@ Set `hidden: true` on a group or tab to exclude it from the sidebar while keepin
 }
 ```
 
-Hidden pages are still reachable by direct URL — they just won't appear in navigation or sitemaps. See [SEO & Visibility](/guides/seo-and-visibility) for more control over indexing.
+Hidden pages remain reachable by direct URL, but they do not appear in
+navigation or sitemaps. See [Control search and page visibility](/guides/seo-and-visibility)
+for more indexing controls.
+
+## Nested groups
+
+Place a group object inside another group's `pages` array when a section needs
+one additional level:
+
+```json
+{
+  "group": "Deploy",
+  "pages": [
+    "guides/deploying",
+    {
+      "group": "Platforms",
+      "pages": ["guides/deploy-vercel", "guides/deploy-cloudflare"]
+    }
+  ]
+}
+```
+
+Avoid deeper structures. If readers must expand several levels to find a page,
+split the material into clearer tabs or reduce the number of categories.
+
+## Verify navigation
+
+Run the local preview and follow every new entry. Confirm the breadcrumb and
+previous/next links match the intended progression, then run:
+
+```bash
+jq empty docs.json
+npx thally check
+```
+
+## Next steps
+
+- [docs.json reference](/guides/docs-json-reference)
+- [Configure SEO and visibility](/guides/seo-and-visibility)
+- [Add redirects](/guides/redirects)

@@ -1,6 +1,7 @@
 import type { MDXComponents } from 'mdx/types'
 import type { ComponentPropsWithoutRef, ReactNode } from 'react'
 import { Note } from '@/components/mdx/note'
+import { AgentPrompt } from '@/components/mdx/agent-prompt'
 import { Code, CodeGroup, Pre } from '@/components/mdx/code-blocks'
 import {
   Badge, Card, CardGroup, Color, Columns, Frame, Hero, Icon, Panel,
@@ -97,6 +98,7 @@ const components: MDXComponents = {
   Prompt: (props) => <Prompt {...props} />,
   PromptUser: (props) => <PromptUser {...props} />,
   PromptAssistant: (props) => <PromptAssistant {...props} />,
+  AgentPrompt: (props) => <AgentPrompt {...props} />,
   Color: (props) => <Color {...props} />,
   Tree: (props) => <Tree {...props} />,
   Folder: (props) => <Folder {...props} />,
@@ -106,6 +108,13 @@ const components: MDXComponents = {
   Expandable: (props) => <Expandable {...props} />,
   Mermaid: (props) => <Mermaid {...(props as { children: string })} />,
   View: (props) => <View {...props} />,
+  // Documentation screenshots are commonly below the fold. Native lazy
+  // loading keeps them out of the critical request queue while preserving
+  // standard Markdown image authoring and Frame zoom behavior.
+  img: ({ alt = '', ...props }) => (
+    // eslint-disable-next-line @next/next/no-img-element -- arbitrary MDX image sources cannot use a fixed Next loader.
+    <img alt={alt} loading="lazy" decoding="async" {...props} />
+  ),
   table: ({ className, ...props }) => (
     <div className="my-6 overflow-x-auto">
       <table className={cn('w-full border-collapse text-sm', className)} {...props} />

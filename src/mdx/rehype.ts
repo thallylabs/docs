@@ -1,10 +1,35 @@
 import type { Element, Root } from 'hast'
+// Fine-grained shiki: the full-bundle `shiki` entry statically embeds every
+// grammar (~9 MB of server chunks), which pushed managed Worker bundles past
+// the hosting size budget. The core entry plus a curated grammar set keeps
+// highlighting for the languages docs actually use; anything outside the set
+// falls back to plaintext exactly like an unknown language always has.
+// Type-only imports from `shiki` are erased at build time and cost nothing.
+import { createHighlighterCore } from 'shiki/core'
 import {
-  createHighlighter,
-  type Highlighter,
-  type ThemedToken,
-  type ThemeRegistration,
-} from 'shiki'
+  createJavaScriptRegexEngine,
+  defaultJavaScriptRegexConstructor,
+} from 'shiki/engine/javascript'
+import type { HighlighterCore, ThemedToken, ThemeRegistration } from 'shiki'
+import langBash from '@shikijs/langs/bash'
+import langCss from '@shikijs/langs/css'
+import langDiff from '@shikijs/langs/diff'
+import langDocker from '@shikijs/langs/docker'
+import langGo from '@shikijs/langs/go'
+import langHtml from '@shikijs/langs/html'
+import langJavascript from '@shikijs/langs/javascript'
+import langJson from '@shikijs/langs/json'
+import langJsonc from '@shikijs/langs/jsonc'
+import langJsx from '@shikijs/langs/jsx'
+import langMarkdown from '@shikijs/langs/markdown'
+import langMdx from '@shikijs/langs/mdx'
+import langPython from '@shikijs/langs/python'
+import langRust from '@shikijs/langs/rust'
+import langSql from '@shikijs/langs/sql'
+import langToml from '@shikijs/langs/toml'
+import langTsx from '@shikijs/langs/tsx'
+import langTypescript from '@shikijs/langs/typescript'
+import langYaml from '@shikijs/langs/yaml'
 import { visit } from 'unist-util-visit'
 
 /**
@@ -24,6 +49,7 @@ const cssVariablesTheme: ThemeRegistration = {
   bg: 'var(--shiki-color-background, transparent)',
   settings: [
     { scope: ['comment', 'punctuation.definition.comment'], settings: { foreground: 'var(--shiki-token-comment)' } },
+    { scope: ['support.type.property-name.json', 'support.type.property-name.json.comments', 'meta.mapping.key'], settings: { foreground: 'var(--shiki-token-property)' } },
     { scope: ['string', 'constant.other.symbol'], settings: { foreground: 'var(--shiki-token-string)' } },
     { scope: ['constant.numeric', 'constant.language', 'constant', 'support.constant'], settings: { foreground: 'var(--shiki-token-constant)' } },
     { scope: ['keyword', 'storage.type', 'storage.modifier', 'keyword.control'], settings: { foreground: 'var(--shiki-token-keyword)' } },
@@ -36,13 +62,43 @@ const cssVariablesTheme: ThemeRegistration = {
 
 const FALLBACK_LANGUAGE = 'txt'
 
-let highlighterPromise: Promise<Highlighter> | null = null
+let highlighterPromise: Promise<HighlighterCore> | null = null
 
-function getHighlighter(): Promise<Highlighter> {
+function getHighlighter(): Promise<HighlighterCore> {
   if (!highlighterPromise) {
-    highlighterPromise = createHighlighter({
+    highlighterPromise = createHighlighterCore({
+      // Workers disallow runtime WebAssembly code generation. Shiki's
+      // JavaScript regex engine preserves highlighting without Oniguruma WASM.
+      engine: createJavaScriptRegexEngine({
+        // The default lazily compiles long patterns with `new Function`, which
+        // workerd forbids. Eager native RegExp construction is CSP-safe.
+        regexConstructor: (pattern) =>
+          defaultJavaScriptRegexConstructor(pattern, { lazyCompileLength: Infinity }),
+      }),
       themes: [cssVariablesTheme],
-      langs: [FALLBACK_LANGUAGE],
+      // Plaintext is built into core; every grammar ships explicitly so the
+      // bundle carries exactly this set and nothing else.
+      langs: [
+        langBash,
+        langCss,
+        langDiff,
+        langDocker,
+        langGo,
+        langHtml,
+        langJavascript,
+        langJson,
+        langJsonc,
+        langJsx,
+        langMarkdown,
+        langMdx,
+        langPython,
+        langRust,
+        langSql,
+        langToml,
+        langTsx,
+        langTypescript,
+        langYaml,
+      ],
     })
   }
   return highlighterPromise
@@ -50,7 +106,12 @@ function getHighlighter(): Promise<Highlighter> {
 
 const languageAliases: Record<string, string> = {
   curl: 'bash',
+  sh: 'bash',
   shell: 'bash',
+  shellscript: 'bash',
+  zsh: 'bash',
+  md: 'markdown',
+  yml: 'yaml',
 }
 
 function normalizeLanguage(language?: string) {
@@ -65,16 +126,13 @@ function normalizeLanguage(language?: string) {
  * Ensure a language grammar is loaded; fall back to plaintext for unknown or
  * unsupported languages so an exotic code fence never breaks the page.
  */
-async function resolveLanguage(highlighter: Highlighter, language: string): Promise<string> {
-  if (highlighter.getLoadedLanguages().includes(language)) {
-    return language
-  }
-  try {
-    await highlighter.loadLanguage(language as Parameters<Highlighter['loadLanguage']>[0])
-    return language
-  } catch {
-    return FALLBACK_LANGUAGE
-  }
+function resolveLanguage(highlighter: HighlighterCore, language: string): string {
+  // Core carries only the curated grammar set — no dynamic registry to load
+  // from — so anything outside it degrades to plaintext, the same contract an
+  // unknown language always had.
+  return highlighter.getLoadedLanguages().includes(language)
+    ? language
+    : FALLBACK_LANGUAGE
 }
 
 const HTML_ESCAPES: Record<string, string> = {
@@ -117,7 +175,7 @@ function tokensToHtml(lines: Array<Array<ThemedToken>>, highlightedLines: Set<nu
 //   ```bash wrap                 (soft-wrap long lines)
 // ---------------------------------------------------------------------------
 
-interface CodeFenceMeta {
+export interface CodeFenceMeta {
   title?: string
   wrap?: boolean
   highlight?: Array<number>
@@ -138,7 +196,8 @@ function expandLineRanges(spec: string): Array<number> {
   return lines
 }
 
-function parseCodeFenceMeta(meta: string): CodeFenceMeta {
+/** Parse portable code-fence metadata without exposing framework-only props. */
+export function parseCodeFenceMeta(meta: string): CodeFenceMeta {
   const result: CodeFenceMeta = {}
   const tokens = meta.match(/[^\s"{]+="[^"]*"|\{[^}]*\}|\S+/g) ?? []
   for (const token of tokens) {
@@ -156,6 +215,10 @@ function parseCodeFenceMeta(meta: string): CodeFenceMeta {
       result.title = titleMatch[1]
       continue
     }
+    // Mintlify emits presentation props such as `theme={"system"}` in the
+    // fence metadata. They configure its renderer and are not human-facing
+    // filenames, so carrying them into Thally's title bar is misleading.
+    if (/^[A-Za-z][\w-]*=/.test(token)) continue
     if (!result.title) result.title = token
   }
   return result
@@ -188,7 +251,7 @@ function rehypeParseCodeBlocks() {
         ...parent.properties,
         language,
         ...(parsedMeta.title ? { title: parsedMeta.title } : {}),
-        ...(parsedMeta.wrap ? { wrap: true } : {}),
+        ...(parsedMeta.wrap ? { wrap: '' } : {}),
         ...(parsedMeta.highlight?.length
           ? { highlightLines: parsedMeta.highlight.join(',') }
           : {}),
@@ -234,9 +297,9 @@ function rehypeShiki() {
     })
 
     for (const target of targets) {
-      const language = await resolveLanguage(highlighter, target.language)
+      const language = resolveLanguage(highlighter, target.language)
       const lines = highlighter.codeToTokensBase(target.code, {
-        lang: language as Parameters<Highlighter['codeToTokensBase']>[1]['lang'],
+        lang: language as Parameters<HighlighterCore['codeToTokensBase']>[1]['lang'],
         theme: cssVariablesTheme,
       })
       const highlightSpec = target.node.properties?.highlightLines as string | undefined

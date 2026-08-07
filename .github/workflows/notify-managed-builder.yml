@@ -1,0 +1,39 @@
+name: Notify managed builder
+
+# The managed-builder image bakes the maintained template's dependencies and a
+# small runtime overlay. Content-only edits do not need an image rebuild.
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/notify-managed-builder.yml"
+      - "package.json"
+      - "package-lock.json"
+      - "src/app/**"
+      - "src/components/admin/**"
+      - "src/components/docs/**"
+      - "src/components/layout/**"
+      - "src/data/get-doc.ts"
+      - "src/lib/**"
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch immutable template revision
+        env:
+          GH_TOKEN: ${{ secrets.THALLY_CLOUD_DISPATCH_TOKEN }}
+          TEMPLATE_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          if [[ -z "$GH_TOKEN" ]]; then
+            echo "::warning::THALLY_CLOUD_DISPATCH_TOKEN is not configured; the weekly watchdog will detect this template revision."
+            exit 0
+          fi
+          gh api --method POST \
+            repos/thallylabs/thally-cloud/dispatches \
+            -f event_type=managed-builder-template-changed \
+            -f "client_payload[template_sha]=$TEMPLATE_SHA"

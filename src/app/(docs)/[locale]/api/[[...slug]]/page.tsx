@@ -5,44 +5,65 @@ import { OperationPanel } from '@/components/api/operation-panel'
 import { JsonLdScript } from '@/components/seo/json-ld-script'
 import { getSiteUrl } from '@/lib/site-url'
 import { apiReferenceConfig, getOpenApiSpecUrl } from '@/config/api-reference'
-import { getAllApiOperationNodes, getApiOperationBySlug, getApiOperationNodes } from '@/data/api-reference'
-import { getBreadcrumbs, getI18nConfig } from '@/data/docs'
+import {
+  getAllApiOperationNodes,
+  getApiOperationBySlug,
+  getApiOperationNodes,
+} from '@/data/api-reference'
+import { getBreadcrumbs } from '@/data/docs'
 import { buildAgentAlternateLinks } from '@/lib/agent-discovery'
 import { buildApiOperationJsonLd } from '@/lib/json-ld'
+import { localeDirection, type I18nConfig } from '@/lib/i18n/config'
+import {
+  getBuildI18nConfig,
+  getRepositoryI18nConfig,
+} from '@/lib/i18n/request'
+import { resolveBuildSiteConfig } from '@/lib/site-config'
 
 interface PageProps {
   params: Promise<{ locale: string; slug?: Array<string> }>
 }
 
-function isValidSecondaryLocale(locale: string): boolean {
-  const i18n = getI18nConfig()
-  if (!i18n) return false
-  return i18n.locales.some((l) => l.code === locale && l.code !== i18n.defaultLocale)
+function isValidSecondaryLocale(locale: string, i18n: I18nConfig): boolean {
+  return i18n.locales.some(
+    (candidate) =>
+      candidate.code === locale && candidate.code !== i18n.defaultLocale,
+  )
 }
 
 export async function generateStaticParams() {
-  const i18n = getI18nConfig()
-  if (!i18n) return []
-  const secondaryLocales = i18n.locales.filter((l) => l.code !== i18n.defaultLocale)
+  const i18n = getRepositoryI18nConfig()
+  const secondaryLocales = i18n.locales.filter(
+    (l) => l.code !== i18n.defaultLocale,
+  )
   const nodes = await getAllApiOperationNodes()
   return secondaryLocales.flatMap(({ code }) =>
     nodes.map((node) => ({ locale: code, slug: node.slug })),
   )
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
   const resolved = await params
-  if (!isValidSecondaryLocale(resolved.locale)) return {}
+  const i18n = getBuildI18nConfig()
+  if (!isValidSecondaryLocale(resolved.locale, i18n)) return {}
   const siteUrl = getSiteUrl()
   const specUrl = getOpenApiSpecUrl(siteUrl)
   const node = await getApiOperationBySlug(resolved.slug)
   if (!node) return {}
   return {
     title: node.operation.title,
-    description: node.operation.description ?? `${node.operation.method} ${node.operation.path}`,
+    description:
+      node.operation.description ??
+      `${node.operation.method} ${node.operation.path}`,
+    robots: { index: false, follow: true },
     alternates: {
+      // Operation prose is source-language content until API translations
+      // exist. Keep the locale route useful without claiming duplicate prose.
+      canonical: `${siteUrl}${node.href}`,
       types: {
-        ...buildAgentAlternateLinks(node.href),
+        ...buildAgentAlternateLinks(node.href, siteUrl),
         ...(specUrl ? { 'application/vnd.oai.openapi': specUrl } : {}),
       },
     },
@@ -53,13 +74,17 @@ export default async function LocaleApiReferencePage({ params }: PageProps) {
   const resolved = await params
   const siteUrl = getSiteUrl()
   const specUrl = getOpenApiSpecUrl(siteUrl)
+  const i18n = getBuildI18nConfig()
+  const effectiveSite = resolveBuildSiteConfig()
 
-  if (!isValidSecondaryLocale(resolved.locale)) {
+  if (!isValidSecondaryLocale(resolved.locale, i18n)) {
     notFound()
   }
 
   if (!resolved.slug?.length) {
-    const defaultNodes = await getApiOperationNodes(apiReferenceConfig.defaultSpecId)
+    const defaultNodes = await getApiOperationNodes(
+      apiReferenceConfig.defaultSpecId,
+    )
     if (defaultNodes.length > 0) {
       redirect(`/${resolved.locale}${defaultNodes[0].href}`)
     }
@@ -71,31 +96,39 @@ export default async function LocaleApiReferencePage({ params }: PageProps) {
     notFound()
   }
 
-  const pageUrl = `${siteUrl}/${resolved.locale}${node.href}`
+  const pageUrl = `${siteUrl}${node.href}`
   const jsonLd = buildApiOperationJsonLd({
     siteUrl,
+    siteName: effectiveSite.name,
     pageUrl,
     title: node.operation.title,
-    description: node.operation.description ?? `${node.operation.method} ${node.operation.path}`,
+    description:
+      node.operation.description ??
+      `${node.operation.method} ${node.operation.path}`,
     specUrl: specUrl ?? undefined,
     method: node.operation.method,
     path: node.operation.path,
-    locale: resolved.locale,
+    locale: i18n.defaultLocale,
     breadcrumb: getBreadcrumbs(node.href),
   })
 
   return (
-    <ApiLayout>
-      {specUrl ? (
-        <p className="text-sm text-foreground/60">
-          OpenAPI specification:{' '}
-          <a href={specUrl} className="underline decoration-border underline-offset-2 hover:text-foreground">
-            {specUrl}
-          </a>
-        </p>
-      ) : null}
-      <JsonLdScript data={jsonLd} />
-      <OperationPanel operation={node.operation} />
-    </ApiLayout>
+    <div lang={i18n.defaultLocale} dir={localeDirection(i18n.defaultLocale)}>
+      <ApiLayout>
+        {specUrl ? (
+          <p className="text-sm text-foreground/60">
+            OpenAPI specification:{' '}
+            <a
+              href={specUrl}
+              className="underline decoration-border underline-offset-2 hover:text-foreground"
+            >
+              {specUrl}
+            </a>
+          </p>
+        ) : null}
+        <JsonLdScript data={jsonLd} />
+        <OperationPanel operation={node.operation} />
+      </ApiLayout>
+    </div>
   )
 }

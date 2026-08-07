@@ -1,6 +1,8 @@
 import { getAdminSettings } from '@/lib/admin/settings'
-import { themeVarsFor } from '@/lib/theme-vars'
-import { toHslValue } from '@/lib/colors'
+import { themeVarsFor, toHslValue } from '@thallylabs/core/theme'
+import type { NextRequest } from 'next/server'
+import { getCloudSiteConfig } from '@/lib/cloud-link/client'
+import { brandRuntimeCss } from '@/lib/brand-runtime-css'
 
 export const runtime = 'nodejs'
 
@@ -11,13 +13,20 @@ const HEX = /^#[0-9a-fA-F]{3,8}$/
  * defaults, so a theme/accent chosen in the dashboard applies site-wide without
  * making every page dynamic. Empty when nothing is overridden.
  */
-export async function GET() {
-  const s = await getAdminSettings()
+export async function GET(request: NextRequest) {
+  const [s, cloud] = await Promise.all([
+    getAdminSettings(),
+    getCloudSiteConfig(request.nextUrl.origin),
+  ])
   const parts: Array<string> = []
 
-  if (s.brandTheme) parts.push(themeVarsFor(s.brandTheme))
+  const theme = cloud?.siteConfig.portable.branding?.themePreset ?? s.brandTheme
+  if (theme) parts.push(themeVarsFor(theme))
 
-  if (s.brandAccent) {
+  // A linked site's cloud colors are the whole brand answer; the single-site
+  // admin accent only fills in when Cloud has not delivered one.
+  const cloudBranding = cloud?.siteConfig.portable.branding
+  if (!cloudBranding?.colors && s.brandAccent) {
     const { light, dark } = s.brandAccent
     if (typeof light === 'string' && HEX.test(light)) {
       const hsl = toHslValue(light)
@@ -33,7 +42,8 @@ export async function GET() {
   // override wins regardless of how Next/React 19 orders the stylesheets by
   // precedence — otherwise the globals bundle can re-sort after this link.
   const declarations = parts.filter(Boolean).join(';')
-  const css = declarations ? `:root:root{${declarations}}` : ''
+  const legacyCss = declarations ? `:root:root{${declarations}}` : ''
+  const css = [brandRuntimeCss(cloudBranding), legacyCss].filter(Boolean).join('\n')
   return new Response(css, {
     headers: { 'content-type': 'text/css; charset=utf-8', 'cache-control': 'public, max-age=30' },
   })

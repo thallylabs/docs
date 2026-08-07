@@ -1,109 +1,120 @@
 ---
-title: Getting Started with Thally
-description: Set up Thally and create your first documentation page in under five minutes.
+title: Create a Thally project with the CLI
+navTitle: CLI setup
+description: Use the developer setup path for a local evaluation, automation, migration, or self-hosted documentation site.
 ---
 
-## Prerequisites
+The recommended path is to create and publish a managed site through the
+[Thally Cloud quickstart](/quickstart). Use this developer guide when you need
+an isolated local evaluation, CI automation, a migration workspace, or a
+self-hosted deployment.
 
-- **Node.js 18+** and npm (or pnpm/yarn)
-- A terminal and code editor
-- An OpenAPI spec (optional — a Pet Store example is included)
+<CardGroup cols={3}>
+  <Card title="Create a local project" icon="code-simple" href="#create-a-local-project">
+    Answer a few prompts and create a ready-to-edit documentation project.
+  </Card>
+  <Card title="Use automation defaults" icon="wrench" href="#use-automation-defaults">
+    Scaffold the same project non-interactively for scripts or a fast evaluation.
+  </Card>
+  <Card title="Migrate existing docs" icon="book-open" href="#migrate-existing-documentation">
+    Import a repository or public documentation site instead of starting over.
+  </Card>
+</CardGroup>
 
-<Frame caption="From setup to deployment in minutes" zoom={false}>
+## Create a local project
 
-![City skyline at night](/images/image3.jpg)
-
-</Frame>
-
-<Steps>
-
-<Step title="Create your project">
-
-Use the CLI (recommended):
-
-```bash
-npx create-thally-docs my-docs
-```
-
-The CLI walks you through an interactive setup:
-
-- **Project name** — displayed in the header and metadata
-- **Description** — used for SEO and OpenGraph tags
-- **Brand preset** — `primary` (green) or `secondary` (purple)
-- **GitHub repo URL** — auto-wires the Support and GitHub links
-- **Install dependencies** — runs `npm install` for you
-
-You can also skip the prompts and accept all defaults:
+Run the interactive setup:
 
 ```bash
-npx create-thally-docs my-docs --yes
+npx create-thally-docs my-docs --install
 ```
 
-Or clone manually:
+The setup asks only for values that shape the initial project:
 
-```bash
-git clone https://github.com/thallylabs/thally.git my-docs
-cd my-docs
-rm -rf .git
-npm install
-```
+| Prompt | What it changes |
+| --- | --- |
+| Project name | Header, metadata, and starter content |
+| Description | Search and social metadata |
+| Brand preset | Initial light and dark color tokens |
+| GitHub repository | Navbar and support links |
+| Install dependencies | Whether the site is ready to run immediately |
 
-</Step>
-
-<Step title="Start the dev server">
+Start the local server after the command completes:
 
 ```bash
 cd my-docs
 npm run dev
 ```
 
-Open [http://localhost:3040](http://localhost:3040) to see the default docs site.
+Open the URL printed in your terminal. It starts at
+[http://localhost:3040](http://localhost:3040).
 
-</Step>
+## Use automation defaults
 
-<Step title="Create your first page">
-
-Create a new file at `src/content/my-first-page.mdx`:
-
-```mdx
----
-title: My First Page
-description: A quick test page to verify everything works.
----
-
-Welcome to my documentation! This page was created with Thally.
-
-## Next steps
-
-- Edit `docs.json` to add this page to the sidebar.
-- Replace the example content with your own.
-```
-
-</Step>
-
-<Step title="Add it to the navigation">
-
-Open `docs.json` and add your page to a group:
-
-```json
-{
-  "group": "Getting Started",
-  "pages": ["introduction", "quickstart", "my-first-page"]
-}
-```
-
-Save the file and the sidebar updates automatically — no restart required.
-
-</Step>
-
-<Step title="Deploy">
+Use `--yes` to accept the defaults and `--install` to install dependencies in
+the same command:
 
 ```bash
-npm run build
+npx create-thally-docs my-docs --yes --install
 ```
 
-Deploy the output to any platform that supports Next.js — Vercel, Netlify, Cloudflare, or a Docker container.
+Use this form in a script, a temporary evaluation, or an agent workflow. You
+can change the product identity later in `src/data/site.ts` and `docs.json`.
 
-</Step>
+## Migrate existing documentation
 
-</Steps>
+Prefer the source repository when you have access to it. A repository migration
+can preserve authored Markdown or MDX, navigation, local assets, snippets,
+locales, redirects, and OpenAPI files that a public website may not expose.
+
+```bash
+npx create-thally-docs migrate https://github.com/acme/docs acme-docs
+```
+
+You can also migrate a public documentation URL:
+
+```bash
+npx create-thally-docs migrate https://docs.acme.com acme-docs
+```
+
+The interactive flow asks whether the source uses Mintlify, Docusaurus, or
+automatic detection. For non-interactive runs, select the adapter explicitly:
+
+```bash
+npx create-thally-docs migrate https://github.com/acme/docs acme-docs --platform mintlify --yes
+```
+
+<Note type="info" title="Review a migration before publishing">
+Run the migrated project locally, check its navigation and assets, then run
+`npx thally check`. Imported content remains yours to edit and reorganize.
+</Note>
+
+## What the scaffold creates
+
+| Path | Purpose |
+| --- | --- |
+| `src/content/` | MDX pages that you own |
+| `docs.json` | Navigation and feature configuration |
+| `src/data/site.ts` | Product identity, links, and brand defaults |
+| `openapi.yaml` | Replaceable example API specification |
+| `.github/workflows/` | Validation workflow for documentation pull requests |
+
+The framework runtime is already wired. You can stay focused on content and
+configuration instead of editing Next.js internals.
+
+## Continue with a task
+
+<CardGroup cols="2">
+  <Card title="Create and edit pages" icon="book-open" href="/guides/writing-content">
+    Learn the page structure and the components available inside MDX.
+  </Card>
+  <Card title="Organize the navigation" icon="grid-round" href="/guides/configuring-navigation">
+    Design tabs and sidebar groups around the tasks your readers need to complete.
+  </Card>
+  <Card title="Customize the site" icon="wrench" href="/guides/branding-and-theming">
+    Apply your product identity and choose versioned or live branding controls.
+  </Card>
+  <Card title="Deploy the site" icon="code-simple" href="/guides/deploying">
+    Validate a production build and configure the public URL on your host.
+  </Card>
+</CardGroup>

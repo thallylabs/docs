@@ -27,6 +27,7 @@ const ICON_MAP: Record<IconName, ComponentType<LucideProps>> = {
 
 function LauncherIcon({ icon }: { icon?: string }) {
   if (icon && (icon.startsWith('/') || icon.startsWith('http'))) {
+    // eslint-disable-next-line @next/next/no-img-element -- remote admin-provided icons have no known dimensions.
     return <img src={icon} alt="" className="h-5 w-5 object-contain" />
   }
   const Icon = ICON_MAP[(icon as IconName) ?? 'sparkles'] ?? Sparkles
@@ -36,13 +37,11 @@ function LauncherIcon({ icon }: { icon?: string }) {
 interface DocsChatLauncherProps {
   label?: string
   icon?: string
-  enabled?: boolean
 }
 
 export function DocsChatLauncher({
   label = 'Ask AI',
   icon,
-  enabled = true,
 }: DocsChatLauncherProps) {
   const [Chat, setChat] = useState<ComponentType<DocsChatProps> | null>(null)
   const [status, setStatus] = useState<DocsChatStatus | null>(null)
@@ -102,7 +101,7 @@ export function DocsChatLauncher({
     return () => window.removeEventListener('thally:ask-assistant', handleAskAssistant)
   }, [openChat])
 
-  const chatEnabled = status?.configured ?? enabled
+  const chatEnabled = status?.configured ?? true
 
   if (Chat) {
     return (

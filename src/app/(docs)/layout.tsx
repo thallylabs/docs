@@ -1,10 +1,16 @@
 import { SiteShell } from '@/components/layout/site-shell'
 import { SidebarCollectionsHydrator } from '@/components/layout/sidebar-hydrator'
-import { getSidebarCollections, getAiConfig, getI18nConfig, getNavbarConfig, getFooterConfig } from '@/data/docs'
+import {
+  getSidebarCollections,
+  getAiConfig,
+  getNavbarConfig,
+  getFooterConfig,
+} from '@/data/docs'
 import type { NavigationSection } from '@/data/docs'
 import { buildApiNavigation } from '@/data/api-reference'
 import { DocsChatLauncher } from '@/components/docs/docs-chat-launcher'
-import { getCloud } from '@/lib/cloud-bridge'
+import { getBuildI18nConfig } from '@/lib/i18n/request'
+import { resolveBuildSiteConfig, siteIdentity } from '@/lib/site-config'
 
 interface DocsLayoutProps {
   children: React.ReactNode
@@ -25,7 +31,7 @@ export default async function DocsLayout({ children }: DocsLayoutProps) {
 
   const sidebarCollections = getSidebarCollections()
   const collections = sidebarCollections.map((collection) => {
-    if (collection.api) {
+    if (collection.api && collection.api.navigation !== false) {
       // Merge MDX-based sections (from docs.json groups) with OpenAPI-generated sections
       const mdxSections = collection.sections ?? []
       const mergedSections = [...mdxSections, ...apiSections]
@@ -34,9 +40,10 @@ export default async function DocsLayout({ children }: DocsLayoutProps) {
     return collection
   })
   const aiConfig = getAiConfig()
-  const i18nConfig = getI18nConfig()
+  const i18nConfig = getBuildI18nConfig()
   const navbarConfig = getNavbarConfig()
   const footerConfig = getFooterConfig()
+  const effectiveSite = resolveBuildSiteConfig()
 
   return (
     <>
@@ -46,15 +53,12 @@ export default async function DocsLayout({ children }: DocsLayoutProps) {
         i18nConfig={i18nConfig}
         navbarConfig={navbarConfig}
         footerConfig={footerConfig}
+        identity={siteIdentity(effectiveSite)}
       >
         {children}
       </SiteShell>
       {aiConfig.chat ? (
-        <DocsChatLauncher
-          label={aiConfig.label}
-          icon={aiConfig.icon}
-          enabled={Boolean(getCloud()?.ai?.isChatConfigured())}
-        />
+        <DocsChatLauncher label={aiConfig.label} icon={aiConfig.icon} />
       ) : null}
     </>
   )

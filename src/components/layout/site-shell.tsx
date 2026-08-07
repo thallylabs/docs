@@ -9,6 +9,8 @@ import type { SidebarCollection, DocsJsonNavbar, DocsJsonFooter } from '@/data/d
 import { useSidebarCollectionsStore } from './sidebar-store'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { SiteNameProvider } from '@/components/layout/use-site-name'
+import type { SiteIdentity } from '@/lib/site-config'
 
 export interface I18nConfig {
   defaultLocale: string
@@ -57,9 +59,17 @@ interface SiteShellProps {
   i18nConfig?: I18nConfig | null
   navbarConfig?: DocsJsonNavbar | null
   footerConfig?: DocsJsonFooter | null
+  identity: SiteIdentity
 }
 
-export function SiteShell({ children, initialCollections, i18nConfig, navbarConfig, footerConfig }: SiteShellProps) {
+export function SiteShell({
+  children,
+  initialCollections,
+  i18nConfig,
+  navbarConfig,
+  footerConfig,
+  identity,
+}: SiteShellProps) {
   const hydratedCollections = useSidebarCollectionsStore((state) => state.collections)
   const collections = hydratedCollections.length > 0 ? hydratedCollections : initialCollections
   const pathname = usePathname()
@@ -107,43 +117,49 @@ export function SiteShell({ children, initialCollections, i18nConfig, navbarConf
         (matchesPath(collection.href, pathname) || matchesPath(collection.href, currentPath)),
     )?.id ?? activeCollection.id
 
+  // `clip` contains horizontal spill without creating a scroll container,
+  // which lets the banner-aware desktop sidebar remain sticky.
   return (
-    <div className="thally-docs-root min-h-screen w-full overflow-x-clip bg-background text-foreground">
-      <TopBar
-        collections={collections}
-        activeCollectionId={activeTabId}
-        onCollectionChange={(id) => {
-          const target = collections.find((collection) => collection.id === id)
-          if (!target) return
-          setSelectedCollectionId(target.id)
-          const targetHref = target.href
-          const firstHref = target.sections[0]?.items[0]?.href
-          if (targetHref && !matchesPath(targetHref, pathname)) {
-            router.push(targetHref)
-            return
-          }
-          if (firstHref && !collectionContainsPath(target, pathname)) {
-            router.push(firstHref)
-          }
-        }}
-        activeSections={activeCollection.sections}
-        i18nConfig={i18nConfig ?? null}
-        currentLocale={currentLocale}
-        currentPath={currentPath}
-        navbarConfig={navbarConfig ?? null}
-      />
-      <div className={`thally-docs-shell flex min-h-[calc(100dvh-48px)] w-full ${shell.wrapper}`}>
-        <Sidebar
-          sections={activeCollection.sections}
-          title={activeCollection.label}
+    <SiteNameProvider initialName={identity.name}>
+      <div className="thally-docs-root min-h-screen w-full overflow-x-clip bg-background text-foreground">
+        <TopBar
+          collections={collections}
+          activeCollectionId={activeTabId}
+          onCollectionChange={(id) => {
+            const target = collections.find((collection) => collection.id === id)
+            if (!target) return
+            setSelectedCollectionId(target.id)
+            const targetHref = target.href
+            const firstHref = target.sections[0]?.items[0]?.href
+            if (targetHref && !matchesPath(targetHref, pathname)) {
+              router.push(targetHref)
+              return
+            }
+            if (firstHref && !collectionContainsPath(target, pathname)) {
+              router.push(firstHref)
+            }
+          }}
+          activeSections={activeCollection.sections}
+          i18nConfig={i18nConfig ?? null}
+          currentLocale={currentLocale}
+          currentPath={currentPath}
+          navbarConfig={navbarConfig ?? null}
+          siteLinks={identity.links}
         />
-        <div className="flex min-h-[calc(100dvh-48px)] w-full min-w-0 flex-1 flex-col">
-          <main id="main-content" className="thally-docs-main flex-1 py-[34px] pb-24">
-            <PageContainer className={layout.pageGap}>{children}</PageContainer>
-          </main>
-          <Footer footerConfig={footerConfig ?? null} />
+        <div className={`thally-docs-shell flex min-h-[calc(100dvh-48px)] w-full ${shell.wrapper}`}>
+          <Sidebar sections={activeCollection.sections} title={activeCollection.label} />
+          <div className="flex min-h-[calc(100dvh-48px)] w-full min-w-0 flex-1 flex-col">
+            <main id="main-content" className="thally-docs-main flex-1 py-[34px] pb-24">
+              <PageContainer className={layout.pageGap}>{children}</PageContainer>
+            </main>
+            <Footer
+              footerConfig={footerConfig ?? null}
+              siteName={identity.name}
+              siteLinks={identity.links}
+            />
+          </div>
         </div>
       </div>
-    </div>
+    </SiteNameProvider>
   )
 }

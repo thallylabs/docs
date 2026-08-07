@@ -1,5 +1,10 @@
 import type { NextConfig } from 'next'
+import { initOpenNextCloudflareForDev } from '@opennextjs/cloudflare'
 import docsJson from './docs.json' assert { type: 'json' }
+
+// Make Wrangler bindings available while `next dev` is running. Production
+// receives the same bindings from the OpenNext-generated Worker entrypoint.
+initOpenNextCloudflareForDev()
 
 interface DocsRedirect {
   source: string
@@ -12,16 +17,37 @@ const docRedirects: Array<DocsRedirect> =
 
 const nextConfig: NextConfig = {
   pageExtensions: ['ts', 'tsx'],
-  // libSQL ships a native binding; leave it as a runtime require so Next doesn't
-  // try to bundle it (which breaks the analytics store on serverless builds).
-  serverExternalPackages: ['@libsql/client'],
+  // Generated projects are commonly inspected through a loopback URL. Permit
+  // that origin so Next dev can load the RSC payloads required for navigation.
+  allowedDevOrigins: ['127.0.0.1'],
+  // The engine core is a workspace package shipped as TS-built ESM; let Next
+  // transpile it so app routes and (server) components can import it directly.
+  // OpenNext cannot load arbitrary Node externals inside workerd. Transpiling
+  // these packages lets its final bundle select libSQL's `workerd` export and
+  // include the MDX compiler used by dynamic documentation routes.
+  transpilePackages: ['@thallylabs/core', '@libsql/client', 'next-mdx-remote', 'shiki'],
+  // Several agent surfaces intentionally read customer-owned source/config at
+  // runtime. Include those files in the server trace so workerd's read-only fs
+  // contains the same project inputs as a Node deployment.
+  outputFileTracingIncludes: {
+    '/*': ['./AGENTS.md', './docs.json', './openapi.yaml', './public/**/*', './src/content/**/*'],
+  },
   experimental: {
     externalDir: true,
+    // Turbopack's persistent build cache is deliberately NOT enabled here.
+    // Measured on this site: it saves about 6s of compile while growing
+    // .next/cache from ~560 KB to ~250 MB. Managed publishes snapshot and
+    // restore that directory per site, so the transfer costs more than the
+    // compile it saves — and Next still marks the flag experimental for
+    // production builds, with restores from a divergent commit able to serve
+    // stale prerendered HTML. Publishing a customer's docs with stale pages is
+    // a correctness failure, not a slow build. Revisit once the flag is stable
+    // (Next 16.3+) and only with a cache key that cannot span commits.
   },
   async redirects() {
     return [
-      // Legacy pre-rebrand URL — the guide moved with the Dox → Thally rename.
-      { source: '/guides/dox-track', destination: '/guides/thally-track', permanent: true },
+      // Legacy pre-rebrand URL — Track is now documented in the AI features guide.
+      { source: '/guides/dox-track', destination: '/guides/ai-features', permanent: true },
       ...docRedirects.map(({ source, destination, permanent = false }) => ({
         source,
         destination,

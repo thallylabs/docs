@@ -1,0 +1,91 @@
+---
+title: Deploy with Docker
+navTitle: Docker
+description: Build a Thally container, persist local data when needed, and run the documentation site on a container host.
+---
+
+Use Docker when your platform runs containers or when you want the site and
+its local libSQL files to share a persistent volume.
+
+## Create a Dockerfile
+
+Create `.dockerignore` first so local credentials and build artifacts cannot be
+copied into an image layer:
+
+```text
+node_modules
+.next
+.open-next
+.git
+.env*
+.data
+*.pem
+npm-debug.log*
+```
+
+Add this `Dockerfile` to the project root:
+
+```dockerfile
+FROM node:22-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM node:22-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+RUN mkdir -p /app/.data && chown node:node /app/.data
+COPY --chown=node:node --from=builder /app/.next ./.next
+COPY --chown=node:node --from=builder /app/node_modules ./node_modules
+COPY --chown=node:node --from=builder /app/package.json ./package.json
+COPY --chown=node:node --from=builder /app/public ./public
+COPY --chown=node:node --from=builder /app/src/content ./src/content
+COPY --chown=node:node --from=builder /app/docs.json ./docs.json
+COPY --chown=node:node --from=builder /app/openapi.yaml ./openapi.yaml
+USER node
+EXPOSE 3040
+CMD ["npm", "start"]
+```
+
+If your project uses a different API-spec path or runtime-loaded assets, copy
+those files into the runner stage too.
+
+## Build and run
+
+```bash
+docker build -t my-docs .
+docker run --rm -p 3040:3040 \
+  -e THALLY_SITE_URL=https://docs.example.com \
+  my-docs
+```
+
+Open [http://localhost:3040](http://localhost:3040) to test the container.
+
+## Persist runtime data
+
+Mount `/app/.data` when analytics and local admin state must survive container
+replacement:
+
+```bash
+docker run -d -p 3040:3040 \
+  -e THALLY_SITE_URL=https://docs.example.com \
+  -v thally-data:/app/.data \
+  my-docs
+```
+
+Alternatively, configure the remote libSQL variables from the
+[environment variable reference](/guides/environment-variables).
+
+## Verify the deployment
+
+Check the container logs, open a nested documentation route, and test enabled
+server features. Confirm your platform forwards port 3040 and supplies secrets
+as environment variables rather than baking them into the image.
+
+## Next steps
+
+- [Protect private documentation](/guides/private-docs)
+- [Analytics and feedback](/guides/analytics-and-feedback)
+- [Troubleshoot a deployment](/guides/troubleshooting)

@@ -5,7 +5,12 @@ import './globals.css'
 import '@/styles/docs-handoff.css'
 import { Providers } from '@/app/providers'
 import { siteConfig } from '@/data/site'
-import { getBannerConfig, getCustomScriptsConfig, getFontsConfig, getI18nConfig, getStructuralTheme } from '@/data/docs'
+import {
+  getBannerConfig,
+  getCustomScriptsConfig,
+  getFontsConfig,
+  getStructuralTheme,
+} from '@/data/docs'
 import { cn } from '@/lib/utils'
 import { toHslValue } from '@/lib/colors'
 import { THEME_VARS } from '@/lib/theme-vars'
@@ -16,6 +21,9 @@ import { JsonLdScript } from '@/components/seo/json-ld-script'
 import { AnalyticsProvider } from '@/components/analytics/analytics-provider'
 import { SiteBanner } from '@/components/layout/site-banner'
 import { WebMcpTools } from '@/components/agent/web-mcp-tools'
+import { localeDirection } from '@/lib/i18n/config'
+import { getBuildI18nConfig } from '@/lib/i18n/request'
+import { resolveBuildSiteConfig } from '@/lib/site-config'
 
 // Default fonts via next/font (optimal performance — preloaded, no FOUC).
 // The Thally brand pairs Inter (body) with Plus Jakarta Sans (display —
@@ -36,6 +44,7 @@ const fontMono = JetBrains_Mono({
   subsets: ['latin'],
   variable: '--font-mono',
   display: 'swap',
+  preload: false,
 })
 
 // ---------------------------------------------------------------------------
@@ -59,14 +68,20 @@ let headingFontFamily: string | null = null
 if (fontsConfig.body?.family) {
   bodyFontFamily = fontsConfig.body.family
   googleFontUrlSet.add(
-    buildGoogleFontsUrl(fontsConfig.body.family, fontsConfig.body.weight ?? ['400', '500', '600', '700']),
+    buildGoogleFontsUrl(
+      fontsConfig.body.family,
+      fontsConfig.body.weight ?? ['400', '500', '600', '700'],
+    ),
   )
 }
 
 if (fontsConfig.heading?.family) {
   headingFontFamily = fontsConfig.heading.family
   googleFontUrlSet.add(
-    buildGoogleFontsUrl(fontsConfig.heading.family, fontsConfig.heading.weight ?? ['600', '700']),
+    buildGoogleFontsUrl(
+      fontsConfig.heading.family,
+      fontsConfig.heading.weight ?? ['600', '700'],
+    ),
   )
 }
 
@@ -75,7 +90,9 @@ const googleFontUrls = Array.from(googleFontUrlSet)
 // CSS variable overrides injected into :root when custom fonts are set
 const fontOverrides = [
   bodyFontFamily ? `--font-sans: '${bodyFontFamily}', sans-serif;` : '',
-  headingFontFamily ? `--font-heading: '${headingFontFamily}', sans-serif;` : '',
+  headingFontFamily
+    ? `--font-heading: '${headingFontFamily}', sans-serif;`
+    : '',
 ]
   .filter(Boolean)
   .join(' ')
@@ -94,62 +111,132 @@ const themeVars = THEME_VARS[structuralTheme] ?? ''
 
 // ---------------------------------------------------------------------------
 
-const defaultOgImage = buildOgImageUrl({})
-
-export const metadata: Metadata = {
-  metadataBase: new URL(getSiteUrl()),
-  title: {
-    default: `${siteConfig.name} Documentation`,
-    template: `%s • ${siteConfig.name}`,
-  },
-  description: siteConfig.description,
-  // Derived from the site config so scaffolded sites never inherit
-  // template-marketing keywords.
-  keywords: [siteConfig.name, `${siteConfig.name} documentation`, 'docs'],
-  icons: {
-    // The dark link wins on OS dark scheme (link media can't follow the
-    // in-site theme toggle); the route falls back to the light asset when no
-    // dark variant is uploaded, so both links always resolve.
-    icon: [
-      { url: '/api/brand/favicon', media: '(prefers-color-scheme: light)' },
-      { url: '/api/brand/favicon?mode=dark', media: '(prefers-color-scheme: dark)' },
+export async function generateMetadata(): Promise<Metadata> {
+  const effectiveSite = resolveBuildSiteConfig()
+  const siteUrl = getSiteUrl()
+  const defaultOgImage = buildOgImageUrl({})
+  return {
+    metadataBase: new URL(siteUrl),
+    title: {
+      default: `${effectiveSite.name} Documentation`,
+      template: `%s • ${effectiveSite.name}`,
+    },
+    description: effectiveSite.description,
+    // Derived from the request-bound site config so a fork never inherits
+    // the baseline's marketing keywords.
+    keywords: [
+      effectiveSite.name,
+      `${effectiveSite.name} documentation`,
+      'docs',
     ],
-    shortcut: '/api/brand/favicon',
-  },
-  openGraph: {
-    title: `${siteConfig.name} Documentation`,
-    description: siteConfig.description,
-    url: getSiteUrl(),
-    siteName: siteConfig.name,
-    images: [{ url: defaultOgImage, width: 1200, height: 630 }],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: `${siteConfig.name} Documentation`,
-    description: siteConfig.description,
-    images: [defaultOgImage],
-  },
+    icons: {
+      // The dark link wins on OS dark scheme (link media can't follow the
+      // in-site theme toggle); the route falls back to the light asset when no
+      // dark variant is uploaded, so both links always resolve.
+      icon: [
+        { url: '/api/brand/favicon', media: '(prefers-color-scheme: light)' },
+        {
+          url: '/api/brand/favicon?mode=dark',
+          media: '(prefers-color-scheme: dark)',
+        },
+      ],
+      shortcut: '/api/brand/favicon',
+    },
+    openGraph: {
+      title: `${effectiveSite.name} Documentation`,
+      description: effectiveSite.description,
+      url: siteUrl,
+      siteName: effectiveSite.name,
+      images: [{ url: defaultOgImage, width: 1200, height: 630 }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${effectiveSite.name} Documentation`,
+      description: effectiveSite.description,
+      images: [defaultOgImage],
+    },
+    verification: {
+      ...(process.env.GOOGLE_SITE_VERIFICATION
+        ? { google: process.env.GOOGLE_SITE_VERIFICATION }
+        : {}),
+      other: {
+        ...(process.env.BING_SITE_VERIFICATION
+          ? { 'msvalidate.01': process.env.BING_SITE_VERIFICATION }
+          : {}),
+      },
+    },
+  }
 }
 
 const brandStyle: Record<string, string> = {
   '--brand-light-background': toHslValue(siteConfig.brand.light.background),
+  '--brand-light-card': toHslValue(
+    siteConfig.brand.light.card ?? siteConfig.brand.light.background,
+  ),
   '--brand-light-foreground': toHslValue(siteConfig.brand.light.foreground),
   '--brand-light-muted': toHslValue(siteConfig.brand.light.muted),
+  '--brand-light-muted-foreground': toHslValue(
+    siteConfig.brand.light.mutedForeground ?? siteConfig.brand.light.foreground,
+  ),
   '--brand-light-border': toHslValue(siteConfig.brand.light.border),
   '--brand-light-accent': toHslValue(siteConfig.brand.light.accent),
-  '--brand-light-accent-foreground': toHslValue(siteConfig.brand.light.accentForeground),
+  '--brand-light-accent-foreground': toHslValue(
+    siteConfig.brand.light.accentForeground,
+  ),
+  '--brand-light-accent-2': toHslValue(
+    siteConfig.brand.light.accent2 ?? siteConfig.brand.light.accent,
+  ),
+  '--brand-light-accent-2-foreground': toHslValue(
+    siteConfig.brand.light.accent2Foreground ??
+      siteConfig.brand.light.accentForeground,
+  ),
+  '--brand-light-input': toHslValue(
+    siteConfig.brand.light.input ?? siteConfig.brand.light.border,
+  ),
+  '--brand-light-sidebar': toHslValue(
+    siteConfig.brand.light.sidebar ?? siteConfig.brand.light.background,
+  ),
   '--brand-light-ring': toHslValue(siteConfig.brand.light.ring),
-  '--brand-sidebar-active-bg-light': toHslValue(siteConfig.brand.light.sidebarActiveBg),
-  '--brand-sidebar-active-text-light': toHslValue(siteConfig.brand.light.sidebarActiveText),
+  '--brand-sidebar-active-bg-light': toHslValue(
+    siteConfig.brand.light.sidebarActiveBg,
+  ),
+  '--brand-sidebar-active-text-light': toHslValue(
+    siteConfig.brand.light.sidebarActiveText,
+  ),
   '--brand-dark-background': toHslValue(siteConfig.brand.dark.background),
+  '--brand-dark-card': toHslValue(
+    siteConfig.brand.dark.card ?? siteConfig.brand.dark.background,
+  ),
   '--brand-dark-foreground': toHslValue(siteConfig.brand.dark.foreground),
   '--brand-dark-muted': toHslValue(siteConfig.brand.dark.muted),
+  '--brand-dark-muted-foreground': toHslValue(
+    siteConfig.brand.dark.mutedForeground ?? siteConfig.brand.dark.foreground,
+  ),
   '--brand-dark-border': toHslValue(siteConfig.brand.dark.border),
   '--brand-dark-accent': toHslValue(siteConfig.brand.dark.accent),
-  '--brand-dark-accent-foreground': toHslValue(siteConfig.brand.dark.accentForeground),
+  '--brand-dark-accent-foreground': toHslValue(
+    siteConfig.brand.dark.accentForeground,
+  ),
+  '--brand-dark-accent-2': toHslValue(
+    siteConfig.brand.dark.accent2 ?? siteConfig.brand.dark.accent,
+  ),
+  '--brand-dark-accent-2-foreground': toHslValue(
+    siteConfig.brand.dark.accent2Foreground ??
+      siteConfig.brand.dark.accentForeground,
+  ),
+  '--brand-dark-input': toHslValue(
+    siteConfig.brand.dark.input ?? siteConfig.brand.dark.border,
+  ),
+  '--brand-dark-sidebar': toHslValue(
+    siteConfig.brand.dark.sidebar ?? siteConfig.brand.dark.background,
+  ),
   '--brand-dark-ring': toHslValue(siteConfig.brand.dark.ring),
-  '--brand-sidebar-active-bg-dark': toHslValue(siteConfig.brand.dark.sidebarActiveBg),
-  '--brand-sidebar-active-text-dark': toHslValue(siteConfig.brand.dark.sidebarActiveText),
+  '--brand-sidebar-active-bg-dark': toHslValue(
+    siteConfig.brand.dark.sidebarActiveBg,
+  ),
+  '--brand-sidebar-active-text-dark': toHslValue(
+    siteConfig.brand.dark.sidebarActiveText,
+  ),
 }
 
 // The brand palette must live in a :root <style> (NOT inline on <html>): inline
@@ -159,30 +246,55 @@ const brandCss = Object.entries(brandStyle)
   .map(([k, v]) => `${k}:${v}`)
   .join(';')
 
-const defaultLang = getI18nConfig()?.defaultLocale ?? 'en'
 const bannerConfig = getBannerConfig()
 const customScripts = getCustomScriptsConfig()
-const siteUrl = getSiteUrl()
-const siteJsonLd = buildSiteJsonLd({ siteUrl, locale: defaultLang })
+// OpenNext's production transform can add esbuild's `__name` calls to the
+// serialized next-themes bootstrap. The bootstrap runs before client bundles,
+// so provide the tiny helper first or one missing global prevents the entire
+// React tree from hydrating and disables every interactive control.
+const runtimeNameShim =
+  "globalThis.__name ??= (target, value) => Object.defineProperty(target, 'name', { value, configurable: true });"
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
+  const i18n = getBuildI18nConfig()
+  const effectiveSite = resolveBuildSiteConfig()
+  const siteUrl = getSiteUrl()
+  const defaultLang = i18n.defaultLocale
+  const siteJsonLd = buildSiteJsonLd({
+    siteUrl,
+    siteName: effectiveSite.name,
+    description: effectiveSite.description,
+    repoUrl: effectiveSite.repoUrl,
+    locale: defaultLang,
+  })
   return (
     // Font variables live on <html> (not <body>) so :root-level rules — the
     // globals.css --font-heading default and docs.json font overrides — can
     // reference and override them.
     <html
       lang={defaultLang}
+      dir={localeDirection(defaultLang)}
       suppressHydrationWarning
       data-theme={structuralTheme}
       className={cn(fontSans.variable, fontDisplay.variable, fontMono.variable)}
     >
       <head>
+        <script
+          id="thally-runtime-name-shim"
+          dangerouslySetInnerHTML={{ __html: runtimeNameShim }}
+        />
         <JsonLdScript data={siteJsonLd} />
         {/* Google Fonts for custom body/heading fonts set in docs.json */}
         {googleFontUrls.length > 0 && (
           <>
             <link rel="preconnect" href="https://fonts.googleapis.com" />
-            <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+            <link
+              rel="preconnect"
+              href="https://fonts.gstatic.com"
+              crossOrigin="anonymous"
+            />
             {googleFontUrls.map((url) => (
               <link key={url} rel="stylesheet" href={url} />
             ))}
@@ -195,7 +307,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         {/* CSS variable overrides for structural theme (radius, sidebar, nav tabs) */}
         {themeVars && <style>{`:root { ${themeVars} }`}</style>}
         {/* Live admin branding override (theme + accent from the dashboard) — last so it wins */}
-        {/* eslint-disable-next-line @next/next/no-head-element */}
+        {/* eslint-disable-next-line @next/next/no-css-tags -- runtime branding must override the generated palette */}
         <link rel="stylesheet" href="/api/brand.css" />
       </head>
       <body className="min-h-screen bg-background font-sans text-foreground antialiased">

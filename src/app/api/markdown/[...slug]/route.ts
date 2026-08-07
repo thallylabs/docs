@@ -1,15 +1,16 @@
 import { NextResponse } from 'next/server'
-import fs from 'node:fs/promises'
 import path from 'node:path'
 import { stripInternalFrontmatter } from '@/lib/provenance'
-import { mdxToMarkdown } from '@/lib/content/to-markdown'
+import { getContentSource } from '@/lib/content-source'
+import { mdxToMarkdown } from '@thallylabs/core'
 
-const localDocsRoot = path.join(process.cwd(), 'src/content')
+const localDocsRoot = 'src/content'
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ slug: string[] }> },
 ) {
+
   const { slug } = await params
   const slugPath = slug.join('/')
 
@@ -18,22 +19,23 @@ export async function GET(
     return new NextResponse('Not Found', { status: 404 })
   }
 
-  const rootPrefix = path.resolve(localDocsRoot) + path.sep
+  const rootPrefix = `${localDocsRoot}/`
   const candidates = [
-    path.join(localDocsRoot, `${slugPath}.mdx`),
-    path.join(localDocsRoot, `${slugPath}.md`),
-    path.join(localDocsRoot, `${slugPath}/index.mdx`),
+    path.posix.join(localDocsRoot, `${slugPath}.mdx`),
+    path.posix.join(localDocsRoot, `${slugPath}.md`),
+    path.posix.join(localDocsRoot, `${slugPath}/index.mdx`),
   ]
 
+  const source = getContentSource()
   for (const filePath of candidates) {
     // Containment: the resolved file must stay inside src/content.
-    if (!path.resolve(filePath).startsWith(rootPrefix)) continue
-    try {
-      const raw = await fs.readFile(filePath, 'utf8')
+    if (!filePath.startsWith(rootPrefix)) continue
+    const file = await source.read(filePath)
+    if (file) {
       // Strip internal provenance frontmatter so it never ships publicly, then
       // clean the MDX body to real Markdown (JSX components → Markdown) while
       // preserving the public frontmatter block.
-      const stripped = stripInternalFrontmatter(raw)
+      const stripped = stripInternalFrontmatter(file.content)
       const frontmatter = stripped.match(/^\s*---\n[\s\S]*?\n---\n?/)?.[0] ?? ''
       const body = mdxToMarkdown(stripped.slice(frontmatter.length))
       return new NextResponse(frontmatter + body, {
@@ -43,8 +45,6 @@ export async function GET(
           'Cache-Control': 'public, max-age=300',
         },
       })
-    } catch {
-      // file not found — try next candidate
     }
   }
 

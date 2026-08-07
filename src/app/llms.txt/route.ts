@@ -1,25 +1,25 @@
-import { siteConfig } from '@/data/site'
 import { getDocEntries, getSidebarCollections } from '@/data/docs'
-import { getSiteUrl, siteUrlMismatch } from '@/lib/site-url'
-
-const baseUrl = getSiteUrl()
+import { siteUrlMismatch } from '@/lib/site-url'
+import { resolveSiteConfig } from '@/lib/site-config'
 
 export async function GET(request: Request) {
+  const baseUrl = new URL(request.url).origin
+  const effectiveSite = await resolveSiteConfig(baseUrl)
   const entries = getDocEntries()
   const collections = getSidebarCollections()
 
   const lines: Array<string> = []
 
   // Header
-  lines.push(`# ${siteConfig.name}`)
+  lines.push(`# ${effectiveSite.name}`)
   lines.push('')
-  lines.push(`> ${siteConfig.description}`)
+  lines.push(`> ${effectiveSite.description}`)
   lines.push('')
 
   // Links
   lines.push(`- Documentation: ${baseUrl}`)
-  if (siteConfig.repoUrl && !siteConfig.repoUrl.includes('your-org')) {
-    lines.push(`- GitHub: ${siteConfig.repoUrl}`)
+  if (effectiveSite.repoUrl && !effectiveSite.repoUrl.includes('your-org')) {
+    lines.push(`- GitHub: ${effectiveSite.repoUrl}`)
   }
   lines.push(`- Full docs for LLMs: ${baseUrl}/llms-full.txt`)
   lines.push(`- Agent discovery (ai.txt): ${baseUrl}/ai.txt`)
@@ -33,9 +33,19 @@ export async function GET(request: Request) {
   lines.push(`- JSON-LD: append \`?format=ldjson\` or send \`Accept: application/ld+json\``)
   lines.push(`- Markdown: append \`?format=md\` or send \`Accept: text/markdown\``)
   lines.push(`- Per-page API: ${baseUrl}/api/docs/{page-id}`)
+  lines.push(`- Search API: ${baseUrl}/api/search?q={query}`)
   lines.push(`- Capability manifest (skill): ${baseUrl}/skill.md`)
   lines.push(`- Agent guidance (editing these docs): ${baseUrl}/AGENTS.md`)
   lines.push(`- MCP server (attach docs as native tools): ${baseUrl}/api/mcp`)
+  lines.push(`- Agent readiness: ${baseUrl}/api/agent-readiness`)
+  lines.push('')
+  lines.push('### Recommended workflow')
+  lines.push('')
+  lines.push('1. Use this index, the search API, or `search_docs` before choosing a page.')
+  lines.push('2. Read the smallest set of relevant pages and follow their prerequisite links.')
+  lines.push('3. Treat the published docs as the source of truth. Label inferences and say when evidence is missing.')
+  lines.push('4. Cite the canonical human page URLs, not only API endpoints.')
+  lines.push('5. Use `/AGENTS.md` before editing a repository. The public MCP server is read-only.')
   lines.push('')
 
   // Sections grouped by tab > group
@@ -74,7 +84,7 @@ export async function GET(request: Request) {
 
   // Surface a stale-THALLY_SITE_URL misconfiguration (all links above would be
   // dead): warns in server logs and flags it on the response for tooling.
-  const mismatch = siteUrlMismatch(new URL(request.url).origin)
+  const mismatch = siteUrlMismatch(baseUrl)
 
   return new Response(body, {
     headers: {

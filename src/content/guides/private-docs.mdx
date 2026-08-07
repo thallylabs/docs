@@ -1,0 +1,68 @@
+---
+title: Protect private documentation
+navTitle: Private docs
+description: Require a shared visitor password for Thally pages and verify which machine endpoints remain publicly reachable.
+---
+
+Set a visitor password when documentation pages should not be readable without
+shared access. This is separate from authentication for the `/admin` dashboard.
+
+## Enable the visitor gate
+
+Set `THALLY_ACCESS_PASSWORD` in the hosting provider:
+
+```bash
+THALLY_ACCESS_PASSWORD=a-long-random-visitor-password
+```
+
+Redeploy the site. A visitor who opens a protected page is redirected to
+`/access`, then returned to the requested page after entering the password.
+Access is stored in a secure, HTTP-only cookie for seven days.
+
+Do not commit this password to `.env`, `docs.json`, or the repository. Use the
+host's encrypted secret settings.
+
+## Manage the password from Thally Cloud
+
+On a connected Thally Cloud deployment, an Editor or Owner can set a hashed
+visitor password under **Admin → Settings → Access & authentication**. The
+managed setting takes precedence when it is present.
+
+For a self-hosted site, keep `THALLY_ACCESS_PASSWORD` set because middleware
+uses its presence to enable the edge gate.
+
+## Understand the boundary
+
+The visitor gate protects documentation pages and their protected content
+routes. Some machine and service endpoints intentionally remain reachable so
+external systems can discover authentication requirements or deliver signed
+events. These include crawler-control and agent-discovery documents, admin
+authentication, analytics ingestion, the Cloud handshake, and Thally Track
+webhooks.
+
+Review `/robots.txt`, `/llms.txt`, and `/.well-known/` on the deployed site.
+Do not place confidential prose in public discovery metadata, site identity,
+or endpoint descriptions merely because page access is gated.
+
+## Verify access
+
+1. Open a documentation page in a private browser window.
+2. Confirm it redirects to `/access`.
+3. Try an incorrect password and confirm access is denied.
+4. Enter the correct password and confirm the original page opens.
+5. Close the private session and verify the page is protected again.
+
+Also test admin sign-in separately. `THALLY_ACCESS_PASSWORD` does not secure
+`/admin`; configure the methods in [Manage the live site](/guides/admin-dashboard).
+
+## Disable protection
+
+Remove `THALLY_ACCESS_PASSWORD` from the host and clear the managed access
+setting, then redeploy. Verify in a private browser window that pages are
+public.
+
+## Next steps
+
+- [Environment variables](/guides/environment-variables)
+- [Deploy your documentation](/guides/deploying)
+- [Admin dashboard and team access](/guides/admin-dashboard)

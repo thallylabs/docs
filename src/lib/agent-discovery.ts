@@ -1,33 +1,37 @@
-import { siteConfig } from '@/data/site'
 import { getI18nConfig } from '@/data/docs'
 import { getSiteUrl } from '@/lib/site-url'
+import type { SiteIdentity } from '@/lib/site-config'
 
 const baseUrl = getSiteUrl()
 
-export function buildAgentAlternateLinks(href: string) {
-  const pageUrl = `${baseUrl}${href}`
+export function buildAgentAlternateLinks(href: string, siteUrl = baseUrl) {
+  const pageUrl = `${siteUrl}${href}`
   return {
     'application/json': `${pageUrl}?format=json`,
     'application/ld+json': `${pageUrl}?format=ldjson`,
   }
 }
 
-export function buildAiTxtBody(): string {
+export function buildAiTxtBody(identity: SiteIdentity, siteUrl = baseUrl): string {
   const i18n = getI18nConfig()
   const lines: Array<string> = [
-    `# ${siteConfig.name} AI Discovery File`,
+    `# ${identity.name} AI Discovery File`,
     '# This file describes how AI agents and automated tools can interact with this documentation site.',
     '',
-    `Site-Name: ${siteConfig.name}`,
-    `Site-Description: ${siteConfig.description}`,
-    `Site-URL: ${baseUrl}`,
+    `Site-Name: ${identity.name}`,
+    `Site-Description: ${identity.description}`,
+    `Site-URL: ${siteUrl}`,
     'Docs-Format: application/json, application/ld+json, text/markdown',
-    `Docs-API: ${baseUrl}/api/docs/{slug}`,
-    `Docs-Index: ${baseUrl}/api/docs-index`,
-    `Docs-LLMs: ${baseUrl}/llms.txt`,
-    `Docs-LLMs-Full: ${baseUrl}/llms-full.txt`,
-    `Docs-MCP: ${baseUrl}/api/mcp`,
-    `Docs-OpenAPI: ${baseUrl}/openapi.yaml`,
+    `Docs-API: ${siteUrl}/api/docs/{slug}`,
+    `Docs-Index: ${siteUrl}/api/docs-index`,
+    `Docs-LLMs: ${siteUrl}/llms.txt`,
+    `Docs-LLMs-Full: ${siteUrl}/llms-full.txt`,
+    `Docs-Skill: ${siteUrl}/skill.md`,
+    `Docs-Agent-Guidance: ${siteUrl}/AGENTS.md`,
+    `Docs-Search: ${siteUrl}/api/search?q={query}`,
+    `Docs-Agent-Readiness: ${siteUrl}/api/agent-readiness`,
+    `Docs-MCP: ${siteUrl}/api/mcp`,
+    `Docs-OpenAPI: ${siteUrl}/openapi.yaml`,
     `Docs-Locale-Default: ${i18n?.defaultLocale ?? 'en'}`,
   ]
 
@@ -35,8 +39,8 @@ export function buildAiTxtBody(): string {
     lines.push(`Docs-Locales: ${i18n.locales.map((l) => l.code).join(', ')}`)
   }
 
-  if (siteConfig.repoUrl && !siteConfig.repoUrl.includes('your-org')) {
-    lines.push(`Docs-Repository: ${siteConfig.repoUrl}`)
+  if (identity.repoUrl && !identity.repoUrl.includes('your-org')) {
+    lines.push(`Docs-Repository: ${identity.repoUrl}`)
   }
 
   lines.push(
@@ -49,11 +53,20 @@ export function buildAiTxtBody(): string {
     '# ?format=ldjson                 → explicit JSON-LD override',
     '# ?format=md                     → explicit Markdown override',
     '',
+    '# Agent operating instructions',
+    '# Search or read the index before selecting pages.',
+    '# Cite canonical page URLs and distinguish documented facts from inference.',
+    '# Read /AGENTS.md before editing. The public /api/mcp endpoint is read-only.',
+    '',
     'Allow: /',
     'Allow: /llms.txt',
     'Allow: /llms-full.txt',
+    'Allow: /skill.md',
+    'Allow: /AGENTS.md',
     'Allow: /api/docs/',
     'Allow: /api/docs-index',
+    'Allow: /api/search',
+    'Allow: /api/agent-readiness',
     'Allow: /api/mcp',
     'Disallow: /api/chat',
     'Disallow: /api/feedback',

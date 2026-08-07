@@ -1,6 +1,6 @@
-import Link from 'next/link'
-import { siteConfig } from '@/data/site'
+import type { SiteLink } from '@/data/site'
 import type { DocsJsonFooter } from '@/data/docs'
+import { IntentPrefetchLink } from '@/components/navigation/intent-prefetch-link'
 
 // Social icon SVGs (inline, no extra dep needed)
 function GithubIcon({ className }: { className?: string }) {
@@ -45,9 +45,11 @@ const SOCIAL_ICONS: Record<string, React.ComponentType<{ className?: string }>> 
 
 interface FooterProps {
   footerConfig?: DocsJsonFooter | null
+  siteName: string
+  siteLinks: Array<SiteLink>
 }
 
-export function Footer({ footerConfig }: FooterProps) {
+export function Footer({ footerConfig, siteName, siteLinks }: FooterProps) {
   const hasSocials = footerConfig?.socials && Object.keys(footerConfig.socials).length > 0
   const hasColumns = footerConfig?.links && footerConfig.links.length > 0
 
@@ -59,7 +61,7 @@ export function Footer({ footerConfig }: FooterProps) {
             <div className="mb-8 grid grid-cols-2 gap-8 sm:grid-cols-3 lg:grid-cols-4">
               {footerConfig!.links!.map((col) => (
                 <div key={col.heading}>
-                  <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-foreground/50">
+                  <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-foreground/70">
                     {col.heading}
                   </h3>
                   <ul className="space-y-2">
@@ -72,14 +74,17 @@ export function Footer({ footerConfig }: FooterProps) {
                               href={item.href}
                               target="_blank"
                               rel="noreferrer"
-                              className="text-sm text-foreground/60 hover:text-foreground"
+                              className="text-sm text-foreground/75 hover:text-foreground"
                             >
                               {item.label}
                             </a>
                           ) : (
-                            <Link href={item.href} prefetch={false} className="text-sm text-foreground/60 hover:text-foreground">
+                            <IntentPrefetchLink
+                              href={item.href}
+                              className="text-sm text-foreground/75 hover:text-foreground"
+                            >
                               {item.label}
-                            </Link>
+                            </IntentPrefetchLink>
                           )}
                         </li>
                       )
@@ -89,8 +94,8 @@ export function Footer({ footerConfig }: FooterProps) {
               ))}
             </div>
           )}
-          <div className="flex flex-col gap-3 text-sm text-foreground/60 sm:flex-row sm:items-center sm:justify-between">
-            <p>© {new Date().getFullYear()} {siteConfig.name}. All rights reserved.</p>
+          <div className="flex flex-col gap-3 text-sm text-foreground/75 sm:flex-row sm:items-center sm:justify-between">
+            <p>© {new Date().getFullYear()} {siteName}. All rights reserved.</p>
             {hasSocials && (
               <div className="flex items-center gap-3">
                 {Object.entries(footerConfig!.socials!).map(([key, href]) => {
@@ -119,13 +124,13 @@ export function Footer({ footerConfig }: FooterProps) {
   // Default footer (no footerConfig)
   return (
     <footer className="border-t border-border/60 bg-muted/30">
-      <div className="flex flex-col gap-3 px-4 py-6 text-sm text-foreground/60 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-        <p>© {new Date().getFullYear()} {siteConfig.name}. All rights reserved.</p>
+      <div className="flex flex-col gap-3 px-4 py-6 text-sm text-foreground/75 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+        <p>© {new Date().getFullYear()} {siteName}. All rights reserved.</p>
         <div className="flex gap-4">
-          {siteConfig.links.map((link) => (
-            <Link key={link.href} href={link.href} prefetch={false} className="hover:text-foreground">
+          {siteLinks.map((link) => (
+            <IntentPrefetchLink key={link.href} href={link.href} className="hover:text-foreground">
               {link.label}
-            </Link>
+            </IntentPrefetchLink>
           ))}
         </div>
       </div>

@@ -1,0 +1,72 @@
+---
+title: Choose the right content type
+navTitle: Content types
+description: Structure tutorials, how-to guides, concepts, references, and release notes so readers can find the kind of answer they need.
+---
+
+Start each page with one reader goal. Separating learning, task, explanation,
+and lookup content makes a documentation set easier to scan and maintain.
+
+## Tutorial
+
+Use a tutorial to help a new reader reach a complete first result. Provide the
+prerequisites, a guided sequence, a clear verification step, and focused next
+tasks.
+
+The [Quickstart](/quickstart) is a tutorial: it creates a site, adds a page, and
+checks the result in one path.
+
+## How-to guide
+
+Use a how-to guide for a specific job the reader already understands, such as
+deploying to Cloudflare or protecting a site with a password.
+
+A useful task page usually follows this order:
+
+1. State the result.
+2. List prerequisites.
+3. Give the shortest reliable procedure.
+4. Show how to verify it.
+5. Cover likely failures near the task.
+6. Link to the next related jobs.
+
+Name task pages with verbs: **Deploy to Vercel**, **Add reusable snippets**, or
+**Configure the API playground**.
+
+## Concept
+
+Use a concept page to explain how a system behaves or why a decision matters.
+Concept pages should clarify a mental model, not hide a long setup procedure.
+
+Examples include [Thally architecture](/architecture) and the
+[product-change pipeline](/product-change-pipeline).
+
+## Reference
+
+Use a reference page for complete, scannable facts: configuration fields,
+commands, components, environment variables, or API endpoints. Prefer tables,
+signatures, defaults, and constraints over narrative.
+
+Reference pages should not be the only place a beginner can discover a task.
+Link to them from the relevant guide, then link back to a practical example.
+
+## Changelog entry
+
+Use the changelog for a dated product change. Explain what changed, who it
+affects, and what the reader needs to do. Do not use it as a substitute for
+updating the permanent guide or reference page.
+
+## Page checklist
+
+- Does the title match one reader intent?
+- Is the expected result clear in the first paragraph?
+- Are prerequisites before the instructions?
+- Can the reader verify success?
+- Are examples real and copyable?
+- Does the page link to the next task instead of repeating it?
+
+## Next steps
+
+- [Create and edit pages](/guides/writing-content)
+- [Frontmatter reference](/guides/frontmatter-reference)
+- [Organize your navigation](/guides/configuring-navigation)

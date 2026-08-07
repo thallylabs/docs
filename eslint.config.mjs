@@ -9,9 +9,15 @@ const eslintConfig = defineConfig([
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",
+    ".open-next/**",
+    ".thally-upload/**",
+    ".wrangler/**",
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generated from author-owned MDX before every build. Linting the emitted
+    // React modules is both redundant and prohibitively memory-intensive.
+    "src/generated/**",
     // Not source: the scaffolded demo and all package build output.
     "demo/**",
     "**/dist/**",

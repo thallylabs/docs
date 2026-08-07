@@ -93,9 +93,11 @@ const fontSans = Outfit({ subsets: ['latin'], variable: '--font-sans' })
 const fontMono = Fira_Code({ subsets: ['latin'], variable: '--font-mono' })
 ```
 
-## Analítica
+## Scripts de analítica de terceros
 
-Agrega analítica configurando uno o más proveedores en `siteConfig.analytics`. Los scripts se cargan automáticamente — no se necesitan cambios en el código.
+Inicializa Google Analytics, Plausible o PostHog configurando uno o más
+proveedores en `siteConfig.analytics`. El layout raíz de Thally renderiza el
+cargador cuando este objeto existe, por lo que no necesitas editar el layout.
 
 ```ts
 export const siteConfig: SiteConfig = {
@@ -111,7 +113,10 @@ export const siteConfig: SiteConfig = {
 }
 ```
 
-Deja `analytics` sin definir para deshabilitar todo el seguimiento.
+Deja `analytics` sin definir si no quieres cargar estos scripts de terceros.
+Esta opción carga los SDK de los proveedores; no sustituye la configuración de
+navegación de página única, eventos personalizados, privacidad o consentimiento
+específica de cada proveedor.
 
 ## Selector de versión
 
