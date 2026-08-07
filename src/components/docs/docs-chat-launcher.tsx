@@ -46,13 +46,18 @@ export function DocsChatLauncher({
   const [Chat, setChat] = useState<ComponentType<DocsChatProps> | null>(null)
   const [status, setStatus] = useState<DocsChatStatus | null>(null)
   const [loading, setLoading] = useState(false)
-  const [hidden, setHidden] = useState(false)
+  const [initialPrompt, setInitialPrompt] = useState<string>()
   const statusRequestRef = useRef<Promise<DocsChatStatus | null> | null>(null)
 
   const loadStatus = useCallback(() => {
     if (!statusRequestRef.current) {
       statusRequestRef.current = fetch('/api/chat-status')
-        .then((response) => (response.ok ? response.json() as Promise<DocsChatStatus> : null))
+        .then(async (response) => {
+          if (!response.ok) return null
+          const contentType = response.headers.get('content-type') ?? ''
+          if (!contentType.includes('application/json')) return null
+          return response.json() as Promise<DocsChatStatus>
+        })
         .catch(() => null)
     }
     return statusRequestRef.current
@@ -61,16 +66,18 @@ export function DocsChatLauncher({
   useEffect(() => {
     let active = true
     void loadStatus().then((liveStatus) => {
-      if (!active) return
+      if (!active || !liveStatus) return
+      // Refresh label / configured state only. Visibility is owned by the
+      // docs layout (`ai.chat`) — hiding here after first paint made the FAB
+      // flash then disappear whenever status lagged or disagreed.
       setStatus(liveStatus)
-      if (liveStatus?.show === false) setHidden(true)
     })
     return () => {
       active = false
     }
   }, [loadStatus])
 
-  async function openChat() {
+  const openChat = useCallback(async () => {
     if (loading) return
     setLoading(true)
 
@@ -79,26 +86,32 @@ export function DocsChatLauncher({
       loadStatus(),
     ])
 
-    if (liveStatus?.show === false) {
-      setHidden(true)
-      setLoading(false)
-      return
-    }
-
     setStatus(liveStatus)
     setChat(() => module.DocsChat)
     setLoading(false)
-  }
+  }, [loadStatus, loading])
 
-  if (hidden) return null
+  useEffect(() => {
+    function handleAskAssistant(event: Event) {
+      const prompt = (event as CustomEvent<{ prompt?: string }>).detail?.prompt
+      if (prompt) setInitialPrompt(prompt)
+      void openChat()
+    }
+    window.addEventListener('thally:ask-assistant', handleAskAssistant)
+    return () => window.removeEventListener('thally:ask-assistant', handleAskAssistant)
+  }, [openChat])
+
+  const chatEnabled = status?.configured ?? true
 
   if (Chat) {
     return (
       <Chat
         label={label}
         icon={icon}
+        enabled={chatEnabled}
         initiallyOpen
         initialStatus={status}
+        initialPrompt={initialPrompt}
       />
     )
   }
@@ -106,7 +119,7 @@ export function DocsChatLauncher({
   return (
     <button
       type="button"
-      onClick={openChat}
+      onClick={() => void openChat()}
       disabled={loading}
       aria-label={`Open ${label}`}
       className="fixed bottom-6 right-6 z-50 flex h-14 w-14 flex-col items-center justify-center gap-0.5 rounded-2xl bg-primary text-primary-foreground shadow-lg transition-all hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-75"

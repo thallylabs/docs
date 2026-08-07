@@ -250,6 +250,7 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
     !pathname.startsWith('/api/admin') &&
     !pathname.startsWith('/api/analytics') &&
     !pathname.startsWith('/api/access') &&
+    !pathname.startsWith('/api/chat') &&
     // The same-origin Thally Cloud handshake authenticates server-to-server with the
     // site token. It must remain reachable when the docs themselves are gated.
     pathname !== '/api/cloud/handshake' &&

@@ -57,7 +57,9 @@ export default async function DocsLayout({ children }: DocsLayoutProps) {
       >
         {children}
       </SiteShell>
-      <DocsChatLauncher label={aiConfig.label} icon={aiConfig.icon} />
+      {aiConfig.chat ? (
+        <DocsChatLauncher label={aiConfig.label} icon={aiConfig.icon} />
+      ) : null}
     </>
   )
 }

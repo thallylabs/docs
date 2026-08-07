@@ -57,6 +57,8 @@ export interface DocsChatStatus {
   show?: boolean
   label?: string
   disclaimer?: string
+  /** Whether a chat backend key/service is ready (vs. config-enabled but unconfigured). */
+  configured?: boolean
 }
 
 export interface DocsChatProps {
@@ -67,6 +69,7 @@ export interface DocsChatProps {
   enabled?: boolean
   initiallyOpen?: boolean
   initialStatus?: DocsChatStatus | null
+  initialPrompt?: string
 }
 
 export function DocsChat({
@@ -75,10 +78,10 @@ export function DocsChat({
   enabled = true,
   initiallyOpen = false,
   initialStatus,
+  initialPrompt,
 }: DocsChatProps) {
   const [open, setOpen] = useState(initiallyOpen)
   const [expanded, setExpanded] = useState(false)
-  const [chatShown, setChatShown] = useState(initialStatus?.show !== false)
   // Live admin overrides — SSR'd prop is the first-paint value; the chat-status
   // fetch swaps in the admin's custom name / disclaimer when set. Disclaimer
   // starts on its generic default so a safety notice always shows, even if the
@@ -86,7 +89,7 @@ export function DocsChat({
   const [liveLabel, setLiveLabel] = useState(initialStatus?.label || label)
   const [disclaimer, setDisclaimer] = useState(initialStatus?.disclaimer ?? DEFAULT_AI_DISCLAIMER)
   const [messages, setMessages] = useState<Message[]>([])
-  const [input, setInput] = useState('')
+  const [input, setInput] = useState(initialPrompt ?? '')
   const [loading, setLoading] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -125,16 +128,24 @@ export function DocsChat({
     setLoading(false)
   }, [])
 
-  // Respect the admin's live enable/disable toggle (hide if off) and pick up the
-  // admin's custom assistant name + disclaimer.
+  // Pick up the admin's custom assistant name + disclaimer. Visibility is owned
+  // by the docs layout / launcher — do not unmount from a late status fetch.
   useEffect(() => {
-    if (initialStatus) return
+    if (initialStatus) {
+      if (typeof initialStatus.label === 'string' && initialStatus.label) setLiveLabel(initialStatus.label)
+      if (typeof initialStatus.disclaimer === 'string') setDisclaimer(initialStatus.disclaimer)
+      return
+    }
     let active = true
     fetch('/api/chat-status')
-      .then((r) => (r.ok ? r.json() : { show: true }))
+      .then(async (r) => {
+        if (!r.ok) return null
+        const contentType = r.headers.get('content-type') ?? ''
+        if (!contentType.includes('application/json')) return null
+        return r.json()
+      })
       .then((d) => {
         if (!active || !d) return
-        if (d.show === false) setChatShown(false)
         if (typeof d.label === 'string' && d.label) setLiveLabel(d.label)
         if (typeof d.disclaimer === 'string') setDisclaimer(d.disclaimer)
       })
@@ -222,8 +233,6 @@ export function DocsChat({
       document.body.style.paddingRight = prevPad
     }
   }, [open])
-
-  if (!chatShown) return null
 
   return (
     <>
