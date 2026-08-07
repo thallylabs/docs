@@ -3,6 +3,28 @@ title: Registro de cambios
 description: Seguimiento de mejoras notables en la plantilla Thally.
 ---
 
+<Update label="Migraciones desde repositorio y plantilla" date="2026-07-28">
+
+- La detección automática interactiva de la CLI ahora recomienda el repositorio fuente de GitHub antes de rastrear un sitio público.
+- Continuar con una URL pública requiere aceptar que pueden ser necesarios ajustes manuales; `--platform auto` y `--yes` muestran la misma advertencia sin bloquear la automatización.
+- `migrate_docs` en el MCP ahora siempre crea la plantilla canónica de Thally en un destino nuevo o vacío.
+- Las importaciones MCP en un proyecto existente solo están disponibles mediante la herramienta explícita `import_docs`.
+
+Consulta [Migrando a Thally](/guides/migrating), la [Referencia CLI](/guides/cli-reference) y la [Referencia del servidor MCP](/guides/mcp-server).
+
+</Update>
+
+<Update label="Migraciones desde Docusaurus" date="2026-07-22">
+
+- `create-thally-docs migrate` ahora pregunta si Mintlify o Docusaurus aloja la documentación, con `--platform` para scripts y CI.
+- Las importaciones públicas de Docusaurus conservan las páginas de la versión actual, la jerarquía de navegación, rutas sensibles a mayúsculas, redirecciones, avisos, pestañas, tablas y código resaltado.
+- Las importaciones desde repositorios admiten proyectos Docusaurus dentro de monorepos y plugins de documentación adicionales sin ejecutar la configuración fuente.
+- Las migraciones completas se verificaron con Relay, Algolia DocSearch y Hasura DDN.
+
+Consulta [Migrando a Thally](/guides/migrating) y la [Referencia CLI](/guides/cli-reference).
+
+</Update>
+
 ## v0.1.0
 
 Lanzamiento inicial de la plantilla Thally de sala limpia.

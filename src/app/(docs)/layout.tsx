@@ -2,9 +2,8 @@ import { SiteShell } from '@/components/layout/site-shell'
 import { SidebarCollectionsHydrator } from '@/components/layout/sidebar-hydrator'
 import { getSidebarCollections, getAiConfig, getI18nConfig, getNavbarConfig, getFooterConfig } from '@/data/docs'
 import type { NavigationSection } from '@/data/docs'
-import { getClientSearchCorpus } from '@/lib/search/corpus'
 import { buildApiNavigation } from '@/data/api-reference'
-import { DocsChat } from '@/components/docs/docs-chat'
+import { DocsChatLauncher } from '@/components/docs/docs-chat-launcher'
 import { getCloud } from '@/lib/cloud-bridge'
 
 interface DocsLayoutProps {
@@ -34,7 +33,6 @@ export default async function DocsLayout({ children }: DocsLayoutProps) {
     }
     return collection
   })
-  const searchIndex = getClientSearchCorpus()
   const aiConfig = getAiConfig()
   const i18nConfig = getI18nConfig()
   const navbarConfig = getNavbarConfig()
@@ -45,15 +43,19 @@ export default async function DocsLayout({ children }: DocsLayoutProps) {
       <SidebarCollectionsHydrator collections={collections} />
       <SiteShell
         initialCollections={collections}
-        searchIndex={searchIndex}
         i18nConfig={i18nConfig}
         navbarConfig={navbarConfig}
         footerConfig={footerConfig}
       >
         {children}
       </SiteShell>
-      {aiConfig.chat && <DocsChat label={aiConfig.label} icon={aiConfig.icon} enabled={Boolean(getCloud()?.ai?.isChatConfigured())} />}
+      {aiConfig.chat ? (
+        <DocsChatLauncher
+          label={aiConfig.label}
+          icon={aiConfig.icon}
+          enabled={Boolean(getCloud()?.ai?.isChatConfigured())}
+        />
+      ) : null}
     </>
   )
 }
-

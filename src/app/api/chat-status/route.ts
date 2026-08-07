@@ -11,13 +11,21 @@ export const runtime = 'nodejs'
  * Lets the admin toggle chat and rename/relabel the assistant live (F1 override)
  * without making every static docs page dynamic — the client DocsChat fetches
  * this, hides itself when disabled, and reflects the admin's name + disclaimer.
- * Always hidden when the deployment has no AI service (OSS free tier).
+ * `configured` reports whether a chat backend is ready; the FAB still shows when
+ * chat is enabled in config so visitors see the setup notice if needed.
  */
 export async function GET() {
   const settings = await getAdminSettings()
   const ai = getAiConfig()
-  const show = Boolean(getCloud()?.ai) && (settings.chatEnabled ?? Boolean(ai.chat))
+  // Visibility follows docs.json / admin toggle. Backend readiness is separate
+  // (`enabled` on the launcher) — requiring getCloud()?.ai here hid the FAB on
+  // every OSS stub deployment even when ai.chat was true.
+  const show = settings.chatEnabled ?? Boolean(ai.chat)
   const label = settings.aiLabel ?? ai.label ?? 'Ask AI'
   const disclaimer = settings.aiDisclaimer ?? DEFAULT_AI_DISCLAIMER
-  return NextResponse.json({ show, label, disclaimer }, { headers: { 'Cache-Control': 'no-store' } })
+  const configured = Boolean(getCloud()?.ai?.isChatConfigured())
+  return NextResponse.json(
+    { show, label, disclaimer, configured },
+    { headers: { 'Cache-Control': 'no-store' } },
+  )
 }

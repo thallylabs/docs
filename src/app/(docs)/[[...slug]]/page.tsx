@@ -1,17 +1,18 @@
 import type { Metadata } from 'next'
+import dynamic from 'next/dynamic'
 import { notFound } from 'next/navigation'
 import { DocLayout } from '@/components/docs/doc-layout'
 import { getDocEntries, getI18nConfig, getNavContext } from '@/data/docs'
 import { getDocFromParams } from '@/data/get-doc'
 import { getSiteUrl } from '@/lib/site-url'
-import { getApiOperationByKey } from '@/data/api-reference'
-import { DocHeader } from '@/components/docs/doc-header'
-import { ApiLayout } from '@/components/api/api-layout'
-import { OperationPanel } from '@/components/api/operation-panel'
 import { JsonLdScript } from '@/components/seo/json-ld-script'
 import { buildAgentAlternateLinks } from '@/lib/agent-discovery'
 import { buildDocPageJsonLd } from '@/lib/json-ld'
 import { buildOgImageUrl } from '@/lib/og'
+
+const OpenApiDocPage = dynamic(
+  () => import('@/components/api/openapi-doc-page').then((module) => module.OpenApiDocPage),
+)
 
 function localizedHref(href: string, code: string, defaultLocale: string) {
   return code === defaultLocale ? href : `/${code}${href}`
@@ -102,22 +103,7 @@ export default async function DocsPage({ params }: PageProps) {
   })
 
   if (doc.openapi) {
-    const operationNode = await getApiOperationByKey(doc.openapi.method, doc.openapi.path, doc.openapi.specId)
-    if (!operationNode) {
-      notFound()
-    }
-
-    return (
-      <div className="space-y-10">
-        <JsonLdScript data={jsonLd} />
-        <div className="not-prose">
-          <DocHeader doc={doc} />
-        </div>
-        <ApiLayout>
-          <OperationPanel operation={operationNode.operation} />
-        </ApiLayout>
-      </div>
-    )
+    return <OpenApiDocPage doc={doc} jsonLd={jsonLd} />
   }
 
   const Content = doc.component

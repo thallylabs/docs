@@ -6,10 +6,9 @@ import { Sidebar } from '@/components/navigation/sidebar'
 import { PageContainer } from '@/components/layout/sections'
 import { layout, shell } from '@/config/layout'
 import type { SidebarCollection, DocsJsonNavbar, DocsJsonFooter } from '@/data/docs'
-import type { SearchCorpusRecord } from '@/components/search/command-search'
 import { useSidebarCollectionsStore } from './sidebar-store'
 import { usePathname, useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 export interface I18nConfig {
   defaultLocale: string
@@ -55,13 +54,12 @@ function normalizePath(value: string) {
 interface SiteShellProps {
   children: React.ReactNode
   initialCollections: Array<SidebarCollection>
-  searchIndex: Array<SearchCorpusRecord>
   i18nConfig?: I18nConfig | null
   navbarConfig?: DocsJsonNavbar | null
   footerConfig?: DocsJsonFooter | null
 }
 
-export function SiteShell({ children, initialCollections, searchIndex, i18nConfig, navbarConfig, footerConfig }: SiteShellProps) {
+export function SiteShell({ children, initialCollections, i18nConfig, navbarConfig, footerConfig }: SiteShellProps) {
   const hydratedCollections = useSidebarCollectionsStore((state) => state.collections)
   const collections = hydratedCollections.length > 0 ? hydratedCollections : initialCollections
   const pathname = usePathname()
@@ -85,25 +83,14 @@ export function SiteShell({ children, initialCollections, searchIndex, i18nConfi
     navigableCollections.find((collection) => collectionContainsPath(collection, pathname, currentPath)) ??
     navigableCollections[0] ??
     collections[0]
-  // Manual override: set when user clicks a tab, cleared when pathname moves to a different collection
+  // Manual override: set when the user clicks a tab and ignored once navigation
+  // leaves that collection. Deriving validity here avoids an effect-driven state reset.
   const [selectedCollectionId, setSelectedCollectionId] = useState<SidebarCollection['id'] | null>(null)
-
-  // Reset manual override whenever the user navigates to a page outside the selected collection
-  useEffect(() => {
-    if (!selectedCollectionId) return
-    const selected = navigableCollections.find((c) => c.id === selectedCollectionId)
-    if (selected && !collectionContainsPath(selected, pathname)) {
-      setSelectedCollectionId(null)
-    }
-  }, [pathname])
-
-  const activeCollection = (() => {
-    if (selectedCollectionId) {
-      const selected = navigableCollections.find((c) => c.id === selectedCollectionId)
-      if (selected) return selected
-    }
-    return matchedCollection
-  })()
+  const selectedCollection = navigableCollections.find((collection) => collection.id === selectedCollectionId)
+  const activeCollection =
+    selectedCollection && collectionContainsPath(selectedCollection, pathname, currentPath)
+      ? selectedCollection
+      : matchedCollection
 
   if (!activeCollection) {
     return null
@@ -121,40 +108,37 @@ export function SiteShell({ children, initialCollections, searchIndex, i18nConfi
     )?.id ?? activeCollection.id
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden bg-background text-foreground">
-      <div className={`flex min-h-screen w-full ${shell.wrapper}`}>
+    <div className="thally-docs-root min-h-screen w-full overflow-x-clip bg-background text-foreground">
+      <TopBar
+        collections={collections}
+        activeCollectionId={activeTabId}
+        onCollectionChange={(id) => {
+          const target = collections.find((collection) => collection.id === id)
+          if (!target) return
+          setSelectedCollectionId(target.id)
+          const targetHref = target.href
+          const firstHref = target.sections[0]?.items[0]?.href
+          if (targetHref && !matchesPath(targetHref, pathname)) {
+            router.push(targetHref)
+            return
+          }
+          if (firstHref && !collectionContainsPath(target, pathname)) {
+            router.push(firstHref)
+          }
+        }}
+        activeSections={activeCollection.sections}
+        i18nConfig={i18nConfig ?? null}
+        currentLocale={currentLocale}
+        currentPath={currentPath}
+        navbarConfig={navbarConfig ?? null}
+      />
+      <div className={`thally-docs-shell flex min-h-[calc(100dvh-48px)] w-full ${shell.wrapper}`}>
         <Sidebar
           sections={activeCollection.sections}
           title={activeCollection.label}
         />
-        <div className="flex min-h-screen w-full min-w-0 flex-1 flex-col">
-          <TopBar
-            collections={collections}
-            activeCollectionId={activeTabId}
-            onCollectionChange={(id) => {
-              const target = collections.find((collection) => collection.id === id)
-              if (!target) {
-                return
-              }
-              setSelectedCollectionId(target.id)
-              const targetHref = target.href
-              const firstHref = target.sections[0]?.items[0]?.href
-              if (targetHref && !matchesPath(targetHref, pathname)) {
-                router.push(targetHref)
-                return
-              }
-              if (firstHref && !collectionContainsPath(target, pathname)) {
-                router.push(firstHref)
-              }
-            }}
-            activeSections={activeCollection.sections}
-            searchIndex={searchIndex}
-            i18nConfig={i18nConfig ?? null}
-            currentLocale={currentLocale}
-            currentPath={currentPath}
-            navbarConfig={navbarConfig ?? null}
-          />
-          <main className="flex-1 py-6 sm:py-8 lg:py-10">
+        <div className="flex min-h-[calc(100dvh-48px)] w-full min-w-0 flex-1 flex-col">
+          <main id="main-content" className="thally-docs-main flex-1 py-[34px] pb-24">
             <PageContainer className={layout.pageGap}>{children}</PageContainer>
           </main>
           <Footer footerConfig={footerConfig ?? null} />
@@ -163,4 +147,3 @@ export function SiteShell({ children, initialCollections, searchIndex, i18nConfi
     </div>
   )
 }
-

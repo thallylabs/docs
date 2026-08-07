@@ -3,11 +3,15 @@ title: Migrating to Thally
 description: Move your existing documentation from Mintlify, Docusaurus, GitBook, or any Markdown-based platform to Thally in one command.
 ---
 
-The `create-thally-docs migrate` command clones a GitHub docs repository and converts it into a running Thally project — no manual copying, no reformatting.
+The `create-thally-docs migrate` command imports either a public documentation site or a GitHub docs repository and converts it into a running Thally project — no manual copying or navigation rebuilding.
 
 ```bash
-npx create-thally-docs migrate https://github.com/your-org/your-docs my-docs
+npx create-thally-docs@latest migrate https://github.com/your-org/your-docs my-docs
 ```
+
+<Note type="info" title="Repository migration is recommended">
+A GitHub repository preserves authored navigation, assets, OpenAPI files, redirects, and MDX structure that may not be recoverable from a rendered website. Use a live docs URL only when the source repository is unavailable.
+</Note>
 
 ---
 
@@ -15,15 +19,21 @@ npx create-thally-docs migrate https://github.com/your-org/your-docs my-docs
 
 <Steps>
 
-<Step title="Clone the source repo">
+<Step title="Choose the source platform">
 
-Thally does a shallow `git clone` of the repository to a temporary directory. No authentication is required for public repos.
+In an interactive migration, Thally asks whether the source is hosted by Mintlify, Docusaurus, or another platform. This selects the platform-specific importer before discovery starts.
+
+If you choose **Other / detect automatically** with a live URL, the CLI offers the source GitHub repository first. Continuing with the website requires confirmation that the result may need manual alignment and recommends the [Thally MCP](/guides/mcp-server) for refinement.
+
+For scripts and CI, pass `--platform mintlify`, `--platform docusaurus`, or `--platform auto`. Explicit `--platform auto` and `--yes` runs remain non-interactive, print the live-site limitation, and treat it as accepted.
 
 </Step>
 
-<Step title="Auto-detect the platform and structure">
+<Step title="Discover pages and navigation">
 
-Thally inspects the repo for platform config files to understand the existing navigation:
+For a GitHub URL, Thally performs a shallow clone and reads the authored content and platform configuration without executing it. This is the recommended auto-detection path. For a live docs URL, Thally reconstructs the site from its sitemap, rendered sidebars, redirects, and page content within the submitted docs path.
+
+Repository imports recognize these configuration files:
 
 | File | Platform detected |
 |------|-------------------|
@@ -35,13 +45,13 @@ Thally inspects the repo for platform config files to understand the existing na
 | `.starlight/` | Starlight |
 | *(none of the above)* | Directory structure used |
 
-The docs directory is also auto-detected: `docs/`, `documentation/`, `content/`, `src/content/`, `pages/`, or the repo root.
+The docs directory is also auto-detected: `docs/`, `documentation/`, `content/`, `src/content/`, `pages/`, or the repo root. Docusaurus projects nested in monorepos and additional `plugin-content-docs` instances are discovered automatically.
 
 </Step>
 
 <Step title="Import all documentation files">
 
-Every `.md` and `.mdx` file is read directly. Frontmatter (`title`, `description`, `keywords`) is preserved. Platform-specific MDX components are converted to their Thally equivalents.
+Repository migrations read every `.md` and `.mdx` file directly. Live-site migrations convert rendered documentation into portable MDX. Frontmatter, headings, links, code blocks, tables, tabs, and callouts are preserved where the source exposes them.
 
 Non-Markdown files (e.g. `.rst`) are converted to MDX using Claude if you provide an Anthropic API key.
 
@@ -65,21 +75,46 @@ All converted pages are written to `src/content/`. The `docs.json` navigation is
 
 ## Supported platforms
 
+### Select a platform
+
+Run without `--yes` to choose interactively:
+
+```bash
+npx create-thally-docs@latest migrate https://relay.dev/ relay-docs --max-pages 1000
+```
+
+For a non-interactive migration, select the platform explicitly:
+
+```bash
+npx create-thally-docs@latest migrate https://relay.dev/ relay-docs \
+  --platform docusaurus \
+  --max-pages 1000 \
+  --yes
+```
+
+<Warning>
+For auto-detection, prefer the source repository URL. A live URL can omit files and structure that are not present in the rendered site. Interactive runs require you to accept this limitation; `--platform auto` and `--yes` acknowledge it non-interactively.
+</Warning>
+
 ### Mintlify
 
 ```bash
-npx create-thally-docs migrate https://github.com/mintlify/starter my-docs
+npx create-thally-docs@latest migrate https://docs.example.com my-docs --platform mintlify
 ```
 
-Navigation is read from `docs.json` (Mintlify v3) or `mint.json`. OpenAPI specs in the `api-reference/` directory are detected and wired up automatically.
+Live sites and repositories are supported. Navigation is read from the rendered site, `docs.json` (Mintlify v3), or `mint.json`. OpenAPI specs in the `api-reference/` directory are detected and wired up automatically.
 
 ### Docusaurus
 
 ```bash
-npx create-thally-docs migrate https://github.com/facebook/docusaurus/tree/main/website/docs my-docs
+npx create-thally-docs@latest migrate https://relay.dev/ relay-docs --platform docusaurus
 ```
 
-Sidebar structure is parsed from `sidebars.js`. Docusaurus admonitions (`:::note`, `:::warning`, etc.) are converted to Thally callout components.
+For live sites, Thally reconstructs the current-version sidebar hierarchy, follows canonical redirects, preserves case-sensitive routes, and excludes legacy/next version trees. Docusaurus admonitions, tabs, tables, and syntax-highlighted code blocks are converted to compilable Thally MDX.
+
+For repositories, sidebar structure is parsed statically from `sidebars.js` or TypeScript equivalents. Nested monorepo projects, autogenerated categories, static assets, `@site` snippets, and additional docs plugins are supported. Source configuration is never executed.
+
+The Docusaurus importer is verified against the complete current documentation sets for [Relay](https://relay.dev/), [Algolia DocSearch](https://docsearch.algolia.com/docs/what-is-docsearch), and [Hasura DDN](https://hasura.io/docs/3.0/index/).
 
 ### GitBook
 
@@ -116,8 +151,10 @@ npx create-thally-docs migrate https://github.com/your-org/api-docs --into ./my-
 | `--into <dir>` | Merge into an existing project |
 | `--branch <name>` | Override the auto-detected git branch |
 | `--docs-dir <path>` | Override the auto-detected docs subdirectory |
+| `--platform <name>` | Source adapter: `mintlify`, `docusaurus`, or `auto` |
+| `--max-pages <count>` | Maximum live-site pages to import, from `1` to `1000` |
 | `--api-key <key>` | Anthropic API key (or set `ANTHROPIC_API_KEY`) for non-Markdown conversion |
-| `--yes`, `-y` | Skip confirmation prompts |
+| `--yes`, `-y` | Accept defaults and skip all interactive prompts, including platform selection |
 
 ---
 
@@ -129,7 +166,9 @@ If you're using Claude Code or Claude Desktop, you can trigger a migration throu
 Migrate the Mintlify starter repo into a new Thally project at ~/dev/my-docs
 ```
 
-The `migrate_docs` MCP tool accepts the same options as the CLI. See [MCP Server](/guides/mcp-server) for setup instructions.
+`migrate_docs` always scaffolds a fresh canonical Thally template before importing the source. Its target must be new or empty, so the result includes Thally's supported runtime, layout, navigation, and configuration.
+
+Use `import_docs` only when you explicitly want to import content into an existing Thally project without replacing its runtime. See [MCP Server](/guides/mcp-server) for setup instructions.
 
 ---
 

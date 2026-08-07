@@ -52,26 +52,43 @@ function TypingDots() {
   )
 }
 
-interface DocsChatProps {
+export interface DocsChatStatus {
+  show?: boolean
+  label?: string
+  disclaimer?: string
+  /** Whether a chat backend key/service is ready (vs. config-enabled but unconfigured). */
+  configured?: boolean
+}
+
+export interface DocsChatProps {
   label?: string
   icon?: string
   /** False when no Anthropic key is configured — show an upfront notice instead
    * of inviting a question that would 503. */
   enabled?: boolean
+  initiallyOpen?: boolean
+  initialStatus?: DocsChatStatus | null
+  initialPrompt?: string
 }
 
-export function DocsChat({ label = 'Ask AI', icon, enabled = true }: DocsChatProps) {
-  const [open, setOpen] = useState(false)
+export function DocsChat({
+  label = 'Ask AI',
+  icon,
+  enabled = true,
+  initiallyOpen = false,
+  initialStatus,
+  initialPrompt,
+}: DocsChatProps) {
+  const [open, setOpen] = useState(initiallyOpen)
   const [expanded, setExpanded] = useState(false)
-  const [chatShown, setChatShown] = useState(true)
   // Live admin overrides — SSR'd prop is the first-paint value; the chat-status
   // fetch swaps in the admin's custom name / disclaimer when set. Disclaimer
   // starts on its generic default so a safety notice always shows, even if the
   // fetch is slow or fails.
-  const [liveLabel, setLiveLabel] = useState(label)
-  const [disclaimer, setDisclaimer] = useState(DEFAULT_AI_DISCLAIMER)
+  const [liveLabel, setLiveLabel] = useState(initialStatus?.label || label)
+  const [disclaimer, setDisclaimer] = useState(initialStatus?.disclaimer ?? DEFAULT_AI_DISCLAIMER)
   const [messages, setMessages] = useState<Message[]>([])
-  const [input, setInput] = useState('')
+  const [input, setInput] = useState(initialPrompt ?? '')
   const [loading, setLoading] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -90,6 +107,16 @@ export function DocsChat({ label = 'Ask AI', icon, enabled = true }: DocsChatPro
   }, [open])
 
   useEffect(() => {
+    function handleAskAssistant(event: Event) {
+      const prompt = (event as CustomEvent<{ prompt?: string }>).detail?.prompt
+      if (prompt) setInput(prompt)
+      setOpen(true)
+    }
+    window.addEventListener('thally:ask-assistant', handleAskAssistant)
+    return () => window.removeEventListener('thally:ask-assistant', handleAskAssistant)
+  }, [])
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
 
@@ -98,15 +125,24 @@ export function DocsChat({ label = 'Ask AI', icon, enabled = true }: DocsChatPro
     setLoading(false)
   }, [])
 
-  // Respect the admin's live enable/disable toggle (hide if off) and pick up the
-  // admin's custom assistant name + disclaimer.
+  // Pick up the admin's custom assistant name + disclaimer. Visibility is owned
+  // by the docs layout / launcher — do not unmount from a late status fetch.
   useEffect(() => {
+    if (initialStatus) {
+      if (typeof initialStatus.label === 'string' && initialStatus.label) setLiveLabel(initialStatus.label)
+      if (typeof initialStatus.disclaimer === 'string') setDisclaimer(initialStatus.disclaimer)
+      return
+    }
     let active = true
     fetch('/api/chat-status')
-      .then((r) => (r.ok ? r.json() : { show: true }))
+      .then(async (r) => {
+        if (!r.ok) return null
+        const contentType = r.headers.get('content-type') ?? ''
+        if (!contentType.includes('application/json')) return null
+        return r.json()
+      })
       .then((d) => {
         if (!active || !d) return
-        if (d.show === false) setChatShown(false)
         if (typeof d.label === 'string' && d.label) setLiveLabel(d.label)
         if (typeof d.disclaimer === 'string') setDisclaimer(d.disclaimer)
       })
@@ -114,7 +150,7 @@ export function DocsChat({ label = 'Ask AI', icon, enabled = true }: DocsChatPro
     return () => {
       active = false
     }
-  }, [])
+  }, [initialStatus])
 
   const send = useCallback(async (text?: string) => {
     const content = (text ?? input).trim()
@@ -194,8 +230,6 @@ export function DocsChat({ label = 'Ask AI', icon, enabled = true }: DocsChatPro
       document.body.style.paddingRight = prevPad
     }
   }, [open])
-
-  if (!chatShown) return null
 
   return (
     <>

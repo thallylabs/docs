@@ -153,20 +153,33 @@ Show me all the pages in my docs project
 
 #### `migrate_docs`
 
-Clona un repositorio de documentación de GitHub y migra su contenido a un proyecto Thally.
+Crea una plantilla canónica nueva de Thally y después importa un sitio público de documentación o un repositorio de GitHub. El destino debe ser nuevo o estar vacío. Así, el proyecto migrado usa el runtime, el diseño, la navegación y la configuración compatibles con Thally en lugar del shell de la aplicación fuente.
 
 ```
-Migrate the Mintlify starter into a new project at /tmp/my-docs
+Migrate https://github.com/acme/docs into a new Thally project at /tmp/acme-docs
 ```
 
 | Parámetro | Requerido | Descripción |
 |-----------|----------|-------------|
-| `sourceUrl` | Sí | URL de GitHub del repositorio fuente |
-| `projectDir` | Sí | Ruta de destino (proyecto nuevo o existente) |
-| `into` | No | Migrar a un proyecto existente (predeterminado: `false`) |
+| `sourceUrl` | Sí | URL pública de documentación o URL de un repositorio de GitHub |
+| `projectDir` | Sí | Ruta de destino para el nuevo proyecto canónico de Thally |
 | `branch` | No | Rama de Git a clonar (se detecta automáticamente por defecto) |
 | `docsDir` | No | Subdirectorio de documentación en el repositorio (se detecta automáticamente) |
+| `platform` | No | `mintlify` o `docusaurus`; omitir para detección automática |
+| `maxPages` | No | Máximo de páginas públicas que se importarán (`1`–`1000`) |
 | `apiKey` | No | Clave de API de Anthropic para conversión de contenido no Markdown |
+
+---
+
+#### `import_docs`
+
+Importa contenido a un proyecto Thally existente sin crear ni reemplazar su runtime. Usa esta herramienta solo cuando se solicite explícitamente una importación en el mismo proyecto.
+
+```
+Import https://github.com/acme/api-docs into the existing Thally project at /workspace/docs
+```
+
+`import_docs` acepta las mismas opciones de fuente que `migrate_docs`, pero `projectDir` debe apuntar a un proyecto Thally existente. No actualiza una aplicación antigua o de terceros a la plantilla actual de Thally.
 
 ---
 

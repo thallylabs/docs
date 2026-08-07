@@ -43,21 +43,31 @@ npx create-thally-docs my-docs --yes
 
 ## create-thally-docs migrate
 
-Migrates an existing documentation repository from GitHub into a Thally project.
+Migrates a public documentation site or GitHub docs repository into a Thally project.
 
 ```bash
-npx create-thally-docs migrate <github-url> [output-dir] [options]
+npx create-thally-docs migrate <github-or-docs-url> [output-dir] [options]
 ```
 
-Thally clones the source repo, reads all Markdown and MDX files directly, converts navigation from the source platform's config, and writes everything into a ready-to-run Thally project.
+For a live URL, Thally discovers the sitemap, rendered navigation, redirects, and portable page content. For a GitHub URL, it clones the repository and reads Markdown, MDX, assets, and platform configuration statically. Both flows write a ready-to-run Thally project.
 
 **Supported source platforms:** Mintlify, Docusaurus, GitBook, Nextra, VitePress, Starlight, and any repo with plain Markdown files.
+
+<Note type="info" title="Use the source repository when possible">
+Repository migration is the recommended auto-platform flow because it preserves authored navigation, assets, OpenAPI files, redirects, and MDX structure. A live website migration reconstructs only what the deployed site exposes and may need manual alignment.
+</Note>
 
 ### Examples
 
 ```bash
-# Migrate into a new project at ./my-docs
+# Recommended: auto-detect from the source repository
 npx create-thally-docs migrate https://github.com/org/repo my-docs
+
+# Choose auto-detection interactively; the CLI will offer a GitHub repo first
+npx create-thally-docs migrate https://relay.dev/ relay-docs --max-pages 1000
+
+# Run the same Docusaurus migration without prompts
+npx create-thally-docs migrate https://relay.dev/ relay-docs --platform docusaurus --max-pages 1000 --yes
 
 # Derive the output dir from the repo name
 npx create-thally-docs migrate https://github.com/mintlify/starter
@@ -72,7 +82,9 @@ npx create-thally-docs migrate https://github.com/org/repo --into ./existing-doc
 ### What gets migrated
 
 - All `.md` and `.mdx` files are copied and converted to clean MDX
-- Navigation structure is detected from `mint.json`, `docusaurus.config.js`, `docs.json`, or inferred from the directory structure
+- Live-site pages are discovered from sitemaps and rendered sidebars within the submitted docs path
+- Navigation structure is detected from rendered Mintlify/Docusaurus navigation, `mint.json`, `docusaurus.config.js`, `docs.json`, or the directory structure
+- Docusaurus current-version boundaries, case-sensitive routes, redirects, nested docs plugins, callouts, tabs, tables, and highlighted code are preserved
 - OpenAPI spec files (`.json`, `.yaml`) are detected and wired up as an API Reference tab
 - Platform-specific MDX components are normalized to Thally equivalents (see [component mapping](#component-mapping) below)
 
@@ -83,8 +95,14 @@ npx create-thally-docs migrate https://github.com/org/repo --into ./existing-doc
 | `--into <dir>` | Migrate into an existing Thally project instead of scaffolding a new one |
 | `--branch <name>` | Override the auto-detected git branch |
 | `--docs-dir <path>` | Override the auto-detected docs subdirectory |
+| `--platform <name>` | Select `mintlify`, `docusaurus`, or `auto` |
+| `--max-pages <count>` | Maximum live-site pages to import (`1`–`1000`) |
 | `--api-key <key>` | Anthropic API key for converting non-Markdown files (e.g. `.rst`). Falls back to `ANTHROPIC_API_KEY` env var |
-| `--yes`, `-y` | Skip confirmation prompts |
+| `--yes`, `-y` | Accept defaults and live-site limitations, then skip all prompts |
+
+<Warning>
+If interactive auto-detection receives a live URL, the CLI recommends its source GitHub repository. Continuing with the website requires confirmation that manual alignment may be needed and points you to the Thally MCP for refinement. Explicit `--platform auto` and `--yes` runs print the warning without adding a prompt.
+</Warning>
 
 ### Component mapping
 
@@ -97,6 +115,9 @@ Mintlify, Docusaurus, and GitBook use platform-specific MDX components that don'
 | `<Danger>` | `<Error>` |
 | `<Callout>` | `<Note>` / `<Warning>` / `<Info>` |
 | `:::note ...:::` (Docusaurus) | `<Note>` |
+| Docusaurus admonition | `<Note>` / `<Info>` / `<Warning>` / `<Error>` |
+| Docusaurus tabs | `<Tabs>` and `<Tab>` |
+| Rendered HTML table | Markdown table |
 | `{% hint style="..." %}` (GitBook) | `<Note>` / `<Warning>` |
 | `<AccordionGroup>` | stripped (children kept) |
 | `<Expandable title="...">` | `<Accordion title="...">` |

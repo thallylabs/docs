@@ -103,15 +103,15 @@ const brandPresets: Record<BrandPresetKey, BrandConfig> = {
       sidebarActiveText: '#454A22',
     },
     dark: {
-      background: '#002B28',
-      foreground: '#EFEFE9',
-      muted: '#0E3D38',
-      border: '#1D433F',
-      accent: '#CBEF63',
-      accentForeground: '#1A2018',
-      ring: '#CBEF63',
-      sidebarActiveBg: '172 47% 19% / 0.8',
-      sidebarActiveText: '#CBEF63',
+      background: '#040704',
+      foreground: '#EFEFE7',
+      muted: '#0E130F',
+      border: '#1B1E1A',
+      accent: '#BAE43E',
+      accentForeground: '#101911',
+      ring: '#BAE43E',
+      sidebarActiveBg: '132 15% 6%',
+      sidebarActiveText: '#BAE43E',
     },
   },
   // Alternate preset — violet. Still a first-class, ready-to-use accent.
@@ -158,4 +158,3 @@ export const siteConfig: SiteConfig = {
   brandPreset,
   brandPresets,
 }
-

@@ -31,8 +31,8 @@ export function DocLayout({ doc, children }: DocLayoutProps) {
   // remains at the foot to keep readers moving into the docs.
   if (mode === 'home') {
     return (
-      <article className="flex-1">
-        <div className="space-y-16">
+      <article className="thally-docs-article thally-docs-home flex-1">
+        <div className="space-y-14">
           <Prose className="max-w-none">{children}</Prose>
           <div className="not-prose">
             <DocPagination prev={prev} next={next} />
@@ -45,7 +45,7 @@ export function DocLayout({ doc, children }: DocLayoutProps) {
   // center mode: single centered column, no sidebar-style TOC
   if (mode === 'center') {
     return (
-      <article className="mx-auto w-full max-w-2xl">
+      <article className="thally-docs-article mx-auto w-full max-w-2xl">
         <ContentStack>
           <div className="not-prose space-y-4">
             <DocBreadcrumbs items={breadcrumbs} />
@@ -65,7 +65,7 @@ export function DocLayout({ doc, children }: DocLayoutProps) {
   // wide mode: no TOC column, full-width content
   if (mode === 'wide') {
     return (
-      <article className="flex-1">
+      <article className="thally-docs-article flex-1">
         <ContentStack>
           <div className="not-prose space-y-4">
             <DocBreadcrumbs items={breadcrumbs} />
@@ -85,7 +85,7 @@ export function DocLayout({ doc, children }: DocLayoutProps) {
   // default: two-column with TOC
   return (
     <MainColumns>
-      <article className="flex-1">
+      <article className="thally-docs-article flex-1">
         <ContentStack>
           <div className="not-prose space-y-4">
             <DocBreadcrumbs items={breadcrumbs} />

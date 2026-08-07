@@ -19,6 +19,7 @@ export function DocBreadcrumbs({ items }: DocBreadcrumbsProps) {
             {item.href && !isLast ? (
               <Link
                 href={item.href}
+                prefetch={false}
                 className="transition hover:text-foreground/80"
               >
                 {item.label}

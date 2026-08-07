@@ -153,20 +153,33 @@ Show me all the pages in my docs project
 
 #### `migrate_docs`
 
-Clones a GitHub docs repo and migrates its content into a Thally project.
+Creates a fresh canonical Thally template, then imports a public docs site or GitHub docs repository. The target must be new or empty. This guarantees that the migrated project uses Thally's supported runtime, layout, navigation, and configuration instead of retaining the source application's shell.
 
 ```
-Migrate the Mintlify starter into a new project at /tmp/my-docs
+Migrate https://github.com/acme/docs into a new Thally project at /tmp/acme-docs
 ```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `sourceUrl` | Yes | GitHub URL of the source repo |
-| `projectDir` | Yes | Target path (new project or existing) |
-| `into` | No | Migrate into an existing project (default: `false`) |
+| `sourceUrl` | Yes | Public docs URL or GitHub repository URL |
+| `projectDir` | Yes | Target path for the new canonical Thally project |
 | `branch` | No | Git branch to clone (auto-detected by default) |
 | `docsDir` | No | Docs subdirectory in the repo (auto-detected) |
+| `platform` | No | `mintlify` or `docusaurus`; omit for auto-detection |
+| `maxPages` | No | Maximum number of live-site pages to import (`1`–`1000`) |
 | `apiKey` | No | Anthropic API key for non-Markdown conversion |
+
+---
+
+#### `import_docs`
+
+Imports content into an existing Thally project without scaffolding or replacing its runtime. Use this only when an in-place import is explicitly requested.
+
+```
+Import https://github.com/acme/api-docs into the existing Thally project at /workspace/docs
+```
+
+`import_docs` accepts the same source options as `migrate_docs`, but `projectDir` must point to an existing Thally project. It does not upgrade a legacy or third-party application to the current Thally template.
 
 ---
 

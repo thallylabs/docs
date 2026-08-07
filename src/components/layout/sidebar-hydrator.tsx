@@ -17,4 +17,3 @@ export function SidebarCollectionsHydrator({ collections }: SidebarCollectionsHy
 
   return null
 }
-

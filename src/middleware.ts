@@ -74,6 +74,17 @@ function shouldTrackRequest(request: NextRequest, pathname: string): boolean {
   return shouldTrackPath(pathname) && !isPrefetchRequest(request) && !isFromAdmin(request)
 }
 
+function isCacheableDocsPage(request: NextRequest, pathname: string): boolean {
+  return (
+    request.method === 'GET' &&
+    request.headers.get('accept')?.includes('text/html') === true &&
+    !isDocsAccessEnabledEdge() &&
+    !pathname.startsWith('/api') &&
+    !pathname.startsWith('/admin') &&
+    !pathname.startsWith('/_next')
+  )
+}
+
 function buildAnalyticsPayload(request: NextRequest, pathname: string) {
   const classification = classifyRequest(request, pathname)
   const slugPath = pathname === '/' ? 'introduction' : pathname.slice(1).replace(/\.md$/, '')
@@ -144,6 +155,7 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
     !pathname.startsWith('/api/admin') &&
     !pathname.startsWith('/api/analytics') &&
     !pathname.startsWith('/api/access') &&
+    !pathname.startsWith('/api/chat') &&
     // Uses the server-only site credential; it must remain reachable so a
     // password-protected deployment can connect itself to Thally Cloud.
     !pathname.startsWith('/api/cloud/handshake') &&
@@ -231,6 +243,19 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
     response.headers.append('Link', '</openapi.yaml>; rel="service-desc"; type="application/yaml"')
     response.headers.append('Link', '</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"')
     response.headers.set('X-Llms-Txt', `${request.nextUrl.origin}/llms.txt`)
+  }
+  if (isCacheableDocsPage(request, pathname)) {
+    // Netlify treats responses that pass through middleware as dynamic. The
+    // document itself is prerendered, and atomic deploys invalidate this cache,
+    // so let CDNs serve it without a function round trip while browsers retain
+    // Next.js's normal revalidation behavior.
+    const cdnCache = 'public, s-maxage=31536000, stale-while-revalidate=86400'
+    response.headers.set(
+      'Cache-Control',
+      'public, max-age=0, s-maxage=31536000, stale-while-revalidate=86400',
+    )
+    response.headers.set('CDN-Cache-Control', cdnCache)
+    response.headers.set('Netlify-CDN-Cache-Control', cdnCache)
   }
   return response
 }

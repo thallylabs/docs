@@ -2,11 +2,9 @@
 
 import type React from 'react'
 import Link from 'next/link'
-import { Suspense } from 'react'
 import { ExternalLink } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import type { SidebarCollection, DocsJsonNavbar } from '@/data/docs'
-import type { SearchCorpusRecord } from '@/components/search/command-search'
 import { MobileNav } from '@/components/navigation/mobile-nav'
 import { CommandSearch } from '@/components/search/command-search'
 import { ThemeSwitch } from '@/components/theme/theme-switch'
@@ -16,6 +14,8 @@ import type { I18nConfig } from '@/components/layout/site-shell'
 import { shell } from '@/config/layout'
 import { cn } from '@/lib/utils'
 import { siteConfig } from '@/data/site'
+import { Logo } from '@/components/layout/logo'
+import { useSiteName } from '@/components/layout/use-site-name'
 
 function matchesPath(targetHref: string, pathname: string) {
   if (!targetHref || /^https?:\/\//i.test(targetHref)) {
@@ -39,7 +39,6 @@ interface TopBarProps {
   activeCollectionId: SidebarCollection['id']
   onCollectionChange: (id: SidebarCollection['id']) => void
   activeSections: SidebarCollection['sections']
-  searchIndex: Array<SearchCorpusRecord>
   i18nConfig?: I18nConfig | null
   currentLocale?: string
   currentPath?: string
@@ -51,7 +50,6 @@ export function TopBar({
   activeCollectionId,
   onCollectionChange,
   activeSections,
-  searchIndex,
   i18nConfig,
   currentLocale,
   currentPath,
@@ -59,6 +57,7 @@ export function TopBar({
 }: TopBarProps) {
   const pathname = usePathname()
   const router = useRouter()
+  const siteName = useSiteName()
 
   // siteConfig fallbacks (used when navbarConfig is not set)
   const supportLink =
@@ -78,18 +77,17 @@ export function TopBar({
     : siteConfigCta
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border/80 bg-background/80 backdrop-blur">
-      <div className={cn('flex flex-col gap-3 py-3 sm:gap-4 sm:py-4', shell.topbar)}>
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+    <header className="thally-docs-topbar sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-xl">
+      <div className={cn('thally-docs-topbar-inner flex h-12 items-center gap-3', shell.topbar)}>
+        <div className="contents">
           <MobileNav sections={activeSections} />
-          <div className="ml-auto flex w-full flex-1 flex-wrap items-center gap-2 sm:w-auto sm:gap-3">
-            <Suspense
-              fallback={
-                <div className="hidden h-9 flex-1 items-center rounded-[var(--theme-control-radius)] border border-border/40 px-4 sm:h-10 lg:flex" />
-              }
-            >
-              <CommandSearch searchIndex={searchIndex} />
-            </Suspense>
+          <Link href="/" prefetch={false} className="thally-docs-brand flex shrink-0 items-center gap-2 text-foreground">
+            <Logo showText={false} className="shrink-0" />
+            <span className="font-heading text-[1rem] font-bold tracking-[-0.015em]">{siteName}</span>
+            <span className="-ml-1 font-heading text-[1rem] font-medium text-foreground/55">Docs</span>
+          </Link>
+          <div className="thally-docs-actions ml-auto flex min-w-0 items-center gap-2">
+            <div className="thally-docs-search min-w-0"><CommandSearch /></div>
             {navbarConfig?.links && navbarConfig.links.length > 0
               ? navbarConfig.links.map((link) => {
                   const isExternal = /^https?:\/\//.test(link.href)
@@ -100,7 +98,8 @@ export function TopBar({
                       href={link.href}
                       target={isExternal ? '_blank' : undefined}
                       rel={isExternal ? 'noreferrer' : undefined}
-                      className="hidden items-center gap-1.5 rounded-[var(--theme-control-radius)] border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground/70 transition hover:text-foreground sm:inline-flex sm:px-4 sm:py-2 sm:text-sm"
+                      data-topbar-link
+                      className="thally-docs-topbar-link hidden items-center gap-1.5 whitespace-nowrap text-[0.86rem] font-medium text-foreground/70 transition hover:text-foreground sm:inline-flex"
                     >
                       {isGithub ? (
                         <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-hidden="true">
@@ -117,7 +116,8 @@ export function TopBar({
                 ? (
                     <Link
                       href={supportLink.href}
-                      className="hidden items-center rounded-[var(--theme-control-radius)] border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground/70 transition hover:text-foreground sm:inline-flex sm:px-4 sm:py-2 sm:text-sm"
+                      prefetch={false}
+                      className="thally-docs-topbar-link hidden whitespace-nowrap text-[0.86rem] font-medium text-foreground/70 transition hover:text-foreground sm:inline-flex"
                     >
                       <span className="hidden sm:inline">{supportLink.label}</span>
                       <span className="inline sm:hidden">{supportLink.label.split(' ')[0]}</span>
@@ -127,7 +127,8 @@ export function TopBar({
             {primaryCta ? (
               <Link
                 href={primaryCta.href}
-                className="inline-flex items-center rounded-[var(--theme-control-radius)] bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow hover:bg-primary/90 active:scale-[0.98] sm:px-4 sm:py-2 sm:text-sm"
+                prefetch={false}
+                className="thally-docs-primary inline-flex h-[30px] items-center rounded-[9px] bg-primary px-3 text-[0.84rem] font-semibold text-primary-foreground transition hover:brightness-125 active:scale-[0.98]"
               >
                 <span className="hidden sm:inline">{primaryCta.label}</span>
                 <span className="inline sm:hidden">{primaryCta.label.replace('Get ', '')}</span>
@@ -145,24 +146,20 @@ export function TopBar({
             <ThemeSwitch />
           </div>
         </div>
-        <div
-          className="thally-nav-tab-bar scrollbar-hide -mx-2 flex items-center gap-1.5 overflow-x-auto border border-border/50 bg-muted/20 px-2 py-1 text-xs font-semibold sm:mx-0 sm:gap-2 sm:text-sm rounded-[var(--theme-nav-bar-radius)]"
-          style={{ backgroundColor: 'var(--theme-nav-bar-bg)', borderColor: 'var(--theme-nav-bar-border-color)' }}
-        >
+        <nav className="thally-docs-tabs scrollbar-hide flex h-full items-center gap-[17px] overflow-x-auto" aria-label="Documentation sections">
           {collections.map((collection) => {
             const isActive = collection.id === activeCollectionId
             const baseClasses = cn(
-              'thally-nav-tab-item group relative shrink-0 px-3 py-1.5 text-left transition whitespace-nowrap sm:px-4 sm:py-2',
-              'rounded-[var(--theme-nav-tab-radius)]',
+              'thally-nav-tab-item group relative flex h-full shrink-0 items-center whitespace-nowrap border-b-[1.5px] px-0 pt-px text-left text-[0.88rem] font-medium transition',
               isActive
-                ? 'thally-nav-tab-active text-foreground'
-                : 'text-foreground/70 hover:text-foreground',
+                ? 'thally-nav-tab-active border-foreground font-semibold text-foreground'
+                : 'border-transparent text-foreground/60 hover:text-foreground',
             )
             const indicator = (
               <span
                 className={cn(
-                  'pointer-events-none absolute inset-x-2 bottom-0 h-px rounded-full transition',
-                  isActive ? 'bg-accent' : 'bg-transparent group-hover:bg-border/80',
+                  'pointer-events-none absolute inset-x-0 bottom-0 h-px transition',
+                  isActive ? 'bg-foreground' : 'bg-transparent',
                 )}
                 style={{ opacity: 'var(--theme-nav-tab-indicator-opacity, 1)' } as React.CSSProperties}
               />
@@ -186,6 +183,7 @@ export function TopBar({
                 <Link
                   key={collection.id}
                   href={collection.href}
+                  prefetch={false}
                   className={baseClasses}
                 >
                   {indicator}
@@ -212,9 +210,8 @@ export function TopBar({
               </button>
             )
           })}
-        </div>
+        </nav>
       </div>
     </header>
   )
 }
-

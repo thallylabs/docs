@@ -5,11 +5,9 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { NavigationSection } from '@/data/docs'
 import { Badge } from '@/components/ui/badge'
-import { Icon } from '@/components/mdx/rich-content'
+import { ContentIcon } from '@/components/ui/content-icon'
 import { layout, typography } from '@/config/layout'
 import { cn } from '@/lib/utils'
-import { Logo } from '@/components/layout/logo'
-import { useSiteName } from '@/components/layout/use-site-name'
 
 interface SidebarProps {
   sections: Array<NavigationSection>
@@ -18,7 +16,6 @@ interface SidebarProps {
 }
 
 export function Sidebar({ sections, title, className }: SidebarProps) {
-  const siteName = useSiteName()
   const pathname = usePathname()
 
   function isActive(href: string) {
@@ -39,31 +36,26 @@ export function Sidebar({ sections, title, className }: SidebarProps) {
 
   return (
     <aside
-      className={cn('hidden shrink-0 border-r border-border/80 bg-background lg:block', layout.sidebarWidth, className)}
+      className={cn(
+        "thally-docs-sidebar relative hidden shrink-0 border-r border-border bg-background before:absolute before:inset-y-0 before:right-full before:w-screen before:bg-inherit before:content-[''] lg:block",
+        layout.sidebarWidth,
+        className,
+      )}
     >
-      <div className={cn('fixed top-0 flex h-screen flex-col', layout.sidebarWidth, layout.sidebarPadding)}>
-        <div className="flex shrink-0 flex-col gap-3 px-1 pt-2">
-          <Link
-            href="/"
-            className="flex items-center gap-2 rounded-lg focus:outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/30"
-          >
-            <Logo showText={false} className="shrink-0" />
-            <span className="text-sm font-semibold text-foreground">{siteName} Docs</span>
-          </Link>
+      <div className={cn('sticky top-12 flex h-[calc(100dvh-48px)] flex-col', layout.sidebarWidth, layout.sidebarPadding)}>
+        <div className="shrink-0">
+          <p className="font-mono text-[0.68rem] font-medium uppercase tracking-[0.14em] text-foreground/50 line-clamp-1">{title}</p>
         </div>
-        <div className="shrink-0 px-1 pt-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.4em] text-foreground/40 line-clamp-1">{title}</p>
-        </div>
-        <nav className="mt-6 min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-y-contain pb-4">
+        <nav className="scrollbar-hide mt-7 min-h-0 flex-1 space-y-[26px] overflow-y-auto overscroll-y-contain pb-4">
             {sections.map((section) => (
-              <div key={section.title} className="space-y-3">
-                <p className={cn(typography.meta, 'flex items-center gap-1.5 px-1 uppercase tracking-wide text-foreground/70')}>
-                  {section.icon && <Icon icon={section.icon} className="h-3.5 w-3.5 shrink-0 text-foreground/50" />}
+              <div key={section.title} className="space-y-2">
+                <p className={cn(typography.meta, 'flex items-center gap-1.5 font-mono text-[0.68rem] font-medium uppercase tracking-[0.14em] text-foreground/50')}>
+                  {section.icon && <ContentIcon icon={section.icon} className="h-3.5 w-3.5 shrink-0 text-foreground/50" />}
                   <span className="truncate">{section.title}</span>
                 </p>
-                <div className="relative pl-4">
-                  <span className="absolute inset-y-0 left-1 w-px rounded-full bg-border/70" />
-                  <div className="space-y-1">
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 w-px bg-border" />
+                  <div>
                     {section.items.map((item) => {
                       const active = isActive(item.href)
                       const activeStyles = active
@@ -76,27 +68,27 @@ export function Sidebar({ sections, title, className }: SidebarProps) {
                         <Link
                           key={item.id}
                           href={item.href}
+                          prefetch={false}
                           aria-current={active ? 'page' : undefined}
                           className={cn(
-                            'group relative block px-3 py-2 text-left transition',
-                            'rounded-[var(--theme-sidebar-item-radius)]',
+                            'group relative block py-[5px] pl-[14px] text-left transition',
                             'focus:outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/30',
                             active
                               ? 'text-foreground shadow-none'
-                              : 'text-foreground/70 hover:bg-muted/40 hover:text-foreground',
+                              : 'text-foreground/70 hover:text-foreground',
                           )}
                           style={activeStyles}
                         >
                           <span
                             className={cn(
-                              'thally-sidebar-indicator absolute -left-3 inset-y-0 w-px rounded-full transition',
-                              active ? 'bg-accent' : 'bg-transparent group-hover:bg-accent/40',
+                              'thally-sidebar-indicator absolute inset-y-0 left-0 w-[2px] transition',
+                              active ? 'bg-foreground' : 'bg-transparent group-hover:bg-border',
                             )}
                             style={{ opacity: 'var(--theme-sidebar-indicator-opacity, 1)' } as React.CSSProperties}
                           />
                           <span
                             className={cn(
-                              'flex items-center gap-2 text-sm leading-tight',
+                              'flex items-center gap-2 text-[0.88rem] leading-[1.45]',
                               active ? 'font-semibold' : 'font-medium',
                             )}
                           >
@@ -125,4 +117,3 @@ function normalizePath(value: string) {
   }
   return value.endsWith('/') ? value.slice(0, -1) : value
 }
-

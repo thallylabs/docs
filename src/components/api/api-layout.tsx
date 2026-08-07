@@ -7,7 +7,7 @@ interface ApiLayoutProps {
 
 export function ApiLayout({ children }: ApiLayoutProps) {
   return (
-    <article className="flex-1">
+    <article className="thally-docs-article flex-1">
       <ContentStack>{children}</ContentStack>
       <div className="mt-10">
         <Feedback />
@@ -15,4 +15,3 @@ export function ApiLayout({ children }: ApiLayoutProps) {
     </article>
   )
 }
-
