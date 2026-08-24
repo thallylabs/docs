@@ -27,17 +27,18 @@ Use Thally Cloud at https://app.thally.io/ to create and publish the site. Do no
 3. Needs me: ask me to sign in or create an account if the browser is not already authenticated. Never request my password, verification code, session cookie, or recovery code in chat.
 4. Select Create a site. Ask me for any missing site name, short description, and preferred thally.app address. Never invent brand or company details.
 5. At Docs source, recommend Create a new docs repository. Use an existing repository only when it is already a current Thally project that I explicitly selected. Needs me: have me install or approve the Thally GitHub App for the intended GitHub organization and repository access. Do not select or modify an unrelated repository.
-6. At Product sources, ask whether I want Thally Track configured now. If yes, show me the available product repositories and confirm the exact selections before continuing. Select no more than five and never select the documentation repository itself. If I do not want Track yet, choose I'll do this later.
-7. Review the site name, thally.app address, documentation repository, production branch, and Track selection with me. Select Publish site only after those values match what I approved.
-8. Wait for Thally Cloud to create or connect the GitHub repository and finish the first production deployment. Do not retry blindly. If publishing fails, report the exact message and preserve the created repository and site state for a safe retry.
-9. Confirm the workspace Home page shows the site as Live. Record the documentation repository and live https://SITE_SLUG.thally.app URL from the site summary.
-10. If I provided existing documentation and the Cloud-created repository still contains starter content, clone the exact documentation repository. For a GitHub repository or public docs URL, import into the existing Thally project with npx create-thally-docs@latest migrate SOURCE --into REPOSITORY_DIRECTORY --yes. For local files, preserve the authored content and adapt it under src/content without deleting unrelated project files. If I connected an existing Thally repository, do not overwrite it.
-11. Before editing, read AGENTS.md if present, docs.json, package.json, and src/data/site.ts. Keep framework internals unchanged. Organize pages around reader tasks, preserve useful redirects and assets, and update navigation only for pages that exist.
-12. Run npx thally check and npm run build. Fix errors caused by the content changes. Start npm run dev when the environment can keep a local server running, inspect the homepage, navigation, representative pages, code blocks, images, and API reference, then stop the server.
-13. Commit only the intended documentation changes with a plain, attribution-free message and push them to the production branch connected in Thally Cloud. The push should trigger a new managed deployment. Do not force-push, rewrite history, delete repositories, or merge unrelated work.
-14. Wait for the managed deployment to finish. Fetch the live URL and confirm it returns a successful response and displays the expected site. If the live content is stale, inspect the deployment status and commit SHA before changing anything else.
-15. Set up future agent work. Read LIVE_URL/AGENTS.md and LIVE_URL/skill.md. If the current client supports MCP, connect the local authoring server with npx -y @thallylabs/mcp and connect the site's read-only remote server at LIVE_URL/api/mcp using the correct client-specific configuration. Tell me if the client must restart before those tools appear.
-16. If I ask for a custom domain, open the site's domain settings, show me the exact DNS records Thally provides, and make it clear that I must add them at my DNS provider. Confirm the custom domain loads before calling that optional work complete.
+6. At Product sources, ask whether I want Thally Track configured now. If yes, show me the available product repositories and confirm the exact selections before continuing. Never select the documentation repository itself. If I do not want Track yet, choose I'll do this later.
+7. If the Knowledge surfaces step is available for my workspace, ask whether Track should also prepare scoped draft pull requests in another Markdown or MDX repository. Treat these as destinations, not Product sources. Confirm the repository, branch, root, and allowed paths before adding one, or skip this optional step.
+8. Review the site name, thally.app address, documentation repository, production branch, Product sources, and Knowledge surfaces with me. Select Publish site only after those values match what I approved.
+9. Wait for Thally Cloud to create or connect the GitHub repository and finish the first production deployment. Do not retry blindly. If publishing fails, report the exact message and preserve the created repository and site state for a safe retry.
+10. Confirm the workspace Home page shows the site as Live. Record the documentation repository and live https://SITE_SLUG.thally.app URL from the site summary.
+11. If I provided existing documentation and the Cloud-created repository still contains starter content, clone the exact documentation repository. For a GitHub repository or public docs URL, import into the existing Thally project with npx create-thally-docs@latest migrate SOURCE --into REPOSITORY_DIRECTORY --yes. For local files, preserve the authored content and adapt it under src/content without deleting unrelated project files. If I connected an existing Thally repository, do not overwrite it.
+12. Before editing, read AGENTS.md if present, docs.json, package.json, and src/data/site.ts. Keep framework internals unchanged. Organize pages around reader tasks, preserve useful redirects and assets, and update navigation only for pages that exist.
+13. Run npx thally check and npm run build. Fix errors caused by the content changes. Start npm run dev when the environment can keep a local server running, inspect the homepage, navigation, representative pages, code blocks, images, and API reference, then stop the server.
+14. Commit only the intended documentation changes with a plain, attribution-free message and push them to the production branch connected in Thally Cloud. The push should trigger a new managed deployment. Do not force-push, rewrite history, delete repositories, or merge unrelated work.
+15. Wait for the managed deployment to finish. Fetch the live URL and confirm it returns a successful response and displays the expected site. If the live content is stale, inspect the deployment status and commit SHA before changing anything else.
+16. Set up future agent work. Read LIVE_URL/AGENTS.md and LIVE_URL/skill.md. If the current client supports MCP, connect the local authoring server with npx -y @thallylabs/mcp and connect the site's read-only remote server at LIVE_URL/api/mcp using the correct client-specific configuration. Tell me if the client must restart before those tools appear.
+17. If I ask for a custom domain, open the site's domain settings, show me the exact DNS records Thally provides, and make it clear that I must add them at my DNS provider. Confirm the custom domain loads before calling that optional work complete.
 
 If a command or platform action fails in a way not covered above, stop and give me the exact error, the step that failed, and the safest next action. Do not guess, silently switch products, or claim the site is live before you have verified the URL.
 
@@ -75,8 +76,9 @@ and connect a custom domain later.
 <Step title="Connect the documentation repository">
 
 Choose **Create a new docs repository** for the recommended path. Thally creates
-a GitHub repository from the maintained template, gives you editable source
-files, and manages the first deployment.
+a GitHub repository from the current verified starter release, gives you
+editable source files, and manages the first deployment. The starter is pinned
+to one exact public Thally runtime revision.
 
 Choose **Use an existing repository** only when the repository is already a
 Thally project. Install or approve the Thally GitHub App when prompted, then
@@ -92,11 +94,21 @@ excluded to prevent update loops.
 
 </Step>
 
+<Step title="Choose Knowledge surfaces">
+
+When the feature is available for your workspace, optionally add another
+Markdown or MDX repository where Track may prepare path-scoped draft pull
+requests. This is a destination for reviewed updates, not a Product source and
+not another managed site. You can also configure it later in **Site settings →
+Knowledge surfaces**.
+
+</Step>
+
 <Step title="Review and publish">
 
-Confirm the site address, repository, production branch, and optional Track
-sources. Select **Publish site**. Creating the repository and publishing the
-first version can take about a minute; keep the page open.
+Confirm the site address, repository, production branch, optional Product
+sources, and optional Knowledge surfaces. Select **Publish site** and keep the
+page open while the first immutable release is prepared and validated.
 
 </Step>
 

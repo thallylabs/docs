@@ -18,7 +18,7 @@ to agents as structured JSON, JSON-LD, and Markdown from the same URL.
 - **Auto-generated API reference** — drop in an OpenAPI spec and get interactive docs with a "Try It" console
 - **Sidebar & tabs** — configured from a single `docs.json` file
 - **Hybrid search** — instant client-side command palette plus a server-side full-text + vector `/api/search`
-- **Retrieval-grounded AI chat** — Claude-powered Q&A with RAG retrieval and inline citations; works out of the box on a rate-limited trial key, then on your own `ANTHROPIC_API_KEY`
+- **Retrieval-grounded AI chat** — cited Q&A through a verified Thally Cloud entitlement; local authoring and migration tools can use an owner-supplied model key when explicitly configured
 - **Agent endpoints** — `/llms.txt`, `/ai.txt`, `/api/docs-index`, `/api/docs/{slug}`, and an **Agent Readiness Score** at `/api/agent-readiness`
 - **Remote MCP server** — every deployed site is an MCP endpoint at `/api/mcp`; attach with `claude mcp add --transport http <site>/api/mcp`
 - **Docs agent** — `thally agent "…"` (or `@thally` on a product PR) drafts docs as a **reviewed pull request**, self-checked with `thally check`; it never merges
@@ -37,27 +37,21 @@ cd my-docs
 npm run dev
 ```
 
-Or use the repo directly:
-
-```bash
-npx degit thallylabs/thally my-docs
-cd my-docs
-npm install
-npm run dev
-```
-
 Open [http://localhost:3040](http://localhost:3040). If port 3040 is already
 taken, the dev server falls back to the next free port and prints the URL it
 started on.
 
-## Canonical site source
+## How the public sources fit together
 
-This repository is both the live Thally documentation site and the canonical
-standalone source used by `create-thally-docs` and Thally Cloud. New projects
-inherit the application/runtime from `main`; the creation flow removes this
-repository's documentation, screenshots, and issue templates before writing
-the new site's placeholder or migrated content. There is no separate template
-implementation to keep in sync.
+This repository contains the live Thally documentation content. The public
+runtime and toolchain are authored in `thallylabs/thally`, while the complete
+customer-ready project is generated in `thallylabs/starter` from one exact
+runtime revision. `create-thally-docs`, MCP, migration, and Thally Cloud all
+consume the same immutable starter release instead of copying this docs site or
+cloning the runtime repository directly.
+
+Use `create-thally-docs` to create a project. Do not clone or `degit` the
+runtime repository as a template.
 
 ## Project Structure
 
@@ -178,13 +172,10 @@ cp .env.example .env.local
 | `THALLY_CLOUD_URL` | Optional Thally Cloud control-plane base URL. Defaults to `https://app.thally.io`; set this only for staging or a public development tunnel |
 | `THALLY_CLOUD_SITE_CONFIG` | Managed-hosting release snapshot injected by Thally Cloud. Self-hosted sites should leave this unset and use `THALLY_CLOUD_SITE_TOKEN` |
 | `THALLY_CONTENT_SOURCE` | Optional — where doc content is read from: `filesystem` (default; build-embedded, SSG) or `assets` (managed hosting; content served from the deployment's static assets and rendered per request). Self-hosted sites should leave this unset |
-| `ANTHROPIC_API_KEY` | Owner key for AI chat — lifts trial limits entirely |
-| `THALLY_TRIAL_ANTHROPIC_KEY` | Optional shared key powering the out-of-the-box trial chat (strict per-IP limits + a global daily cap) |
-| `THALLY_TRIAL_RATE_PER_MIN` / `THALLY_TRIAL_RATE_PER_DAY` / `THALLY_TRIAL_DAILY_LIMIT` / `THALLY_CHAT_RATE_PER_MIN` | Optional chat rate-limit overrides |
-| `THALLY_REPO_URL` | Optional — the docs repo Thally Track dispatches to. Defaults to `siteConfig.repoUrl`; set it when `site.ts` keeps the template default (`repoUrl: ''`) but Track should still target your repo |
-| `THALLY_TRACK_WEBHOOK_SECRET` | Optional — enables the manual Thally Track webhook (`/api/track/webhook`); merged/preview PRs in tracked repos become docs-agent PRs. Not needed when you Connect a GitHub App |
-| `THALLY_GITHUB_TOKEN` | Optional — fine-grained PAT that reads tracked product-repo PRs, relays Track dispatches, and authenticates the admin Docs-tasks queue |
-| `THALLY_GITHUB_APP_ID` / `THALLY_GITHUB_APP_INSTALLATION_ID` / `THALLY_GITHUB_APP_PRIVATE_KEY` | Optional — wire a GitHub App by hand instead of the admin "Connect GitHub" button (which stores these encrypted). Grants org-wide access to selected repos |
+| `ANTHROPIC_API_KEY` | Optional key for local CLI, docs-agent, migration, and translation operations; it does not enable chat in a deployed runtime |
+| `THALLY_REPO_URL` | Optional docs-repository identity for local docs-agent compatibility tools |
+| `THALLY_GITHUB_TOKEN` | Optional fine-grained token for a local compatibility command that reads a product pull request or dispatches a docs task; never inject it into a managed site |
+| `THALLY_AGENT_TOKEN` / `THALLY_DISPATCH_TOKEN` | Optional GitHub Actions secrets for the self-managed docs-agent workflow; unrelated to Cloud Track |
 
 Legacy `DOX_*` names are still read as a fallback for every `THALLY_*` variable, so existing deployments keep working without renaming anything.
 

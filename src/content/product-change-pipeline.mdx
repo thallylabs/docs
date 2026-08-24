@@ -37,10 +37,12 @@ affected, and prepares a pull request for a person to review.
     version. Impact analysis keeps a docs page only when a supported graph path
     and evidence explain why it may need work.
   </Step>
-  <Step title="Track updates the affected source">
-    Track receives a limited list of pages and evidence, updates the relevant
-    MDX in a disposable sandbox, and validates the result with `thally check`.
-    If no docs are affected, the loop stops without AI work or a pull request.
+  <Step title="Track updates each allowed destination">
+    Track receives a bounded impact bundle and prepares a pull request for the
+    primary documentation repository. When Knowledge surfaces are connected,
+    scoped child runs may also prepare draft pull requests in those Markdown
+    or MDX repositories. If nothing is affected, the loop stops without model
+    work or a pull request.
   </Step>
   <Step title="A person decides what publishes">
     The result is a normal pull request. Reviewers can accept, correct, or
@@ -79,7 +81,7 @@ affected, and prepares a pull request for a person to review.
 | --- | --- | --- |
 | Product source | Connected GitHub repositories with OpenAPI, MDX, and TypeScript evidence | More source types and integrations |
 | Product understanding | Versioned product facts and links tied to exact commits and inspectable evidence | Broader fact coverage across product tools |
-| Knowledge surface | Documentation pages and API-reference content in a Thally project | SDK references, tutorials, release notes, examples, and other customer-facing surfaces |
+| Knowledge surface | The primary Thally docs repository plus explicitly connected, path-scoped Markdown or MDX repositories | More destination types and integrations |
 | Output | Explained impact results and evidence-checked documentation pull requests | Coordinated updates across every affected surface |
 | Approval | Existing GitHub review and deployment workflow | Human control over every important communication |
 | Learning | Reviewer corrections improve later ranking after enough examples exist | More useful team-specific ranking without weakening evidence rules |
@@ -89,6 +91,11 @@ Thally includes an open documentation engine, but the product is not trying to
 be another wiki, CMS, or knowledge base. Those tools store knowledge. Thally's
 job is to keep it synchronized as the product changes.
 </Note>
+
+Connected Knowledge surfaces remain review-only destinations. Thally opens a
+scoped draft pull request and never deploys the connected repository. The
+primary docs repository is the only destination whose merged Track update can
+enter the managed publishing pipeline.
 
 ## Put the pipeline to work
 

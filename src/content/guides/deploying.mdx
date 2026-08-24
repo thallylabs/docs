@@ -53,11 +53,16 @@ Use a server-capable deployment for:
 - AI chat and remote MCP routes;
 - the admin dashboard and analytics ingestion;
 - password-protected documentation;
-- Thally Track webhooks and other server APIs.
+- feedback, search, and other runtime server APIs.
 
 A fully static export is suitable only when you need rendered documentation
 pages and static assets. The features above depend on server routes and will
 not work in an `output: 'export'` build.
+
+The canonical Thally Track webhook is part of the Thally Cloud control plane,
+not a route that managed sites must host themselves. Self-hosting the public
+documentation runtime does not move Cloud's GitHub intake or Track workers
+into your site process.
 
 ## Add production configuration
 

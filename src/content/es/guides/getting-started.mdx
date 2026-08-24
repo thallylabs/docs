@@ -5,7 +5,7 @@ description: Configura Thally y crea tu primera página de documentación en men
 
 ## Requisitos previos
 
-- **Node.js 18+** y npm (o pnpm/yarn)
+- **Node.js 22+** y npm (o pnpm/yarn)
 - Una terminal y un editor de código
 - Una especificación OpenAPI (opcional — se incluye un ejemplo de JSONPlaceholder)
 
@@ -39,14 +39,9 @@ También puedes omitir las preguntas y aceptar todos los valores predeterminados
 npx create-thally-docs my-docs --yes
 ```
 
-O clonar manualmente:
-
-```bash
-git clone https://github.com/thallylabs/thally.git my-docs
-cd my-docs
-rm -rf .git
-npm install
-```
+La CLI descarga la versión inicial inmutable que también utiliza Thally Cloud.
+No clones `thallylabs/thally` como plantilla: ese repositorio contiene el
+runtime público, no el proyecto completo destinado al cliente.
 
 </Step>
 

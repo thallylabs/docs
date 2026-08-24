@@ -47,30 +47,35 @@ still accepted where a corresponding `THALLY_*` variable replaced them.
 | `THALLY_STORAGE` | No | Set to `memory` to opt out of persistent general storage. |
 | `THALLY_ANALYTICS_SECRET` | No | Separate internal analytics-ingest secret. |
 
-## AI and agent limits
+## Local AI authoring
+
+These variables apply to local CLI, docs-agent, migration, or translation
+operations. They do not enable chat in a deployed documentation runtime.
+Thally Cloud's managed AI endpoints use a verified site entitlement and keep
+provider credentials in the control plane.
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `ANTHROPIC_API_KEY` | Owner-powered AI | Production key for chat and documentation-agent operations. |
-| `THALLY_TRIAL_ANTHROPIC_KEY` | No | Shared trial key used under strict limits when no owner key is present. |
-| `THALLY_CHAT_RATE_PER_MIN` | No | Owner-tier chat requests per minute. |
-| `THALLY_CHAT_RATE_PER_DAY` | No | Owner-tier daily limit; `0` means unlimited. |
-| `THALLY_TRIAL_RATE_PER_MIN` | No | Trial requests per minute. |
-| `THALLY_TRIAL_RATE_PER_DAY` | No | Trial requests per day per visitor. |
-| `THALLY_TRIAL_DAILY_LIMIT` | No | Global trial requests per day. |
+| `ANTHROPIC_API_KEY` | Local AI operations | Model key for docs-agent, migration, and translation commands. Keep it in the local environment or the specific authoring workflow. |
 | `THALLY_MCP_RATE_PER_MIN` | No | Remote MCP request-rate override. |
 | `THALLY_AGENT_MODEL` | No | Model override for documentation-agent runs. |
 
-## Thally Track and GitHub
+## Local docs-agent automation
+
+The canonical Thally Cloud Track pipeline uses the platform GitHub App and the
+shared, durable control-plane webhook. You configure its Product sources and
+Knowledge surfaces in Thally Cloud and do not set the variables below on a
+managed site.
+
+These variables are limited to local compatibility commands and the
+self-managed GitHub Actions docs-agent workflow. Do not deploy a GitHub App
+private key, Track webhook secret, or reusable product-repository credential in
+the documentation runtime.
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `THALLY_REPO_URL` | Sometimes | Docs repository Track dispatches to when `site.ts` has no repository URL. |
-| `THALLY_TRACK_WEBHOOK_SECRET` | Manual webhook mode | HMAC secret shared with product-repository webhooks. |
-| `THALLY_GITHUB_TOKEN` | Manual token mode | Fine-grained token for reading tracked pull requests and dispatching work. |
-| `THALLY_GITHUB_APP_ID` | Manual App setup | GitHub App identifier. |
-| `THALLY_GITHUB_APP_INSTALLATION_ID` | Manual App setup | Installation used to mint access tokens. |
-| `THALLY_GITHUB_APP_PRIVATE_KEY` | Manual App setup | PEM private key. Preserve line breaks in the host's secret field. |
+| `THALLY_REPO_URL` | Local compatibility | Docs repository used when a local authoring tool needs an explicit destination. |
+| `THALLY_GITHUB_TOKEN` | Local compatibility | Fine-grained token for a local command that reads a product pull request or dispatches a docs task. |
 | `THALLY_AGENT_TOKEN` | Agent workflow | Token that can write to the docs repository and read configured product repositories. |
 | `THALLY_DISPATCH_TOKEN` | Product repository workflow | Secret used to dispatch an update to the docs repository. |
 

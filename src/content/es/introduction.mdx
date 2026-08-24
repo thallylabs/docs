@@ -61,14 +61,10 @@ npx create-thally-docs my-docs
 
 La CLI te solicita un nombre de proyecto, descripción, preajuste de marca y URL opcional del repositorio de GitHub — luego crea un sitio de documentación listo para ejecutar con contenido inicial, navegación y dependencias instaladas.
 
-Alternativamente, clona la plantilla manualmente:
-
-```bash
-git clone https://github.com/thallylabs/thally.git my-docs
-cd my-docs
-npm install
-npm run dev
-```
+La CLI descarga la versión inicial inmutable que también utiliza Thally Cloud.
+No clones `thallylabs/thally` como plantilla: ese repositorio contiene el
+runtime público del que se genera la versión inicial, no el proyecto completo
+destinado al cliente.
 
 ## Cómo funciona
 
