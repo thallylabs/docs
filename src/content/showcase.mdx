@@ -226,7 +226,7 @@ Create an `.mdx` file in `src/content/`, then add its slug to a group in `docs.j
 </Accordion>
 
 <Accordion title="Can I use my own components?">
-Yes. Create a component in `src/components/` and register it in `src/components/mdx/mdx-components.tsx`. It will be available in all MDX files.
+Yes. Define and register it in `src/mdx/custom-components.tsx`. It will be available in all MDX files, and Thally never overwrites that file on update. See [Extend Thally](/guides/extending#custom-mdx-components).
 </Accordion>
 
 ## Tooltip
