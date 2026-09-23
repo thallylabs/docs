@@ -20,18 +20,23 @@ Actualiza estos valores para rediseñar toda la interfaz sin tocar los component
 
 ## Agregar componentes personalizados
 
-Crea nuevos componentes en `src/components/` y úsalos directamente en los archivos MDX. Thally automáticamente pone a disposición los componentes comunes en todo el contenido MDX.
+Registra tus propios componentes en `src/mdx/custom-components.tsx`. Ese archivo es tuyo: Thally nunca lo sobrescribe al actualizarse, y todo lo que exporta está disponible en todas las páginas MDX.
 
-Para registrar un nuevo componente MDX, agrégalo al mapa de componentes en `src/components/mdx/mdx-components.tsx`:
+```tsx
+// src/mdx/custom-components.tsx
+import type { MDXComponents } from 'mdx/types'
+import type { ReactNode } from 'react'
 
-```ts
-import { MyWidget } from '@/components/mdx/my-widget'
+function MyWidget({ children }: { children: ReactNode }) {
+  return <div className="rounded-lg border border-border p-4">{children}</div>
+}
 
-const components: MDXComponents = {
-  // ...existing components
-  MyWidget: (props) => <MyWidget {...props} />,
+export const customComponents: MDXComponents = {
+  MyWidget,
 }
 ```
+
+Tus componentes se combinan sobre los integrados, así que registrar un nombre integrado como `Note` o `Card` lo reemplaza.
 
 ### Componentes MDX integrados
 
